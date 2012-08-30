@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: cc_library
+# key: cc_library
+# binding: "keybinding"
+# --
+
+cc_library(name = "$1",
+           srcs = [ "$1.cc" ],
+           hdrs = [ "$1.h" ],
+           deps = [ ],
+           )

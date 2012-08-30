@@ -1,0 +1,7 @@
+#name : cl ...
+# --
+**** TODO Ensure all tests pass
+**** TODO Adding protos?  If so, check to see if you will break Java
+**** TODO Send ${1:CL Description} CL to $2
+**** WAITING Wait for approval for $1  :$2:
+**** TODO Submit $1 CL

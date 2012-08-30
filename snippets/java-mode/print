@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: print
+# type: command
+# --
+System.out.println("$0");

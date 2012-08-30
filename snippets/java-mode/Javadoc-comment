@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Javadoc comment
+# key: jd
+# --
+/**
+ * `yas/selected-text`$0
+ */

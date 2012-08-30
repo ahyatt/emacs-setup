@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: TEST_F
+# key: test_f
+# binding: C-c / t
+# --
+TEST_F(${1:TestClassName}, ${2:TestName}) {
+$0
+}

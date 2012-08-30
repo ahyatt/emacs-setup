@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: DEFINE flag
+# key: define
+# binding: C-c / d
+# expand-env: ((yas/wrap-around-region t))
+# --
+DEFINE_${3:$$(yas/choose-value '("int32" "bool" "string" "double"))}($1, ${3:$(cond ((equal text "int32")  "0") ((equal text "bool")  "false") ((equal text "string") "\"\"") ((equal text "double") "0"))}, "$2");
