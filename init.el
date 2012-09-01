@@ -2,25 +2,10 @@
 (require 'eieio)
 ;; This only gets set for real when cc mode is enabled
 (setq c-buffer-is-cc-mode nil)
-  (defun org-narrow-to-clocked-project ()
-  (interactive)
-  (save-excursion
-    (org-clock-jump-to-current-clock)
-    (switch-to-buffer (marker-buffer org-clock-marker))
-    (org-up-heading-all 1)
-    (org-narrow-to-subtree)
-    (org-clock-jump-to-current-clock)))
 
-(defun org-widen-up ()
-  (interactive)
-  (widen)
-  (org-up-heading-all 2)
-  (org-narrow-to-subtree))
-
-(define-key global-map "\C-coj" 'org-narrow-to-clocked-project)
-(define-key global-map "\C-cou" 'org-widen-up)
 ;; We don't really want to specify every single directory...
-(let ((default-directory elisp-source-dir))
+(let ((default-directory "~/.emacs.d"))
+  (add-to-list 'load-path default-directory)
   (normal-top-level-add-subdirs-to-load-path))
 
 ;; So that we can require encyrpted files (this will ask for a password).
@@ -143,155 +128,156 @@ as a string."
 (eval-after-load "rng-loc"
   '(add-to-list 'rng-schema-locating-files "~/.emacs.d/src/html5-el/schemas.xml"))
 
-(require 'whattf-dt)
+(eval-after-load 'ido
+  '(add-to-list 'ido-ignore-files "flymake.cc"))
 
-(add-to-list 'ido-ignore-files "flymake.cc")
+(eval-after-load 'org
+  '(progn  
+     (setq org-clock-string-limit 80
+	   org-log-done t
+	   org-agenda-include-diary t
+	   org-deadline-warning-days 1
+	   org-clock-idle-time 10
+	   org-agenda-start-with-log-mode nil)
+     (setq org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
+					 "WAITING(w@/!)" "|" "DONE(d)"
+					 "OBSOLETE(o)")
+			       (type "PERMANENT")
+			       (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
+					 "|" "SUBMITTED(b)"))
+	   org-agenda-custom-commands
+	   '(("w" todo "WAITING" nil)
+	     ("n" tags-todo "+someday"
+	      ((org-show-hierarchy-above nil) (org-agenda-todo-ignore-with-date t)
+	       (org-agenda-tags-todo-honor-ignore-options t)))
+	     ("0" "Critical tasks" ((agenda "") (tags-todo "+p0")))
+	     ("l" "Agenda and live tasks" ((agenda "")
+					   (todo "PERMANENT")
+					   (todo "WAITING|EXTREVIEW")
+					   (tags-todo "-someday/!-WAITING-EXTREVIEW")))
+	     ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
+	      ((org-agenda-overriding-header "Last week's completed TODO: "))))
+	   org-enforce-todo-dependencies t
+	   org-agenda-todo-ignore-scheduled t
+	   org-agenda-dim-blocked-tasks 'invisible
+	   org-agenda-tags-todo-honor-ignore-options t
+	   org-agenda-skip-deadline-if-done 't
+	   org-agenda-skip-scheduled-if-done 't
+	   org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s")
+				      (timeline . "  % s")
+				      (todo . " %i %-18:c")
+				      (tags . " %i %-18:c")
+				      (search . " %i %-18:c"))
+	   org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit)
+	   org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
+	   org-archive-location "/home/ahyatt/org/notes.org::datetree/* Archived"
+	   org-use-property-inheritance t
+	   org-agenda-clockreport-parameter-plist
+	   '(:maxlevel 2 :link nil :scope ("/home/ahyatt/org/work.org"))
+	   org-refile-targets '((nil :maxlevel . 5)))
+     
 
-(setq org-clock-string-limit 80
-      org-log-done t
-      org-agenda-include-diary t
-      org-deadline-warning-days 1
-      org-clock-idle-time 10
-      org-agenda-start-with-log-mode nil)
+     ;; I like to cycle in the agenda instead of jump to state
+     ;;  (defadvice org-agenda-todo (before ash-agenda-todo-prefer-cycling
+     ;;                                   activate)
+     ;; (ad-set-arg 0 (if (ad-get-arg 0) nil 'right)))
 
-(setq org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
-                                    "WAITING(w@/!)" "|" "DONE(d)"
-                                    "OBSOLETE(o)")
-                          (type "PERMANENT")
-                          (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
-                                    "|" "SUBMITTED(b)"))
-      org-agenda-custom-commands
-      '(("w" todo "WAITING" nil)
-        ("n" tags-todo "+someday"
-         ((org-show-hierarchy-above nil) (org-agenda-todo-ignore-with-date t)
-          (org-agenda-tags-todo-honor-ignore-options t)))
-        ("0" "Critical tasks" ((agenda "") (tags-todo "+p0")))
-        ("l" "Agenda and live tasks" ((agenda "")
-                                      (todo "PERMANENT")
-                                      (todo "WAITING|EXTREVIEW")
-                                      (tags-todo "-someday/!-WAITING-EXTREVIEW")))
-        ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
-         ((org-agenda-overriding-header "Last week's completed TODO: "))))
-      org-enforce-todo-dependencies t
-      org-agenda-todo-ignore-scheduled t
-      org-agenda-dim-blocked-tasks 'invisible
-      org-agenda-tags-todo-honor-ignore-options t
-      org-agenda-skip-deadline-if-done 't
-      org-agenda-skip-scheduled-if-done 't
-      org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s")
-                                 (timeline . "  % s")
-                                 (todo . " %i %-18:c")
-                                 (tags . " %i %-18:c")
-                                 (search . " %i %-18:c"))
-      org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit)
-      org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
-      org-archive-location "/home/ahyatt/org/notes.org::datetree/* Archived"
-      org-use-property-inheritance t
-      org-agenda-clockreport-parameter-plist
-      '(:maxlevel 2 :link nil :scope ("/home/ahyatt/org/work.org"))
-      org-refile-targets '((nil :maxlevel . 5)))
+     (setq org-use-speed-commands t
+	   org-refile-targets '((nil . (:maxlevel . 3)))
+	   org-link-frame-setup '((gnus . gnus)
+				  (file . find-file-other-window))
+	   org-use-speed-commands t
+	   org-completion-use-ido t
+	   org-use-fast-todo-selection t)
 
+     
+     (defun ash-agenda ()
+       (interactive)
+       (let ((buf (get-buffer "*Org Agenda*")))
+	 (if buf
+	     (switch-to-buffer buf)
+	   (org-agenda-goto-today))
+	 (ash-jabber-colorize-tags)))
 
-;; I like to cycle in the agenda instead of jump to state
-;;  (defadvice org-agenda-todo (before ash-agenda-todo-prefer-cycling
-;;                                   activate)
-;; (ad-set-arg 0 (if (ad-get-arg 0) nil 'right)))
+     (setq org-capture-templates
+	   '(("n" "Note" entry
+	      (file+headline "/home/ahyatt/org/notes.org" "Unfiled notes")
+	      "* %a%?\n%u\n%i")
+	     ("j" "Journal" entry
+	      (file+datetree "/home/ahyatt/org/notes.org")
+	      "* %T %?")
+	     ("t" "Todo" entry
+	      (file+headline "/home/ahyatt/org/work.org" "Inbox")
+	      "* TODO %?\n%a")
+	     ("a" "Act on email" entry
+	      (file+headline "/home/ahyatt/org/work.org" "Inbox")
+	      "* TODO Process [%a]\n" :immediate-finish t)))
+     (defun ash-jabber-colorize-tags ()
+       (when (featurep 'emacs-jabber)
+	 (let ((contact-hash (make-hash-table :test 'equal)))
+	   (dolist (jc jabber-connections)
+	     (dolist (contact (plist-get (fsm-get-state-data jc) :roster))
+	       (puthash (car (split-string (symbol-name contact) "@")) contact contact-hash)))
+	   (save-excursion
+	     (goto-char (point-min))
+	     (while (re-search-forward ":\\(\\w+\\):" nil t)
+	       (let ((tag (match-string-no-properties 1)))
+		 (when (and tag (gethash tag contact-hash))
+		   (let* ((js (jabber-jid-symbol (gethash tag contact-hash)))
+			  (connected (get js 'connected))
+			  (show (get js 'show)))
+		     (if connected
+			 (let ((o (make-overlay (match-beginning 1) (- (point) 1))))
+			   (overlay-put o 'face
+					(cons 'foreground-color
+					      (cond ((equal "away" show)
+						     "orange")
+						    ((equal "dnd" show)
+						     "red")
+						    (t "green")))))))))
+	       (backward-char))))))
 
-(setq org-use-speed-commands t
-      org-refile-targets '((nil . (:maxlevel . 3)))
-      org-link-frame-setup '((gnus . gnus)
-                             (file . find-file-other-window))
-      org-use-speed-commands t
-      org-completion-use-ido t
-      org-use-fast-todo-selection t)
+     (setq org-default-notes-file "~/work/work.org")
+     (define-key global-map [f12] 'org-capture)
 
-(defun ash-agenda ()
-  (interactive)
-  (let ((buf (get-buffer "*Org Agenda*")))
-    (if buf
-        (switch-to-buffer buf)
-      (org-agenda-goto-today))
-    (ash-jabber-colorize-tags)))
+     (add-hook 'jabber-post-connect-hook 'jabber-autoaway-start)
 
-(global-set-key [M-f11] 'ash-agenda)
-(global-set-key [print] 'ash-agenda)
+     (setq org-timer-default-timer 30)
 
-(setq org-capture-templates
-      '(("n" "Note" entry
-         (file+headline "/home/ahyatt/org/notes.org" "Unfiled notes")
-         "* %a%?\n%u\n%i")
-        ("j" "Journal" entry
-         (file+datetree "/home/ahyatt/org/notes.org")
-         "* %T %?")
-        ("t" "Todo" entry
-         (file+headline "/home/ahyatt/org/work.org" "Inbox")
-         "* TODO %?\n%a")
-        ("a" "Act on email" entry
-         (file+headline "/home/ahyatt/org/work.org" "Inbox")
-         "* TODO Process [%a]\n" :immediate-finish t)))
-(setq org-default-notes-file "~/work/work.org")
-(define-key global-map [f12] 'org-capture)
+     (setq org-export-babel-evaluate nil)
 
-(add-hook 'jabber-post-connect-hook 'jabber-autoaway-start)
+     (defun org-narrow-to-clocked-project ()
+       (interactive)
+       (save-excursion
+	 (org-clock-jump-to-current-clock)
+	 (switch-to-buffer (marker-buffer org-clock-marker))
+	 (org-up-heading-all 1)
+	 (org-narrow-to-subtree)
+	 (org-clock-jump-to-current-clock)
+	 (if (search-forward ":NOTES:" nil t)
+	     (progn (org-cycle)
+		    (search-forward ":END:")
+		    (forward-line -1)
+		    (if (looking-at "^$") (insert "\t") (end-of-line)))
+	   (let ((begin (point)))
+	     (insert "\n:NOTES:\n\n:END:\n")
+	     (indent-region begin (point))
+	     (forward-line -2)
+	     (insert "\t")))))
 
-(defun ash-jabber-colorize-tags ()
-  (when (featurep 'emacs-jabber)
-    (let ((contact-hash (make-hash-table :test 'equal)))
-      (dolist (jc jabber-connections)
-        (dolist (contact (plist-get (fsm-get-state-data jc) :roster))
-          (puthash (car (split-string (symbol-name contact) "@")) contact contact-hash)))
-      (save-excursion
-        (goto-char (point-min))
-        (while (re-search-forward ":\\(\\w+\\):" nil t)
-          (let ((tag (match-string-no-properties 1)))
-            (when (and tag (gethash tag contact-hash))
-              (let* ((js (jabber-jid-symbol (gethash tag contact-hash)))
-                     (connected (get js 'connected))
-                     (show (get js 'show)))
-                (if connected
-                    (let ((o (make-overlay (match-beginning 1) (- (point) 1))))
-                      (overlay-put o 'face
-                                   (cons 'foreground-color
-                                         (cond ((equal "away" show)
-                                                "orange")
-                                               ((equal "dnd" show)
-                                                "red")
-                                               (t "green")))))))))
-          (backward-char))))))
+     (defun org-widen-up ()
+       (interactive)
+       (widen)
+       (org-up-heading-all 2)
+       (org-narrow-to-subtree))
 
-(setq org-timer-default-timer 30)
+     (define-key global-map "\C-coj" 'org-narrow-to-clocked-project)
+     (define-key global-map "\C-cou" 'org-widen-up)
 
-(setq org-export-babel-evaluate nil)
+     (add-hook 'org-mode-hook (lambda () (visual-line-mode 1)))
 
-(defun org-narrow-to-clocked-project ()
-  (interactive)
-  (save-excursion
-    (org-clock-jump-to-current-clock)
-    (switch-to-buffer (marker-buffer org-clock-marker))
-    (org-up-heading-all 1)
-    (org-narrow-to-subtree)
-    (org-clock-jump-to-current-clock)
-    (if (search-forward ":NOTES:" nil t)
-        (progn (org-cycle)
-               (search-forward ":END:")
-               (forward-line -1)
-               (if (looking-at "^$") (insert "\t") (end-of-line)))
-      (let ((begin (point)))
-        (insert "\n:NOTES:\n\n:END:\n")
-        (indent-region begin (point))
-        (forward-line -2)
-        (insert "\t")))))
-
-(defun org-widen-up ()
-  (interactive)
-  (widen)
-  (org-up-heading-all 2)
-  (org-narrow-to-subtree))
-
-(define-key global-map "\C-coj" 'org-narrow-to-clocked-project)
-(define-key global-map "\C-cou" 'org-widen-up)
-
-(add-hook 'org-mode-hook (lambda () (visual-line-mode 1)))
+     (global-set-key (kbd "C-c a") 'org-agenda)
+     (global-set-key (kbd "C-c c") 'org-capture)))
 
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
@@ -355,61 +341,66 @@ as a string."
                                   yas/completing-prompt))))
 
 (eval-after-load "jabber"
-  (progn
-    ;; I don't like the jabber modeline having counts, it takes up too
-    ;; much room.
-    (defadvice jabber-mode-line-count-contacts (around ash-remove-jabber-counts
-                                                       (&rest ignore))
-      "Override for count contacts, to remove contacts from modeline"
-      (setq ad-return-value ""))
-    (ad-activate 'jabber-mode-line-count-contacts)
-    (add-hook 'jabber-chat-mode-hook 'flyspell-mode)
-    (when (featurep 'anything)
-      (add-to-list 'anything-sources anything-c-source-jabber-contacts))
-    (setq jabber-alert-message-hooks '(jabber-message-echo jabber-message-scroll)
-          jabber-alert-muc-hooks '(jabber-muc-scroll)
-          jabber-alert-presence-hooks (quote (jabber-presence-update-roster))
-          jabber-autoaway-method (quote jabber-current-idle-time)
-          jabber-mode-line-mode t
-          jabber-vcard-avatars-retrieve nil)
-    (add-hook 'jabber-post-connect-hook 'jabber-autoaway-start)))
+  '(progn
+     ;; I don't like the jabber modeline having counts, it takes up too
+     ;; much room.
+     ;; (defadvice jabber-mode-line-count-contacts (around ash-remove-jabber-counts
+     ;;    						(&rest ignore))
+     ;;   "Override for count contacts, to remove contacts from modeline"
+     ;;   (setq ad-return-value ""))
+     ;; (ad-activate 'jabber-mode-line-count-contacts)
 
-(require 'smex)
-;; This stopped being defined, so let's just define it ourselves
-(defun smex-update-and-run ()
-  (interactive)
-  (smex-update)
-  (smex))
-(add-hook 'after-init-hook 'smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
-(global-set-key (kbd "C-c M-x") 'smex-update-and-run)
-;; This is the old M-x.
-(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
+     (add-hook 'jabber-chat-mode-hook 'flyspell-mode)
+     (when (featurep 'anything)
+       (add-to-list 'anything-sources anything-c-source-jabber-contacts))
+     (setq jabber-alert-message-hooks '(jabber-message-echo jabber-message-scroll)
+	   jabber-alert-muc-hooks '(jabber-muc-scroll)
+	   jabber-alert-presence-hooks (quote (jabber-presence-update-roster))
+	   jabber-autoaway-method (quote jabber-current-idle-time)
+	   jabber-mode-line-mode t
+	   jabber-vcard-avatars-retrieve nil)
+     (add-hook 'jabber-post-connect-hook 'jabber-autoaway-start)
+     ;; jabber roster redisplay is *slow* and slows down everything in
+     ;; emacs.  I don't use the roster, so let's just make the
+     ;; offending function a no-op
+     (defun jabber-display-roster ())
+     ))
 
 ;; edit server, a Chrome extension
 (if (and (daemonp) (locate-library "edit-server"))
     (progn
       (require 'edit-server)
-      (edit-server-start)))
+      (edit-server-start)
+      (add-hook 'edit-server-text-mode-hook (lambda () (visual-line-mode 1)))
+      (add-hook 'edit-server-text-mode-hook (lambda () (flyspell-mode 1)))))
 
-(require 'ace-jump-mode)
-(define-key global-map (quote [Scroll_Lock]) 'ace-jump-mode)
-(define-key global-map (kbd "C-'") 'ace-jump-char-mode)
+(eval-after-load 'ace-jump-mode
+  '(progn (define-key global-map (quote [Scroll_Lock]) 'ace-jump-mode)
+	  (define-key global-map (kbd "C-'") 'ace-jump-char-mode)))
 
-(setq ido-use-virtual-buffers t)
+(eval-after-load 'key-chord
+  '(progn
+     (key-chord-mode 1)
+     (key-chord-define-global "jk" 'dabbrev-expand)
+     (key-chord-define-global "l;" 'magit-status)
+     (key-chord-define-global "`1" 'yas/expand)
+     (key-chord-define-global "-=" (lambda () (interactive) (switch-to-buffer "*compilation*")))
 
-(require 'key-chord)
-(key-chord-mode 1)
-(key-chord-define-global "jk" 'dabbrev-expand)
-(key-chord-define-global "l;" 'magit-status)
-(key-chord-define-global "`1" 'yas/expand)
-(key-chord-define-global "-=" (lambda () (interactive) (switch-to-buffer "*compilation*")))
+     (key-chord-define-global "xb" 'recentf-ido-find-file)
+     (key-chord-define-global "xg" 'smex)
+     (key-chord-define-global "XG" 'smex-major-mode-commands)
+     (key-chord-define-global "fj" 'ash-clear)))
 
-(key-chord-define-global "xb" 'recentf-ido-find-file)
-(key-chord-define-global "xg" 'smex)
-(key-chord-define-global "XG" 'smex-major-mode-commands)
-(key-chord-define-global "fj" 'ash-clear)
+(eval-after-load 'smex
+  ;; Workaround for https://github.com/nonsequitur/smex/issues/21
+  ;; Also see https://github.com/technomancy/ido-ubiquitous/issues/17
+  '(defun smex-completing-read (choices initial-input)
+     (let ((ido-completion-map ido-completion-map)
+           (ido-setup-hook (cons 'smex-prepare-ido-bindings ido-setup-hook))
+           (ido-enable-prefix nil)
+           (ido-enable-flex-matching smex-flex-matching)
+           (ido-max-prospects 10))
+    (ido-completing-read (smex-prompt-with-prefix-arg) choices nil t initial-input nil (car choices)))))
 
 (autoload 'gnus "gnus-load" nil t)
 
@@ -417,48 +408,48 @@ as a string."
   ;; gnus-agent and nnimap don't always work well together,
   ;; but maybe things have gotten better.  Setting to 't again, if it
   ;; fails again let's record why.
-  (setq gnus-agent t
-        bbdb-always-add-addresses 'ash-add-addresses-p
-        bbdb-complete-name-allow-cycling t
-        bbdb-completion-display-record nil
-        bbdb-silent-running t
-        bbdb-use-pop-up nil
-        bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook
-        bbdb/news-auto-create-p 'bbdb-ignore-some-messages-hook
+  '(setq gnus-agent t
+	 bbdb-always-add-addresses 'ash-add-addresses-p
+	 bbdb-complete-name-allow-cycling t
+	 bbdb-completion-display-record nil
+	 bbdb-silent-running t
+	 bbdb-use-pop-up nil
+	 bbdb/mail-auto-create-p 'bbdb-ignore-some-messages-hook
+	 bbdb/news-auto-create-p 'bbdb-ignore-some-messages-hook
          ;; This really speeds things up!
-        gnus-nov-is-evil t
-        nnimap-search-uids-not-since-is-evil t
-        gnus-ignored-newsgroups "^$"
-        mm-text-html-renderer 'w3m-standalone
-        mm-attachment-override-types '("image/.*")
-        ;; No HTML mail
-        mm-discouraged-alternatives '("text/html" "text/richtext")
-        gnus-message-archive-group "Sent"
-        gnus-ignored-mime-types '("text/x-vcard")
-        gnus-agent-queue-mail nil
-        gnus-keep-same-level 't
-        gnus-summary-ignore-duplicates t
-        gnus-group-use-permanent-levels 't
-        ;; From http://emacs.wordpress.com/2008/04/21/two-gnus-tricks/
-        gnus-user-date-format-alist
-        '(((gnus-seconds-today) . "Today, %H:%M")
-          ((+ 86400 (gnus-seconds-today)) . "Yesterday, %H:%M")
-          (604800 . "%A %H:%M") ;;that's one week
-          ((gnus-seconds-month) . "%A %d")
-          ((gnus-seconds-year) . "%B %d")
-          (t . "%B %d '%y"))
+	 gnus-nov-is-evil t
+	 nnimap-search-uids-not-since-is-evil t
+	 gnus-ignored-newsgroups "^$"
+	 mm-text-html-renderer 'w3m-standalone
+	 mm-attachment-override-types '("image/.*")
+	 ;; No HTML mail
+	 mm-discouraged-alternatives '("text/html" "text/richtext")
+	 gnus-message-archive-group "Sent"
+	 gnus-ignored-mime-types '("text/x-vcard")
+	 gnus-agent-queue-mail nil
+	 gnus-keep-same-level 't
+	 gnus-summary-ignore-duplicates t
+	 gnus-group-use-permanent-levels 't
+	 ;; From http://emacs.wordpress.com/2008/04/21/two-gnus-tricks/
+	 gnus-user-date-format-alist
+	 '(((gnus-seconds-today) . "Today, %H:%M")
+	   ((+ 86400 (gnus-seconds-today)) . "Yesterday, %H:%M")
+	   (604800 . "%A %H:%M") ;;that's one week
+	   ((gnus-seconds-month) . "%A %d")
+	   ((gnus-seconds-year) . "%B %d")
+	   (t . "%B %d '%y"))
          ;; From http://www.emacswiki.org/emacs/init-gnus.el
-        gnus-summary-line-format "%U%R%z%O %{%16&user-date;%}   %{%-20,20n%} %{%ua%} %B %(%I%-90,90s%)\n"
-        gnus-summary-same-subject ""
-        gnus-sum-thread-tree-indent "    "
-        gnus-sum-thread-tree-single-indent "◎ "
-        gnus-sum-thread-tree-root "● "
-        gnus-sum-thread-tree-false-root "☆"
-        gnus-sum-thread-tree-vertical "│"
-        gnus-sum-thread-tree-leaf-with-other "├─► "
-        gnus-sum-thread-tree-single-leaf "╰─► "
-        gnus-single-article-buffer nil
-        gnus-suppress-duplicates t))
+	 gnus-summary-line-format "%U%R%z%O %{%16&user-date;%}   %{%-20,20n%} %{%ua%} %B %(%I%-90,90s%)\n"
+	 gnus-summary-same-subject ""
+	 gnus-sum-thread-tree-indent "    "
+	 gnus-sum-thread-tree-single-indent "◎ "
+	 gnus-sum-thread-tree-root "● "
+	 gnus-sum-thread-tree-false-root "☆"
+	 gnus-sum-thread-tree-vertical "│"
+	 gnus-sum-thread-tree-leaf-with-other "├─► "
+	 gnus-sum-thread-tree-single-leaf "╰─► "
+	 gnus-single-article-buffer nil
+	 gnus-suppress-duplicates t))
 
 (defun gnus-user-format-function-a (header) 
    (let ((myself (concat "<" user-mail-address ">"))
@@ -493,35 +484,6 @@ as a string."
 ;; from http://www.method-combination.net/blog/archives/2011/03/11/speeding-up-emacs-saves.htlm
 (setq vc-handled-backends nil)
 
-(setq erc-modules '(autoaway autojoin completion fill irccontrols log match menu move-to-prompt noncommands notify readonly ring scrolltobottom smiley stamp track)
-      erc-hide-list (quote ("JOIN" "KICK" "NICK" "PART" "QUIT" "MODE"))
-      erc-autoaway-mode t
-      erc-notify-mode t
-      erc-echo-notices-in-minibuffer-flag t
-      erc-auto-query t  ;; nil = no new buffer
-      erc-autoaway-idletimer 'emacs
-      erc-user-full-name user-full-name
-      erc-track-when-inactive 'nil
-      ;; also "324" "329" "332" "333" "353" "477" ?
-      erc-track-exclude-types '(("JOIN" "NICK" "PART" "QUIT" "MODE" "333" "353"))
-      erc-track-exclude-server-buffer 'nil
-      erc-autoaway-idle-seconds 300
-      erc-track-showcount t
-      erc-track-shorten-names nil)
-
-(require 'erc-track)  ;; to load the default definitions
-
-(defface erc-modeline
-  '((((class color)) (:foreground "ping"))
-    (t (:italic t) (:bold t)))
-  "Face used for ERC modeline."
-  :group 'erc)
-
-
-(defun erc-track-find-face (faces)
-  "Just return a reasonable face"
-  'erc-modeline)
-
 (setq rcirc-max-message-length 5000)
 (eval-after-load "rcirc"
   '(progn (add-hook 'rcirc-mode-hook (lambda () 
@@ -530,128 +492,76 @@ as a string."
                                        (setq rcirc-fill-flag nil
                                              rcirc-fill-column 'frame-width
                                              rcirc-omit-mode t)))
-          (defun rcirc-handler-MODE (process sender args text))))
+          (defun rcirc-handler-MODE (process sender args text))
+	  (defun ash-switch-to-rcirc-buffer ()
+	    (interactive)
+	    (switch-to-buffer (ido-completing-read "Conversation: "
+						   (mapcar 'buffer-name
+							   (remove-if-not (lambda (buf)
+									    (with-current-buffer buf
+									      (eq major-mode 'rcirc-mode)))
+									  (buffer-list))))))
+	  
+	  ;; From http://www.emacswiki.org/emacs/rcircAutoAway
+	  (defvar rcirc-auto-away-server-regexps nil
+	    "List of regexps to match servers for auto-away.")
+	  
+	  (defvar rcirc-auto-away-after 3600
+	    "Auto-away after this many seconds.")
+	  
+	  (defvar rcirc-auto-away-reason "idle"
+	    "Reason sent to server when auto-away.")
 
-(defun ash-switch-to-rcirc-buffer ()
-  (interactive)
-  (switch-to-buffer (ido-completing-read "Conversation: "
-                                         (mapcar 'buffer-name
-                                                 (remove-if-not (lambda (buf)
-                                                                  (with-current-buffer buf
-                                                                    (eq major-mode 'rcirc-mode)))
-                                                                (buffer-list))))))
-
-;; From http://www.emacswiki.org/emacs/rcircAutoAway
-(defvar rcirc-auto-away-server-regexps nil
-  "List of regexps to match servers for auto-away.")
-
-(defvar rcirc-auto-away-after 3600
-  "Auto-away after this many seconds.")
-
-(defvar rcirc-auto-away-reason "idle"
-  "Reason sent to server when auto-away.")
-
-(defun rcirc-auto-away ()
-  (message "rcirc-auto-away")
-  (rcirc-auto-away-1 rcirc-auto-away-reason)
-  (add-hook 'post-command-hook 'rcirc-auto-unaway))
-
-(defun rcirc-auto-away-1 (reason)
-  (let ((regexp (mapconcat (lambda (x) (concat "\\(" x "\\)")) 
-                           rcirc-auto-away-server-regexps "\\|")))
-    (dolist (process (rcirc-process-list))
-      (when (string-match regexp (process-name process))
-        (rcirc-send-string process (concat "AWAY :" reason))))))
-
-(defun rcirc-auto-unaway ()
-  (remove-hook 'post-command-hook 'rcirc-auto-unaway)
-  (rcirc-auto-away-1 ""))
-
-(run-with-idle-timer rcirc-auto-away-after t 'rcirc-auto-away)
-;;(cancel-function-timers 'rcirc-auto-away)
-
-(scroll-bar-mode -1)
+	  (defun rcirc-auto-away ()
+	    (message "rcirc-auto-away")
+	    (rcirc-auto-away-1 rcirc-auto-away-reason)
+	    (add-hook 'post-command-hook 'rcirc-auto-unaway))
+	  
+	  (defun rcirc-auto-away-1 (reason)
+	    (let ((regexp (mapconcat (lambda (x) (concat "\\(" x "\\)")) 
+				     rcirc-auto-away-server-regexps "\\|")))
+	      (dolist (process (rcirc-process-list))
+		(when (string-match regexp (process-name process))
+		  (rcirc-send-string process (concat "AWAY :" reason))))))
+	  
+	  (defun rcirc-auto-unaway ()
+	    (remove-hook 'post-command-hook 'rcirc-auto-unaway)
+	    (rcirc-auto-away-1 ""))
+	  (run-with-idle-timer rcirc-auto-away-after t 'rcirc-auto-away)))
 
 ; Save every time things are changed
 (setq bookmark-save-flag 1)
 
-(add-hook 'edit-server-text-mode-hook (lambda () (visual-line-mode 1)))
-(add-hook 'edit-server-text-mode-hook (lambda () (flyspell-mode 1)))
+(eval-after-load 'bc
+  '(progn 
+     (autoload 'bc-set               "breadcrumb" "Set bookmark in current point."   t)
+     (autoload 'bc-previous          "breadcrumb" "Go to previous bookmark."         t)
+     (autoload 'bc-next              "breadcrumb" "Go to next bookmark."             t)
+     (autoload 'bc-local-previous    "breadcrumb" "Go to previous local bookmark."   t)
+     (autoload 'bc-local-next        "breadcrumb" "Go to next local bookmark."       t)
+     (autoload 'bc-goto-current      "breadcrumb" "Go to the current bookmark."      t)
+     (autoload 'bc-list              "breadcrumb" "List all bookmarks in menu mode." t)
+     (autoload 'bc-clear             "breadcrumb" "Clear all bookmarks."             t)
+     (eval-after-load 'key-chord
+       (key-chord-define-global "9m" 'bc-set)
+       (key-chord-define-global "9p" 'bc-previous)
+       (key-chord-define-global "9n" 'bc-next)
+       (key-chord-define-global "9P" 'bc-local-previous)
+       (key-chord-define-global "9N" 'bc-local-next)
+       (key-chord-define-global "9l" 'bc-list)
+       (key-chord-define-global "9c" 'bc-clear))))
 
-;; (require 'anything)
-;; (require 'anything-config)
-
-;; (setq anything-sources
-;;       (remove-duplicates (append anything-for-files-prefered-list
-;;                                  '(anything-c-source-buffers+
-;;                                    anything-c-source-imenu
-;;                                    anything-c-source-info-emacs
-;;                                    anything-c-source-org-keywords
-;;                                    anything-c-source-info-org
-;;                                    anything-c-source-info-cl
-;;                                    anything-c-source-info-elisp))))
-
-;; ;; This makes sense on kinesys keyboards
-;; (key-chord-define-global "=1" 'anything)
-;; ;; This makes sense on normal keyboards
-;; (key-chord-define-global "`1" 'anything)
-
-(autoload 'bc-set               "breadcrumb" "Set bookmark in current point."   t)
-(autoload 'bc-previous          "breadcrumb" "Go to previous bookmark."         t)
-(autoload 'bc-next              "breadcrumb" "Go to next bookmark."             t)
-(autoload 'bc-local-previous    "breadcrumb" "Go to previous local bookmark."   t)
-(autoload 'bc-local-next        "breadcrumb" "Go to next local bookmark."       t)
-(autoload 'bc-goto-current      "breadcrumb" "Go to the current bookmark."      t)
-(autoload 'bc-list              "breadcrumb" "List all bookmarks in menu mode." t)
-(autoload 'bc-clear             "breadcrumb" "Clear all bookmarks."             t)
-
-(key-chord-define-global "9m" 'bc-set)
-(key-chord-define-global "9p" 'bc-previous)
-(key-chord-define-global "9n" 'bc-next)
-(key-chord-define-global "9P" 'bc-local-previous)
-(key-chord-define-global "9N" 'bc-local-next)
-(key-chord-define-global "9l" 'bc-list)
-(key-chord-define-global "9c" 'bc-clear)
-
-;; (message "autocomplete")
-;; (add-to-list 'load-path "~/.emacs.d/auto-complete")
-;; (require 'auto-complete-config)
-;; (add-to-list 'ac-dictionary-directories "~/.emacs.d/auto-complete/ac-dict")
-;; (ac-config-default)
-
-;; (defun ielm-auto-complete ()
-;;   "Enables `auto-complete' support in \\[ielm]."
-;;   (setq ac-sources '(ac-source-functions
-;;                      ac-source-variables
-;;                      ac-source-features
-;;                      ac-source-symbols
-;;                      ac-source-words-in-same-mode-buffers))
-;;   (add-to-list 'ac-modes 'inferior-emacs-lisp-mode)
-;;   (auto-complete-mode 1))
-;; (add-hook 'ielm-mode-hook 'ielm-auto-complete)
 (add-hook 'ielm-mode-hook (lambda () (paredit-mode 1)))
-
 (setq mode-line-modes nil)
 
 (defun ash-set-frame-font-points (points)
   (interactive "nPoints: ")
   (set-frame-parameter (selected-frame) 'font (concat "Monaco-" (int-to-string points))))
 
-;; what about custom-theme-load-path?
-(add-to-list 'load-path "~/.emacs.d/src/emacs-color-theme-solarized/")
-(add-to-list 'custom-theme-load-path "~/.emacs.d/src/emacs-color-theme-solarized")
 (defun ash-reapply-theme (frame)
   (save-excursion
     (dolist (theme custom-enabled-themes)
       (enable-theme theme))))
-;; (add-hook 'after-make-frame-functions
-;;           'ash-reapply-theme)
-(setq color-theme-is-global nil)
-
-;; (message "midnight")
-;; (require 'midnight)
-;; (setq clean-buffer-list-delay-general 2)
-;; (add-to-list 'clean-buffer-list-kill-never-regexps ".*@localhost")
 
 (defun push-mark-no-activate ()
   "Pushes `point' to `mark-ring' and does not activate the region
@@ -681,36 +591,75 @@ This is the same as using \\[set-mark-command] with the prefix argument."
         ((= (length (window-list)) 1)
          (split-window))
         (t (error "There must be 2 or less windows to mirror the current buffer"))))
-(key-chord-define-global "0k" 'mirror-buffer)
+
+(eval-after-load 'key-chord
+  '(key-chord-define-global "0k" 'mirror-buffer))
 
 (require 'expand-region)
-(key-chord-define-global "o\\" 'er/expand-region)
-(key-chord-define-global "p\\" 'er/contract-region)
+(eval-after-load 'key-chord
+  '(progn
+     (key-chord-define-global "o\\" 'er/expand-region)
+     (key-chord-define-global "p\\" 'er/contract-region)))
 
 (setq comint-input-ignoredups t)
 
-(require 'multiple-cursors)
-(global-set-key (kbd "C-c m m") 'mc/edit-lines)
-(key-chord-define-global "zm" 'mc/edit-lines)
-(global-set-key (kbd "C-c m a") 'mc/edit-beginnings-of-lines)
-(key-chord-define-global "za" 'mc/edit-lines)
-(global-set-key (kbd "C-c m e") 'mc/edit-ends-of-lines)
-(key-chord-define-global "ze" 'mc/edit-lines)
-(global-set-key (kbd "C-c m r") 'mc/set-rectangular-region-anchor)
-(key-chord-define-global "zr" 'mc/set-rectangular-region-anchor)
-(global-set-key (kbd "C-c m =") 'mc/mark-all-like-this)
-(key-chord-define-global "z=" 'mc/mark-all-like-this)
-(key-chord-define-global "i\\" 'mc/mark-all-like-this)
-(global-set-key (kbd "C-c m n") 'mc/mark-next-like-this)
-(key-chord-define-global "zn" 'mc/mark-next-like-this)
-(global-set-key (kbd "C-c m p") 'mc/mark-previous-like-this)
-(key-chord-define-global "zp" 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c m x") 'mc/mark-more-like-this-extended)
-(key-chord-define-global "zx" 'mc/mark-more-like-this-extended)
-(global-set-key (kbd "C-c m u") 'mc/mark-all-in-region)
-(key-chord-define-global "zu" 'mc/mark-all-in-region)
+(eval-after-load 'multiple-cursors
+  '(progn 
+     (global-set-key (kbd "C-c m m") 'mc/edit-lines)
+     (global-set-key (kbd "C-c m a") 'mc/edit-beginnings-of-lines)
+     (global-set-key (kbd "C-c m e") 'mc/edit-ends-of-lines)
+     (global-set-key (kbd "C-c m r") 'mc/set-rectangular-region-anchor)
+     (global-set-key (kbd "C-c m =") 'mc/mark-all-like-this)
+     (global-set-key (kbd "C-c m n") 'mc/mark-next-like-this)
+     (global-set-key (kbd "C-c m p") 'mc/mark-previous-like-this)
+     (global-set-key (kbd "C-c m x") 'mc/mark-more-like-this-extended)
+     (global-set-key (kbd "C-c m u") 'mc/mark-all-in-region)
+     (eval-after-load 'key-chord
+       '(progn
+	  (key-chord-define-global "zm" 'mc/edit-lines)
+	  (key-chord-define-global "za" 'mc/edit-lines)
+	  (key-chord-define-global "ze" 'mc/edit-lines)
+	  (key-chord-define-global "zr" 'mc/set-rectangular-region-anchor)
+	  (key-chord-define-global "z=" 'mc/mark-all-like-this)
+	  (key-chord-define-global "i\\" 'mc/mark-all-like-this)
+	  (key-chord-define-global "zn" 'mc/mark-next-like-this)
+	  (key-chord-define-global "zp" 'mc/mark-previous-like-this)
+	  (key-chord-define-global "zx" 'mc/mark-more-like-this-extended)
+	  (key-chord-define-global "zu" 'mc/mark-all-in-region)))))
 
+(require 'org)
+(require 'multiple-cursors)
 (require 'google-contacts)
 (require 'google-contacts-gnus)
 (require 'google-contacts-message)
 (require 'ahyatt-google)
+(require 'ace-jump-mode)
+(require 'yasnippet)
+
+;; ffap and ido-mode don't play well together, remove ffap...
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(ansi-color-names-vector ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
+ '(column-number-mode t)
+ '(custom-safe-themes (quote ("1e7e097ec8cb1f8c3a912d7e1e0331caeed49fef6cff220be63bd2a6ba4cc365" "5debeb813b180bd1c3756306cd8c83ac60fda55f85fb27249a0f2d55817e3cab" "117284df029007a8012cae1f01c3156d54a0de4b9f2f381feab47809b8a1caef" "0174d99a8f1fdc506fa54403317072982656f127" "5600dc0bb4a2b72a613175da54edb4ad770105aa" "c3fbf1e1469afba60543a39792be147c1cc33189" "b03af7ef60f7163c67e0984d0a54082d926f74ac" "937a688137bf1e6e4df5c8805ba7caad8d411d5d" default)))
+ '(google-flymake-run-only-after-saving t)
+ '(ido-everywhere t)
+ '(jabber-avatar-cache-directory "/usr/local/google/.jabber-avatars/")
+ '(make-backup-files nil)
+ '(offlineimap-command "offlineimap -u ttyui -1")
+ '(org-agenda-files (quote ("/home/ahyatt/org/work.org")))
+ '(org-agenda-span (quote day))
+ '(org-agenda-sticky t)
+ '(yas/also-auto-indent-first-line t)
+ '(yas/global-mode t nil (yasnippet))
+ '(yas/root-directory (quote ("~/.emacs.d/snippets")) nil (yasnippet)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
