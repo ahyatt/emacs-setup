@@ -1,5 +1,56 @@
-;; emacs 24 seems to break if I don't do this
-(require 'eieio)
+(require 'cl)
+
+(setq package-archives '(("ELPA" . "http://tromey.com/elpa/")
+                         ("gnu" . "http://elpa.gnu.org/packages/")
+                         ("melpa" . "http://melpa.milkbox.net/packages/")
+                         ("marmalade" . "http://marmalade-repo.org/packages/")
+                         ("technomancy" . "http://repo.technomancy.us/emacs/")))
+
+;; Package setup, taken from
+;; https://github.com/zane/dotemacs/blob/master/zane-packages.el#L62
+(setq ash-packages
+      '(ace-jump-mode
+        anaphora
+        autopair
+        bang
+        color-theme-solarized
+        cppcheck
+        dart-mode
+        dynamic-fonts
+        expand-region
+        fill-column-indicator
+        flex-autopair
+        flymake-cursor
+        flyspell-lazy
+        font-utils
+        idle-highlight-mode
+        ido-ubiquitous
+        jabber
+        js2-mode
+        key-chord
+        list-utils
+        magit
+        oauth2
+        paredit
+        rainbow-delimiters
+        rainbow-mode
+        smex
+        starter-kit
+        undo-tree
+        yasnippet
+        ))
+
+(require 'package)
+(package-initialize)
+;;; install missing packages
+(let ((not-installed (remove-if 'package-installed-p ash-packages)))
+  (if not-installed
+      (if (y-or-n-p (format "there are %d packages to be installed. install them? "
+                            (length not-installed)))
+          (progn (package-refresh-contents)
+                 (dolist (package not-installed)
+                   (package-install package))))))
+
 ;; This only gets set for real when cc mode is enabled
 (setq c-buffer-is-cc-mode nil)
 
@@ -10,10 +61,6 @@
 
 ;; So that we can require encyrpted files (this will ask for a password).
 (add-to-list 'load-suffixes ".el.gpg")
-
-(setq package-archives '(("ELPA" . "http://tromey.com/elpa/")
-                         ("gnu" . "http://elpa.gnu.org/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")))
 
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
@@ -275,9 +322,17 @@ as a string."
      (define-key global-map "\C-cou" 'org-widen-up)
 
      (add-hook 'org-mode-hook (lambda () (visual-line-mode 1)))
-
+     ;; always evaluate everything.  Livin' on the edge!
+     (setq org-confirm-babel-evaluate (lambda (lang body) nil))
+     (setq org-babel-sh-command "zsh")
+     
      (global-set-key (kbd "C-c a") 'org-agenda)
      (global-set-key (kbd "C-c c") 'org-capture)))
+
+;; this function causes an annoying prompt for LAST_READ_MAIL.  Kill
+;; the whole function for now.
+(eval-after-load 'org-contacts
+  '(defun org-contacts-gnus-store-last-mail ()))
 
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
@@ -376,7 +431,8 @@ as a string."
 
 (eval-after-load 'ace-jump-mode
   '(progn (define-key global-map (quote [Scroll_Lock]) 'ace-jump-mode)
-	  (define-key global-map (kbd "C-'") 'ace-jump-char-mode)))
+	  (define-key global-map (kbd "C-'") 'ace-jump-char-mode)
+          (define-key global-map (kbd "C-\"") 'ace-jump-line-mode)))
 
 (eval-after-load 'key-chord
   '(progn
@@ -619,7 +675,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 	  (key-chord-define-global "zm" 'mc/edit-lines)
 	  (key-chord-define-global "za" 'mc/edit-lines)
 	  (key-chord-define-global "ze" 'mc/edit-lines)
-	  (key-chord-define-global "zr" 'mc/set-rectangular-region-anchor)
+	  (key-chord-define-global "zr" 'set-rectangular-region-anchor)
 	  (key-chord-define-global "z=" 'mc/mark-all-like-this)
 	  (key-chord-define-global "i\\" 'mc/mark-all-like-this)
 	  (key-chord-define-global "zn" 'mc/mark-next-like-this)
@@ -627,16 +683,120 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 	  (key-chord-define-global "zx" 'mc/mark-more-like-this-extended)
 	  (key-chord-define-global "zu" 'mc/mark-all-in-region)))))
 
-(require 'org)
-(require 'multiple-cursors)
-(require 'google-contacts)
-(require 'google-contacts-gnus)
-(require 'google-contacts-message)
-(require 'ahyatt-google)
-(require 'ace-jump-mode)
-(require 'yasnippet)
+(eval-after-load 'flyspell-lazy
+  '(flyspell-lazy-mode 1))
 
-;; ffap and ido-mode don't play well together, remove ffap...
+(eval-after-load 'undo-tree '(progn
+			       (setq undo-tree-auto-save-history nil
+				     undo-tree-visualizer-timestamps t)
+			       (global-undo-tree-mode 1)))
+
+(defun ash-shorten-minor-mode (minor-mode)
+  (cons (car minor-mode)
+        (let ((mode (car minor-mode)))
+          (cond ((eq mode 'eldoc-mode) "文档")
+                ((eq mode 'yas-minor-mode "模板"))
+                ((eq mode 'paredit-mode "插入语"))
+                ((eq mode 'undo-tree-mode "复原"))
+                ((eq mode 'googlemenu-mode ""))
+                (t (cdr minor-mode))))))
+
+;; from http://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html,
+;; with modifications.
+(setq-default
+ mode-line-format
+ '(; Position, including warning for 80 columns
+   (:propertize "%4l:" face mode-line-position-face)
+   (:eval (propertize "%3c" 'face
+                      (if (>= (current-column) 80)
+                          'mode-line-80col-face
+                        'mode-line-position-face)))
+   ; emacsclient [default -- keep?]
+   mode-line-client
+   "  "
+   ; read-only or modified status
+   (:eval
+    (cond (buffer-read-only
+           (propertize " RO " 'face 'mode-line-read-only-face))
+          ((buffer-modified-p)
+           (propertize " ** " 'face 'mode-line-modified-face))
+          (t "      ")))
+   "    "
+   mode-line-buffer-identification
+   ; narrow [default -- keep?]
+   " %n "
+   "  %["
+   (:propertize mode-name
+                face mode-line-mode-face)
+   "%] "
+   (:eval (propertize (format-mode-line (mapcar #'ash-shorten-minor-mode (minor-mode-alist)))
+                      'face 'mode-line-minor-mode-face))
+   (:propertize mode-line-process
+                face mode-line-process-face)
+   (global-mode-string global-mode-string)))
+
+;; Extra mode line faces
+(make-face 'mode-line-read-only-face)
+(make-face 'mode-line-modified-face)
+(make-face 'mode-line-folder-face)
+(make-face 'mode-line-filename-face)
+(make-face 'mode-line-position-face)
+(make-face 'mode-line-mode-face)
+(make-face 'mode-line-minor-mode-face)
+(make-face 'mode-line-process-face)
+(make-face 'mode-line-80col-face)
+
+(set-face-attribute 'mode-line nil
+    :foreground "gray60" :background "gray20" :family "SourceSansPro-Bold"
+    :inverse-video nil
+    :box '(:line-width 6 :color "gray20" :style nil))
+(set-face-attribute 'mode-line-inactive nil
+    :foreground "gray80" :background "gray40"
+    :inverse-video nil
+    :box '(:line-width 6 :color "gray40" :style nil))
+(set-face-attribute 'mode-line-read-only-face nil
+    :inherit 'mode-line-face
+    :foreground "#4271ae"
+    :box '(:line-width 2 :color "#4271ae"))
+(set-face-attribute 'mode-line-modified-face nil
+    :inherit 'mode-line-face
+    :foreground "#c82829"
+    :background "#ffffff"
+    :box '(:line-width 2 :color "#c82829"))
+(set-face-attribute 'mode-line-folder-face nil
+    :inherit 'mode-line-face
+    :foreground "gray60")
+(set-face-attribute 'mode-line-filename-face nil
+    :inherit 'mode-line-face
+    :foreground "#eab700"
+    :weight 'bold)
+(set-face-attribute 'mode-line-position-face nil
+    :inherit 'mode-line-face
+    :family "Monaco" :height 100)
+(set-face-attribute 'mode-line-mode-face nil
+    :inherit 'mode-line-face
+    :foreground "gray80")
+(set-face-attribute 'mode-line-minor-mode-face nil
+    :inherit 'mode-line-mode-face
+    :foreground "gray40"
+    :height 110)
+(set-face-attribute 'mode-line-process-face nil
+    :inherit 'mode-line-face
+    :foreground "#718c00")
+(set-face-attribute 'mode-line-80col-face nil
+    :inherit 'mode-line-position-face
+    :foreground "black" :background "#eab700")
+
+(require 'org)
+(require 'multiple-cursors nil t)
+;; This isn't working correctly right now, much investigate why.
+;; (require 'google-contacts nil t)
+;; (require 'google-contacts-gnus nil t)
+;; (require 'google-contacts-message nil t)
+(require 'ahyatt-google nil t)
+(require 'ace-jump-mode nil t)
+(require 'yasnippet nil t)
+(require 'undo-tree nil t)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -645,18 +805,19 @@ This is the same as using \\[set-mark-command] with the prefix argument."
  ;; If there is more than one, they won't work right.
  '(ansi-color-names-vector ["#2e3436" "#a40000" "#4e9a06" "#c4a000" "#204a87" "#5c3566" "#729fcf" "#eeeeec"])
  '(column-number-mode t)
- '(custom-safe-themes (quote ("1e7e097ec8cb1f8c3a912d7e1e0331caeed49fef6cff220be63bd2a6ba4cc365" "5debeb813b180bd1c3756306cd8c83ac60fda55f85fb27249a0f2d55817e3cab" "117284df029007a8012cae1f01c3156d54a0de4b9f2f381feab47809b8a1caef" "0174d99a8f1fdc506fa54403317072982656f127" "5600dc0bb4a2b72a613175da54edb4ad770105aa" "c3fbf1e1469afba60543a39792be147c1cc33189" "b03af7ef60f7163c67e0984d0a54082d926f74ac" "937a688137bf1e6e4df5c8805ba7caad8d411d5d" default)))
+ '(custom-safe-themes (quote ("fc5fcb6f1f1c1bc01305694c59a1a861b008c534cae8d0e48e4d5e81ad718bc6" "1e7e097ec8cb1f8c3a912d7e1e0331caeed49fef6cff220be63bd2a6ba4cc365" "5debeb813b180bd1c3756306cd8c83ac60fda55f85fb27249a0f2d55817e3cab" "117284df029007a8012cae1f01c3156d54a0de4b9f2f381feab47809b8a1caef" "0174d99a8f1fdc506fa54403317072982656f127" "5600dc0bb4a2b72a613175da54edb4ad770105aa" "c3fbf1e1469afba60543a39792be147c1cc33189" "b03af7ef60f7163c67e0984d0a54082d926f74ac" "937a688137bf1e6e4df5c8805ba7caad8d411d5d" default)))
  '(google-flymake-run-only-after-saving t)
  '(ido-everywhere t)
+ '(ido-use-url-at-point t)
  '(jabber-avatar-cache-directory "/usr/local/google/.jabber-avatars/")
  '(make-backup-files nil)
  '(offlineimap-command "offlineimap -u ttyui -1")
  '(org-agenda-files (quote ("/home/ahyatt/org/work.org")))
  '(org-agenda-span (quote day))
  '(org-agenda-sticky t)
- '(yas/also-auto-indent-first-line t)
- '(yas/global-mode t nil (yasnippet))
- '(yas/root-directory (quote ("~/.emacs.d/snippets")) nil (yasnippet)))
+ '(yas-also-auto-indent-first-line t)
+ '(yas-global-mode t nil (yasnippet))
+ '(yas-snippet-dirs (quote ("~/.emacs.d/snippets")) nil (yasnippet)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
