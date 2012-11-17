@@ -62,6 +62,10 @@
 ;; So that we can require encyrpted files (this will ask for a password).
 (add-to-list 'load-suffixes ".el.gpg")
 
+;; This stops matching regardless of case, which is better for
+;; camel-cased words.
+(setq dabbrev-case-fold-search nil)
+
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
 (add-hook 'c++-mode-hook (lambda ()
@@ -692,14 +696,14 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 			       (global-undo-tree-mode 1)))
 
 (defun ash-shorten-minor-mode (minor-mode)
-  (cons (car minor-mode)
+  (list (car minor-mode)
         (let ((mode (car minor-mode)))
-          (cond ((eq mode 'eldoc-mode) "文档")
-                ((eq mode 'yas-minor-mode "模板"))
-                ((eq mode 'paredit-mode "插入语"))
-                ((eq mode 'undo-tree-mode "复原"))
-                ((eq mode 'googlemenu-mode ""))
-                (t (cdr minor-mode))))))
+          (cond ((eq mode 'eldoc-mode) "文档·")
+                ((eq mode 'yas-minor-mode) "模板·")
+                ((eq mode 'paredit-mode) "插入语·")
+                ((eq mode 'undo-tree-mode) "复原·")
+                ((eq mode 'googlemenu-mode) "")
+                (t (second minor-mode))))))
 
 ;; from http://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html,
 ;; with modifications.
@@ -729,7 +733,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
    (:propertize mode-name
                 face mode-line-mode-face)
    "%] "
-   (:eval (propertize (format-mode-line (mapcar #'ash-shorten-minor-mode (minor-mode-alist)))
+   (:eval (propertize (format-mode-line (mapcar #'ash-shorten-minor-mode minor-mode-alist))
                       'face 'mode-line-minor-mode-face))
    (:propertize mode-line-process
                 face mode-line-process-face)
