@@ -787,7 +787,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (set-face-attribute 'mode-line-modified-face nil
     :inherit 'mode-line-face
     :foreground "#c82829"
-y    :background "#ffffff"
+    :background "#ffffff"
     :box '(:line-width 2 :color "#c82829"))
 (set-face-attribute 'mode-line-folder-face nil
     :inherit 'mode-line-face
@@ -812,12 +812,12 @@ y    :background "#ffffff"
 (set-face-attribute 'mode-line-80col-face nil
     :inherit 'mode-line-position-face
     :foreground "black" :background "#eab700")
+
+(require 'org)
 (set-face-attribute 'org-mode-line-clock nil
     :inherit 'mode-line-face
     :family "Monaco" :height 100)
 
-
-(require 'org)
 (require 'multiple-cursors nil t)
 ;; This isn't working correctly right now, much investigate why.
 ;; (require 'google-contacts nil t)
