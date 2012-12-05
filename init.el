@@ -1,5 +1,12 @@
 (require 'cl)
 
+;; We don't really want to specify every single directory...
+(let ((default-directory "~/.emacs.d"))
+  (add-to-list 'load-path default-directory)
+  (normal-top-level-add-subdirs-to-load-path))
+
+(require 'package)
+(require 'ahyatt-google nil t)
 (setq package-archives '(("ELPA" . "http://tromey.com/elpa/")
                          ("gnu" . "http://elpa.gnu.org/packages/")
                          ("melpa" . "http://melpa.milkbox.net/packages/")
@@ -40,7 +47,6 @@
         yasnippet
         ))
 
-(require 'package)
 (package-initialize)
 ;;; install missing packages
 (let ((not-installed (remove-if 'package-installed-p ash-packages)))
@@ -53,11 +59,6 @@
 
 ;; This only gets set for real when cc mode is enabled
 (setq c-buffer-is-cc-mode nil)
-
-;; We don't really want to specify every single directory...
-(let ((default-directory "~/.emacs.d"))
-  (add-to-list 'load-path default-directory)
-  (normal-top-level-add-subdirs-to-load-path))
 
 ;; So that we can require encyrpted files (this will ask for a password).
 (add-to-list 'load-suffixes ".el.gpg")
@@ -207,7 +208,9 @@ as a string."
 					   (todo "WAITING|EXTREVIEW")
 					   (tags-todo "-someday/!-WAITING-EXTREVIEW")))
 	     ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
-	      ((org-agenda-overriding-header "Last week's completed TODO: "))))
+	      ((org-agenda-overriding-header "Last week's completed TODO: ")
+               (org-agenda-skip-archived-trees nil)
+               (org-agenda-files '("/home/ahyatt/org/work.org" "/home/ahyatt/org/notes.org")))))
 	   org-enforce-todo-dependencies t
 	   org-agenda-todo-ignore-scheduled t
 	   org-agenda-dim-blocked-tasks 'invisible
@@ -221,6 +224,9 @@ as a string."
 				      (search . " %i %-18:c"))
 	   org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit)
 	   org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
+           org-clock-into-drawer t
+           org-clock-report-include-clocking-task t
+           org-clock-history-length 20
 	   org-archive-location "/home/ahyatt/org/notes.org::datetree/* Archived"
 	   org-use-property-inheritance t
 	   org-agenda-clockreport-parameter-plist
@@ -249,6 +255,7 @@ as a string."
 	     (switch-to-buffer buf)
 	   (org-agenda-goto-today))
 	 (ash-jabber-colorize-tags)))
+     (require 'org-gnus)
 
      (setq org-capture-templates
 	   '(("n" "Note" entry
@@ -262,7 +269,8 @@ as a string."
 	      "* TODO %?\n%a")
 	     ("a" "Act on email" entry
 	      (file+headline "/home/ahyatt/org/work.org" "Inbox")
-	      "* TODO Process [%a]\n" :immediate-finish t)))
+              "* TODO Respond to %:from on %:subject\n%U\n%a\n"
+              :clock-in t :clock-resume t :immediate-finish t)))
      (defun ash-jabber-colorize-tags ()
        (when (featurep 'emacs-jabber)
 	 (let ((contact-hash (make-hash-table :test 'equal)))
@@ -751,7 +759,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (make-face 'mode-line-80col-face)
 
 (set-face-attribute 'mode-line nil
-    :foreground "gray60" :background "gray20" :family "SourceSansPro-Bold"
+    :foreground "gray60" :background "gray20" :family "Source Sans Pro"
     :inverse-video nil
     :box '(:line-width 6 :color "gray20" :style nil))
 (set-face-attribute 'mode-line-inactive nil
@@ -790,6 +798,10 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (set-face-attribute 'mode-line-80col-face nil
     :inherit 'mode-line-position-face
     :foreground "black" :background "#eab700")
+(set-face-attribute 'org-mode-line-clock nil
+    :inherit 'mode-line-face
+    :family "Monaco" :height 100)
+
 
 (require 'org)
 (require 'multiple-cursors nil t)
@@ -797,7 +809,6 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 ;; (require 'google-contacts nil t)
 ;; (require 'google-contacts-gnus nil t)
 ;; (require 'google-contacts-message nil t)
-(require 'ahyatt-google nil t)
 (require 'ace-jump-mode nil t)
 (require 'yasnippet nil t)
 (require 'undo-tree nil t)
@@ -828,3 +839,4 @@ This is the same as using \\[set-mark-command] with the prefix argument."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'downcase-region 'disabled nil)
