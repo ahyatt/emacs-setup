@@ -826,6 +826,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (require 'ace-jump-mode nil t)
 (require 'yasnippet nil t)
 (require 'undo-tree nil t)
+(require 'key-chord nil t)
 
 (setq custom-file "~/.emacs.d/custom.el")
 ;; Load the customizations file, if it exists. If it doesn't exist,
