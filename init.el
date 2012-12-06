@@ -614,25 +614,6 @@ as a string."
 ; Save every time things are changed
 (setq bookmark-save-flag 1)
 
-(eval-after-load 'bc
-  '(progn 
-     (autoload 'bc-set               "breadcrumb" "Set bookmark in current point."   t)
-     (autoload 'bc-previous          "breadcrumb" "Go to previous bookmark."         t)
-     (autoload 'bc-next              "breadcrumb" "Go to next bookmark."             t)
-     (autoload 'bc-local-previous    "breadcrumb" "Go to previous local bookmark."   t)
-     (autoload 'bc-local-next        "breadcrumb" "Go to next local bookmark."       t)
-     (autoload 'bc-goto-current      "breadcrumb" "Go to the current bookmark."      t)
-     (autoload 'bc-list              "breadcrumb" "List all bookmarks in menu mode." t)
-     (autoload 'bc-clear             "breadcrumb" "Clear all bookmarks."             t)
-     (eval-after-load 'key-chord
-       (key-chord-define-global "9m" 'bc-set)
-       (key-chord-define-global "9p" 'bc-previous)
-       (key-chord-define-global "9n" 'bc-next)
-       (key-chord-define-global "9P" 'bc-local-previous)
-       (key-chord-define-global "9N" 'bc-local-next)
-       (key-chord-define-global "9l" 'bc-list)
-       (key-chord-define-global "9c" 'bc-clear))))
-
 (add-hook 'ielm-mode-hook (lambda () (paredit-mode 1)))
 (setq mode-line-modes nil)
 
