@@ -827,7 +827,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (require 'yasnippet nil t)
 (require 'undo-tree nil t)
 
-(setq custom-file "~/.emacs-custom.el")
+(setq custom-file "~/.emacs.d/custom.el")
 ;; Load the customizations file, if it exists. If it doesn't exist,
 ;; don't throw an error or complain.
 (load custom-file t t)
