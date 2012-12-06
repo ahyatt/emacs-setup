@@ -97,7 +97,7 @@
 
 (defadvice yank (after c-indent-after-yank activate)
   "Do an indent after a yank"
-  (if c-buffer-is-cc-mode
+  (if (and (boundp 'c-buffer-is-cc-mode) c-buffer-is-cc-mode)
       (let ((transient-mark-mode nil))
         (indent-region (region-beginning) (region-end) nil))))
 
