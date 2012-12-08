@@ -471,7 +471,10 @@ as a string."
      (key-chord-define-global "xb" 'recentf-ido-find-file)
      (key-chord-define-global "xg" 'smex)
      (key-chord-define-global "XG" 'smex-major-mode-commands)
-     (key-chord-define-global "fj" 'ash-clear)))
+     (key-chord-define-global "fj" 'ash-clear)
+     (key-chord-define-global "0k" 'mirror-buffer)
+     (key-chord-define-global "o\\" 'er/expand-region)
+     (key-chord-define-global "p\\" 'er/contract-region)))
 
 (eval-after-load 'smex
   ;; Workaround for https://github.com/nonsequitur/smex/issues/21
@@ -655,14 +658,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
          (split-window))
         (t (error "There must be 2 or less windows to mirror the current buffer"))))
 
-(eval-after-load 'key-chord
-  '(key-chord-define-global "0k" 'mirror-buffer))
-
 (require 'expand-region)
-(eval-after-load 'key-chord
-  '(progn
-     (key-chord-define-global "o\\" 'er/expand-region)
-     (key-chord-define-global "p\\" 'er/contract-region)))
 
 (setq comint-input-ignoredups t)
 
