@@ -1,10 +1,5 @@
 (require 'cl)
 
-;; We don't really want to specify every single directory...
-(let ((default-directory "~/.emacs.d"))
-  (add-to-list 'load-path default-directory)
-  (normal-top-level-add-subdirs-to-load-path))
-
 ;; General variable setting
 (setq
  ;; Column numbers are useful when programming, in case you want to
@@ -71,6 +66,8 @@
           (progn (package-refresh-contents)
                  (dolist (package not-installed)
                    (package-install package))))))
+
+(add-to-list 'load-path "~/.emacs.d/")  
 
 ;; So that we can require encyrpted files (this will ask for a password).
 (add-to-list 'load-suffixes ".el.gpg")
