@@ -348,7 +348,27 @@ as a string."
      (setq org-babel-sh-command "zsh")
      
      (global-set-key (kbd "C-c a") 'org-agenda)
-     (global-set-key (kbd "C-c c") 'org-capture)))
+     (global-set-key (kbd "C-c c") 'org-capture)
+
+     (define-key global-map (kbd "C-c g") 'org-store-link)
+     (defun ash/org-link-description (link)
+       "Makes a useful description from a link."
+       (cond ((string-match "^file:" link)
+              (file-name-nondirectory link))
+             (t nil)))
+     
+     (defun ash/org-paste-link ()
+       "Paste all stored links without prompting."
+       (interactive)
+       (unwind-protect
+           (flet ((read-string (prompt &optional initial-input history default-value
+                                       inherit-input-method)
+                               initial-input))
+             (dolist (link (delete-duplicates org-stored-links :test 'equal))
+               (org-insert-link nil (car link) (ash/org-link-description (car link)))))
+         (setq org-stored-links nil)))
+     
+     (define-key org-mode-map (kbd "C-c p") 'ash/org-paste-link)))
 
 ;; this function causes an annoying prompt for LAST_READ_MAIL.  Kill
 ;; the whole function for now.
