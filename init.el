@@ -78,16 +78,19 @@
 
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
-(add-hook 'c++-mode-hook (lambda ()
-                           (setq fill-column 80)
-                           (fci-mode 1)
-                           (electric-pair-mode)
-                           ;; compatible with fci-mode
-                           (setq whitespace-style '(face trailing))))
-(add-hook 'java-mode-hook (lambda ()
-                            (setq fill-column 80)
-                            (fci-mode 1)
-                            (electric-pair-mode)))
+
+(defun ash/c-like-initialization ()
+  (setq fill-column 80)
+  (fci-mode)
+  (electric-pair-mode))
+
+(defun ash/show-trailing-whitespace ()
+  (set (make-local-variable 'whitespace-style)
+                                '(face trailing)))
+
+(add-hook 'c++-mode-hook 'ash/c-like-initialization)
+(add-hook 'c++-mode-hook 'ash/show-trailing-whitespace)
+(add-hook 'java-mode-hook 'ash/c-like-initialization)
 
 (add-hook 'after-save-hook
   'executable-make-buffer-file-executable-if-script-p)
@@ -149,8 +152,6 @@ as a string."
 ;  (require 'doc-mode)
 ;  (add-hook 'c-mode-common-hook 'doc-mode)
 
-(autoload 'company-mode "company" nil t)
-
 (setq ediff-keep-variants nil)
 
 ;; The following was from a mail...
@@ -184,10 +185,6 @@ as a string."
         (pop ediff-combination-patterns-available))
   (add-to-list 'ediff-combination-patterns-available ediff-combination-pattern t)
   (ediff-combine-diffs nil))
-
-(add-to-list 'load-path "~/.emacs.d/src/html5-el")
-(eval-after-load "rng-loc"
-  '(add-to-list 'rng-schema-locating-files "~/.emacs.d/src/html5-el/schemas.xml"))
 
 (eval-after-load 'ido
   '(progn (add-to-list 'ido-ignore-files "flymake.cc")
