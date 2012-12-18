@@ -76,6 +76,17 @@
 ;; camel-cased words.
 (setq dabbrev-case-fold-search nil)
 
+;; Dynamic fonts
+(setq dynamic-fonts-preferred-proportional-fonts
+      '("Source Sans Pro" "DejaVu Sans" "Helvetica"))
+  
+(setq dynamic-fonts-preferred-monospace-fonts
+      '("Source Code Pro" "Inconsolata" "Monaco" "Consolas" "Menlo"
+        "DejaVu Sans Mono" "Droid Sans Mono Pro" "Droid Sans Mono"))
+
+(require 'dynamic-fonts)
+(dynamic-fonts-setup)
+
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
 
