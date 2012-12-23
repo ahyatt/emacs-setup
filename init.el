@@ -85,7 +85,13 @@
         "DejaVu Sans Mono" "Droid Sans Mono Pro" "Droid Sans Mono"))
 
 (require 'dynamic-fonts)
-(dynamic-fonts-setup)
+
+;; If we started with a frame, just setup the fonts, otherwise wait until
+;; we make a frame.
+(if initial-window-system
+    (dynamic-fonts-setup)
+  (add-to-list 'after-make-frame-functions
+               (lambda (frame) (dynamic-fonts-setup))))
 
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
@@ -390,6 +396,7 @@ as a string."
 (recentf-mode 1)
 (tool-bar-mode -1)
 (display-time-mode 1)
+
 ;; Recentf is useless without saving frequently
 (run-with-idle-timer 1 nil 'recentf-save-list)
 
@@ -647,12 +654,23 @@ as a string."
 
 (defun ash-set-frame-font-points (points)
   (interactive "nPoints: ")
-  (set-frame-parameter (selected-frame) 'font (concat "Monaco-" (int-to-string points))))
+  (require 'font-utils)
+  (set-frame-parameter
+   (selected-frame) 'font
+   (concat
+    (font-utils-name-from-xlfd (frame-parameter nil 'font)) "-"
+    (int-to-string points))))
 
 (defun ash-reapply-theme (frame)
   (save-excursion
     (dolist (theme custom-enabled-themes)
       (enable-theme theme))))
+
+;; Adapted from http://irreal.org/blog/?p=1536
+(autoload 'zap-up-to-char "misc"
+  "Kill up to, but not including ARGth occurrence of CHAR.")
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "M-Z") 'zap-to-char)
 
 (defun push-mark-no-activate ()
   "Pushes `point' to `mark-ring' and does not activate the region
