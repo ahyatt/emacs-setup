@@ -686,13 +686,6 @@ This is the same as using \\[set-mark-command] with the prefix argument."
   (set-mark-command 1))
 (global-set-key (kbd "C-:") 'jump-to-mark)
 
-(define-abbrev-table
-  'global-abbrev-table '(
-                         (";G"  "Google" nil 0)
-                         (";i18n" "internationalization" nil 0)
-                         (";l10n" "localization" nil 0)))
-(abbrev-mode 1)
-
 (defun mirror-buffer ()
   (interactive)
   (cond ((= (length (window-list)) 2)
