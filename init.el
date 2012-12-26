@@ -133,50 +133,13 @@
       (let ((transient-mark-mode nil))
         (indent-region (region-beginning) (region-end) nil))))
 
-(defvar ash-clear-pairs '((?\( . ")")
-                          (?\) . "(")
-                          (?\[  . "]")
-                          (?\] . "[")
-                          (?< . ">")
-                          (?> . "<")))
-
-(defun ash-opener (char)
-  "Return the opening equivalent of CHAR (a single char string),
-as a string."
-  (if (memq char '("(" "[" "<"))
-      char (ash-pair-get-other char)))
-
-(defun ash-pair-get-other (char)
-  (or (cdr (assoc (string-to-char char) ash-clear-pairs)) char))
-
-(defun ash-nearest-enclosing-pair-char ()
-  (save-excursion
-    (let ((orig-point (point))
-          (min-elem (cons (buffer-size) ""))
-          (paired-chars '("\"" "'" "(" ")" "[" "]" "{" "}" "," ";"
-                          "<" ">" "/" "|")))
-      (dolist (char paired-chars)
-        (goto-char orig-point)
-        (when (search-backward char nil t)
-          (let ((begin (match-beginning 0)))
-            (goto-char orig-point)
-            (when (search-forward (ash-pair-get-other char) nil t)
-              (let ((length (- (match-beginning 0) begin)))
-                (when (< length (car min-elem))
-                  (setq min-elem (cons length char))))))))
-      (cdr min-elem))))
 
 (defun ash-clear (&optional char)
   (interactive)
-  (let* ((char (or char (ash-nearest-enclosing-pair-char)))
-         (opener (ash-opener char))
-         (closer (ash-pair-get-other opener))
-         (begin (search-backward-regexp (format "%s\\|%s" (regexp-quote opener)
-                                               (regexp-quote closer)))))
-    (forward-char)
-    (search-forward (ash-pair-get-other (match-string 0)))
-    (kill-region (+ 1 begin) (- (point) 1))
-    (goto-char (+ 1 begin))))
+  (require 'expand-region)
+  (er/expand-region 1)
+  (kill-region (region-beginning) (region-end))
+  (er/expand-region 0))
 
 (setq semanticdb-default-save-directory "/tmp/semantic.cache")
   
