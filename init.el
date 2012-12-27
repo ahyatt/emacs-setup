@@ -134,7 +134,7 @@
         (indent-region (region-beginning) (region-end) nil))))
 
 
-(defun ash-clear (&optional char)
+(defun ash-clear ()
   (interactive)
   (require 'expand-region)
   (er/expand-region 1)
