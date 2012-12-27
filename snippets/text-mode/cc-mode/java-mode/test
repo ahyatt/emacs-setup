@@ -1,6 +1,0 @@
-#name : test
-# --
-@Test
-public void test$1() throws Exception {
-    $0
-}
