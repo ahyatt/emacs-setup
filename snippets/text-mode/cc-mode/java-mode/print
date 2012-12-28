@@ -1,3 +1,0 @@
-#name : print
-# --
-System.out.println("$0");

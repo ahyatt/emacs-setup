@@ -33,6 +33,7 @@
         color-theme-solarized
         cppcheck
         dart-mode
+        diminish
         dynamic-fonts
         expand-region
         fill-column-indicator
@@ -40,8 +41,8 @@
         flymake-cursor
         flyspell-lazy
         font-utils
+        helm
         idle-highlight-mode
-        ido-ubiquitous
         jabber
         js2-mode
         key-chord
@@ -95,18 +96,21 @@
 
 ;; From http://whattheemacsd.com//setup-magit.el-01.html
 ;; full screen magit-status
-(defadvice magit-status (around magit-fullscreen activate)
-  (window-configuration-to-register :magit-fullscreen)
-  ad-do-it
-  (delete-other-windows))
+;; altered to appear after loading
+(eval-after-load 'magit
+  '(progn
+     (defadvice magit-status (around magit-fullscreen activate)
+       (window-configuration-to-register :magit-fullscreen)
+       ad-do-it
+       (delete-other-windows))
 
-(defun magit-quit-session ()
-  "Restores the previous window configuration and kills the magit buffer"
-  (interactive)
-  (kill-buffer)
-  (jump-to-register :magit-fullscreen))
-
-(define-key magit-status-mode-map (kbd "q") 'magit-quit-session)
+     (defun magit-quit-session ()
+       "Restores the previous window configuration and kills the magit buffer"
+       (interactive)
+       (kill-buffer)
+       (jump-to-register :magit-fullscreen))
+     
+     (define-key magit-status-mode-map (kbd "q") 'magit-quit-session)))
 
 (require 'fill-column-indicator)
 (setq fci-style 'rule)
@@ -134,7 +138,7 @@
         (indent-region (region-beginning) (region-end) nil))))
 
 
-(defun ash-clear (&optional char)
+(defun ash-clear ()
   (interactive)
   (require 'expand-region)
   (er/expand-region 1)
@@ -182,8 +186,7 @@
   (ediff-combine-diffs nil))
 
 (eval-after-load 'ido
-  '(progn (add-to-list 'ido-ignore-files "flymake.cc")
-          (ido-everywhere 1)))
+  '(progn (add-to-list 'ido-ignore-files "flymake.cc")))
 
 (eval-after-load 'org
   '(progn  
@@ -628,6 +631,7 @@
 (setq bookmark-save-flag 1)
 
 (add-hook 'ielm-mode-hook (lambda () (paredit-mode 1)))
+(add-hook 'emacs-lisp-mode-hook (lambda () (paredit-mode 1)))
 (setq mode-line-modes nil)
 
 (defun ash-set-frame-font-points (points)
@@ -708,15 +712,12 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 				     undo-tree-visualizer-timestamps t)
 			       (global-undo-tree-mode 1)))
 
-(defun ash-shorten-minor-mode (minor-mode)
-  (list (car minor-mode)
-        (let ((mode (car minor-mode)))
-          (cond ((eq mode 'eldoc-mode) "文档·")
-                ((eq mode 'yas-minor-mode) "模板·")
-                ((eq mode 'paredit-mode) "插入语·")
-                ((eq mode 'undo-tree-mode) "复原·")
-                ((eq mode 'googlemenu-mode) "")
-                (t (second minor-mode))))))
+;; Let's use helm for choosing just about everything.
+(require 'helm)
+(helm-mode 1)
+
+(require 'diminish nil t)
+(eval-after-load 'paredit-mode '(diminish 'paredit-mode "()"))
 
 ;; from http://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html,
 ;; with modifications.
