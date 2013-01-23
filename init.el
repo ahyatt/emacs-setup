@@ -137,13 +137,24 @@
       (let ((transient-mark-mode nil))
         (indent-region (region-beginning) (region-end) nil))))
 
+(define-key global-map "\C-c i" 'change-inner)
+(define-key global-map (kbd "H-i") 'change-inner)
+(define-key global-map "\C-c o" 'change-outer)
+(define-key global-map (kbd "H-o") 'change-outer)
 
+(defun ash/go-initialization ()
+  (setq tab-width 2))
+(add-hook 'go-mode-hook 'ash/go-initialization) 
+
+;; This is much like change-inner, but doesn't require us to identify
+;; additional input.
 (defun ash-clear ()
   (interactive)
   (require 'expand-region)
   (er/expand-region 1)
   (kill-region (region-beginning) (region-end))
   (er/expand-region 0))
+
 
 (setq semanticdb-default-save-directory "/tmp/semantic.cache")
   
@@ -809,6 +820,11 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (set-face-attribute 'org-mode-line-clock nil
     :inherit 'mode-line-face
     :family "Monaco" :height 100)
+
+;; Mac customization, from http://whattheemacsd.com/mac.el-01.html
+(setq mac-command-modifier 'meta)
+(setq mac-option-modifier 'super)
+(setq ns-function-modifier 'hyper)
 
 (require 'multiple-cursors nil t)
 ;; This isn't working correctly right now, much investigate why.
