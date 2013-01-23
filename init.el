@@ -747,7 +747,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
    (:propertize mode-name
                 face mode-line-mode-face)
    "%] "
-   (:eval (propertize (format-mode-line (mapcar #'ash-shorten-minor-mode minor-mode-alist))
+   (:eval (propertize (format-mode-line minor-mode-alist)
                       'face 'mode-line-minor-mode-face))
    (:propertize mode-line-process
                 face mode-line-process-face)
