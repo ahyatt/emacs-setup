@@ -290,7 +290,7 @@
               "* TODO Respond to %:from on %:subject\n%U\n%a\n"
               :clock-in t :clock-resume t :immediate-finish t)))
      (defun ash-jabber-colorize-tags ()
-       (when (featurep 'emacs-jabber)
+       (when (featurep 'jabber)
 	 (let ((contact-hash (make-hash-table :test 'equal)))
 	   (dolist (jc jabber-connections)
 	     (dolist (contact (plist-get (fsm-get-state-data jc) :roster))
