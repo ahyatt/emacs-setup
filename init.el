@@ -23,7 +23,8 @@
                          ("gnu" . "http://elpa.gnu.org/packages/")
                          ("melpa" . "http://melpa.milkbox.net/packages/")
                          ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("technomancy" . "http://repo.technomancy.us/emacs/")))
+                         ("technomancy" . "http://repo.technomancy.us/emacs/")
+                         ("org" . "http://orgmode.org/elpa/")))
 
 ;; Package setup, taken from
 ;; https://github.com/zane/dotemacs/blob/master/zane-packages.el#L62
@@ -246,7 +247,7 @@
            org-clock-into-drawer t
            org-clock-report-include-clocking-task t
            org-clock-history-length 20
-	   org-archive-location "/home/ahyatt/org/notes.org::datetree/* Archived"
+	   org-archive-location "/home/ahyatt/org/journal.org::datetree/* Archived"
 	   org-use-property-inheritance t
 	   org-agenda-clockreport-parameter-plist
 	   '(:maxlevel 2 :link nil :scope ("/home/ahyatt/org/work.org"))
@@ -281,7 +282,7 @@
 	      (file+headline "/home/ahyatt/org/notes.org" "Unfiled notes")
 	      "* %a%?\n%u\n%i")
 	     ("j" "Journal" entry
-	      (file+datetree "/home/ahyatt/org/notes.org")
+	      (file+datetree "/home/ahyatt/org/journal.org")
 	      "* %T %?")
 	     ("t" "Todo" entry
 	      (file+headline "/home/ahyatt/org/work.org" "Inbox")
@@ -314,6 +315,9 @@
 						     "red")
 						    (t "green")))))))))
 	       (backward-char))))))
+
+     (defadvice org-agenda-finalize (after ash/after-agenda-display activate)
+       (ash-jabber-colorize-tags))
 
      (setq org-default-notes-file "~/work/work.org")
      (define-key global-map [f12] 'org-capture)
@@ -732,6 +736,12 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 ;; http://www\.google\.com)
 (add-to-list 'helm-completing-read-handlers-alist '(ido-find-file . ido-completing-read))
 (helm-mode 1)
+;; Even more helmy!
+(global-set-key (kbd "C-x b") 'helm-buffers-list)
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
+(add-to-list 'helm-c-boring-file-regexp-list "\\.~undo-tree~$")
+(add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
+(add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
 
 (require 'diminish nil t)
 (eval-after-load 'paredit-mode '(diminish 'paredit-mode "()"))
@@ -825,7 +835,13 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (require 'org)
 (set-face-attribute 'org-mode-line-clock nil
     :inherit 'mode-line-face
-    :family "Monaco" :height 100)
+    :family "Source Sans Pro" :height 120)
+
+(defun ash/sanity-check ()
+  (when (and (eq auto-fill-function 'c-do-auto-fill)
+             (not (eq major-mode 'c++-mode)))
+    (error "Hey! auto-fill-function set to c-do-auto-fill!")))
+(add-hook 'post-command-hook 'ash/sanity-check)
 
 ;; Mac customization, from http://whattheemacsd.com/mac.el-01.html
 (setq mac-command-modifier 'meta)
@@ -851,6 +867,8 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 ;; corruption that happens, turning on c-do-auto-fill as the auto-fill
 ;; function for all buffers.  It is really mysterious.
 (defun c-do-auto-fill ())
+
+(setq projectile-enable-caching t)
 
 (require 'dynamic-fonts)
 ;; If we started with a frame, just setup the fonts, otherwise wait until
