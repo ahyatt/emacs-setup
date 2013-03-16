@@ -1,5 +1,7 @@
 (require 'cl)
 
+(add-to-list 'load-path "~/.emacs.d")
+
 ;; General variable setting
 (setq
  ;; Column numbers are useful when programming, in case you want to
@@ -37,7 +39,6 @@
         dynamic-fonts
         expand-region
         fill-column-indicator
-        flex-autopair
         flymake-cursor
         flyspell-lazy
         font-utils
@@ -67,8 +68,6 @@
           (progn (package-refresh-contents)
                  (dolist (package not-installed)
                    (package-install package))))))
-
-(add-to-list 'load-path "~/.emacs.d/")  
 
 ;; So that we can require encyrpted files (this will ask for a password).
 (add-to-list 'load-suffixes ".el.gpg")
@@ -117,8 +116,7 @@
 
 (defun ash/c-like-initialization ()
   (setq fill-column 80)
-  (fci-mode)
-  (electric-pair-mode))
+  (fci-mode))
 
 (defun ash/show-trailing-whitespace ()
   (set (make-local-variable 'whitespace-style)
@@ -127,6 +125,9 @@
 (add-hook 'c++-mode-hook 'ash/c-like-initialization)
 (add-hook 'c++-mode-hook 'ash/show-trailing-whitespace)
 (add-hook 'java-mode-hook 'ash/c-like-initialization)
+
+(require 'autopair)
+(autopair-global-mode) ;; enable autopair in all buffers
 
 (add-hook 'after-save-hook
   'executable-make-buffer-file-executable-if-script-p)
@@ -724,7 +725,12 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 			       (global-undo-tree-mode 1)))
 
 ;; Let's use helm for choosing just about everything.
-(require 'helm)
+(require 'helm-config)
+(require 'helm-mode)
+;; Turn off helm-mode for ido mode, otherwise you get the dots in the
+;; urls escaped (i.e. http://www.google.com becomes
+;; http://www\.google\.com)
+(add-to-list 'helm-completing-read-handlers-alist '(ido-find-file . ido-completing-read))
 (helm-mode 1)
 
 (require 'diminish nil t)
@@ -840,3 +846,18 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 ;; Load the customizations file, if it exists. If it doesn't exist,
 ;; don't throw an error or complain.
 (load custom-file t t)
+
+;; This seems to be needed due to some jabber-related auto-fill
+;; corruption that happens, turning on c-do-auto-fill as the auto-fill
+;; function for all buffers.  It is really mysterious.
+(defun c-do-auto-fill ())
+
+(require 'dynamic-fonts)
+;; If we started with a frame, just setup the fonts, otherwise wait until
+;; we make a frame.
+;; NOTE: This doesn't actually work with daemon mode.  I don't know
+;; why not yet.  Maybe add a delay as a hack?
+(if initial-window-system
+    (dynamic-fonts-setup)
+  (add-to-list 'after-make-frame-functions
+               (lambda (frame) (dynamic-fonts-setup))))
