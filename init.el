@@ -35,6 +35,7 @@
         color-theme-solarized
         cppcheck
         dart-mode
+        dropdown-list
         diminish
         dynamic-fonts
         edit-server
