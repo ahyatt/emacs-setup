@@ -30,6 +30,7 @@
 (setq ash-packages
       '(ace-jump-mode
         anaphora
+        auto-complete
         bang
         color-theme-solarized
         cppcheck
@@ -37,13 +38,17 @@
         dropdown-list
         diminish
         dynamic-fonts
+        edit-server
         expand-region
         fill-column-indicator
+        flx-ido
         flymake-cursor
         flyspell-lazy
         font-utils
-        helm
+        guide-key
         idle-highlight-mode
+        ido-ubiquitous
+        ido-vertical-mode
         jabber
         js2-mode
         key-chord
@@ -51,10 +56,12 @@
         magit
         oauth2
         paredit
+        powerline
+        projectile
         rainbow-delimiters
         rainbow-mode
+        smartparens
         smex
-        starter-kit
         undo-tree
         yasnippet
         ))
@@ -93,7 +100,7 @@
   (add-to-list 'after-make-frame-functions
                (lambda (frame) (dynamic-fonts-setup))))
 
-;; From http://whattheemacsd.com//setup-magit.el-01.html
+;; From http://whattheemacsd.com/setup-magit.el-01.html
 ;; full screen magit-status
 ;; altered to appear after loading
 (eval-after-load 'magit
@@ -118,6 +125,10 @@
   (setq fill-column 80)
   (fci-mode))
 
+(defun ash/java-initialization ()
+  (setq fill-column 100)
+  (fci-mode))
+
 (defun ash/show-trailing-whitespace ()
   (set (make-local-variable 'whitespace-style)
                                 '(face trailing)))
@@ -125,6 +136,7 @@
 (add-hook 'c++-mode-hook 'ash/c-like-initialization)
 (add-hook 'c++-mode-hook 'ash/show-trailing-whitespace)
 (add-hook 'java-mode-hook 'ash/c-like-initialization)
+(add-hook 'java-mode-hook 'ash/java-initialization)
 
 (add-hook 'after-save-hook
   'executable-make-buffer-file-executable-if-script-p)
@@ -226,7 +238,7 @@
 	     ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
 	      ((org-agenda-overriding-header "Last week's completed TODO: ")
                (org-agenda-skip-archived-trees nil)
-               (org-agenda-files '("/home/ahyatt/org/work.org" "/home/ahyatt/org/notes.org")))))
+               (org-agenda-files '("/home/ahyatt/org/work.org" "/home/ahyatt/org/journal.org")))))
 	   org-enforce-todo-dependencies t
 	   org-agenda-todo-ignore-scheduled t
 	   org-agenda-dim-blocked-tasks 'invisible
@@ -240,11 +252,13 @@
 				      (search . " %i %-18:c"))
 	   org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit)
 	   org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
-           org-clock-into-drawer t
+           org-clock-into-drawer nil
            org-clock-report-include-clocking-task t
            org-clock-history-length 20
 	   org-archive-location "/home/ahyatt/org/journal.org::datetree/* Archived"
 	   org-use-property-inheritance t
+           org-hide-leading-stars nil
+           org-startup-indented t
 	   org-agenda-clockreport-parameter-plist
 	   '(:maxlevel 2 :link nil :scope ("/home/ahyatt/org/work.org"))
 	   org-refile-targets '((nil :maxlevel . 5)))
@@ -286,7 +300,12 @@
 	     ("a" "Act on email" entry
 	      (file+headline "/home/ahyatt/org/work.org" "Inbox")
               "* TODO Respond to %:from on %:subject\n%U\n%a\n"
-              :clock-in t :clock-resume t :immediate-finish t)))
+              :clock-in t :clock-resume t :immediate-finish t)
+             ("c" "Contacts" entry (file "/home/ahyatt/org/contacts.org")
+              "* %(org-contacts-template-name)
+                  :PROPERTIES:
+                  :EMAIL: %(org-contacts-template-email)
+                  :END:")))
      (defun ash-jabber-colorize-tags ()
        (when (featurep 'jabber)
 	 (let ((contact-hash (make-hash-table :test 'equal)))
@@ -333,7 +352,7 @@
 	 (org-narrow-to-subtree)
 	 (org-clock-jump-to-current-clock)
 	 (if (search-forward ":NOTES:" nil t)
-	     (progn (org-cycle)
+	     (progn (org-show-subtree)
 		    (search-forward ":END:")
 		    (forward-line -1)
 		    (if (looking-at "^$") (insert "\t") (end-of-line)))
@@ -357,10 +376,6 @@
      (setq org-confirm-babel-evaluate (lambda (lang body) nil))
      (setq org-babel-sh-command "zsh")
      
-     (global-set-key (kbd "C-c a") 'org-agenda)
-     (global-set-key (kbd "C-c c") 'org-capture)
-
-     (define-key global-map (kbd "C-c g") 'org-store-link)
      (defun ash/org-link-description (link)
        "Makes a useful description from a link."
        (cond ((string-match "^file:" link)
@@ -379,6 +394,10 @@
          (setq org-stored-links nil)))
      
      (define-key org-mode-map (kbd "C-c p") 'ash/org-paste-link)))
+
+(global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c c") 'org-capture)
+(define-key global-map (kbd "C-c g") 'org-store-link)
 
 ;; this function causes an annoying prompt for LAST_READ_MAIL.  Kill
 ;; the whole function for now.
@@ -706,8 +725,6 @@ This is the same as using \\[set-mark-command] with the prefix argument."
      (eval-after-load 'key-chord
        '(progn
 	  (key-chord-define-global "zm" 'mc/edit-lines)
-	  (key-chord-define-global "za" 'mc/edit-lines)
-	  (key-chord-define-global "ze" 'mc/edit-lines)
 	  (key-chord-define-global "zr" 'set-rectangular-region-anchor)
 	  (key-chord-define-global "z=" 'mc/mark-all-like-this)
 	  (key-chord-define-global "i\\" 'mc/mark-all-like-this)
@@ -724,114 +741,30 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 				     undo-tree-visualizer-timestamps t)
 			       (global-undo-tree-mode 1)))
 
-;; Let's use helm for choosing just about everything.
-(require 'helm-config)
-(require 'helm-mode)
-;; Turn off helm-mode for ido mode, otherwise you get the dots in the
-;; urls escaped (i.e. http://www.google.com becomes
-;; http://www\.google\.com)
-(add-to-list 'helm-completing-read-handlers-alist '(ido-find-file . ido-completing-read))
-(helm-mode 1)
-;; Even more helmy!
-(global-set-key (kbd "C-x b") 'helm-buffers-list)
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
-(add-to-list 'helm-c-boring-file-regexp-list "\\.~undo-tree~$")
-(add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
-(add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
+(global-set-key (kbd "C-x b") 'ido-switch-buffer)
+(global-set-key (kbd "C-x C-f") 'ido-find-file)
+
+(eval-after-load 'helm
+  '(progn
+     (add-to-list 'helm-c-boring-file-regexp-list "\\.~undo-tree~$")
+     (add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
+     (add-to-list 'helm-c-boring-file-regexp-list "^#.*#$")
+     (setq helm-follow-mode-persistent t)
+     (setq helm-input-idle-delay 0.001
+      helm-idle-delay 0.001)))
 
 (require 'diminish nil t)
 (eval-after-load 'paredit-mode '(diminish 'paredit-mode "()"))
+(eval-after-load 'helm-mode '(diminish 'helm-mode ""))
+(eval-after-load 'undo-tree '(diminish 'undo-tree-mode ""))
+(eval-after-load 'yas-snippet '(diminish 'yas/global-mode ""))
 
-;; from http://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html,
-;; with modifications.
-(setq-default
- mode-line-format
- '(; Position, including warning for 80 columns
-   (:propertize "%4l:" face mode-line-position-face)
-   (:eval (propertize "%3c" 'face
-                      (if (>= (current-column) 80)
-                          'mode-line-80col-face
-                        'mode-line-position-face)))
-   ; emacsclient [default -- keep?]
-   mode-line-client
-   "  "
-   ; read-only or modified status
-   (:eval
-    (cond (buffer-read-only
-           (propertize " RO " 'face 'mode-line-read-only-face))
-          ((buffer-modified-p)
-           (propertize " ** " 'face 'mode-line-modified-face))
-          (t "      ")))
-   "    "
-   mode-line-buffer-identification
-   ; narrow [default -- keep?]
-   " %n "
-   "  %["
-   (:propertize mode-name
-                face mode-line-mode-face)
-   "%] "
-   (:eval (propertize (format-mode-line minor-mode-alist)
-                      'face 'mode-line-minor-mode-face))
-   (:propertize mode-line-process
-                face mode-line-process-face)
-   (global-mode-string global-mode-string)))
-
-;; Extra mode line faces
-(make-face 'mode-line-read-only-face)
-(make-face 'mode-line-modified-face)
-(make-face 'mode-line-folder-face)
-(make-face 'mode-line-filename-face)
-(make-face 'mode-line-position-face)
-(make-face 'mode-line-mode-face)
-(make-face 'mode-line-minor-mode-face)
-(make-face 'mode-line-process-face)
-(make-face 'mode-line-80col-face)
-
-(set-face-attribute 'mode-line nil
-    :foreground "gray60" :background "gray20" :family "Source Sans Pro"
-    :inverse-video nil
-    :box '(:line-width 6 :color "gray20" :style nil))
-(set-face-attribute 'mode-line-inactive nil
-    :foreground "gray80" :background "gray40"
-    :inverse-video nil
-    :box '(:line-width 6 :color "gray40" :style nil))
-(set-face-attribute 'mode-line-read-only-face nil
-    :inherit 'mode-line-face
-    :foreground "#4271ae"
-    :box '(:line-width 2 :color "#4271ae"))
-(set-face-attribute 'mode-line-modified-face nil
-    :inherit 'mode-line-face
-    :foreground "#c82829"
-    :background "#ffffff"
-    :box '(:line-width 2 :color "#c82829"))
-(set-face-attribute 'mode-line-folder-face nil
-    :inherit 'mode-line-face
-    :foreground "gray60")
-(set-face-attribute 'mode-line-filename-face nil
-    :inherit 'mode-line-face
-    :foreground "#eab700"
-    :weight 'bold)
-(set-face-attribute 'mode-line-position-face nil
-    :inherit 'mode-line-face
-    :family "Monaco" :height 100)
-(set-face-attribute 'mode-line-mode-face nil
-    :inherit 'mode-line-face
-    :foreground "gray80")
-(set-face-attribute 'mode-line-minor-mode-face nil
-    :inherit 'mode-line-mode-face
-    :foreground "gray40"
-    :height 110)
-(set-face-attribute 'mode-line-process-face nil
-    :inherit 'mode-line-face
-    :foreground "#718c00")
-(set-face-attribute 'mode-line-80col-face nil
-    :inherit 'mode-line-position-face
-    :foreground "black" :background "#eab700")
-
-(require 'org)
-(set-face-attribute 'org-mode-line-clock nil
-    :inherit 'mode-line-face
-    :family "Source Sans Pro" :height 120)
+(eval-after-load 'smartparens
+  '(progn
+     (sp-pair "'" nil :unless '(sp-point-after-word-p sp-in-string-p))
+     (dolist (mode '(emacs-lisp-mode lisp-interaction-mode inferior-emacs-lisp-mode))
+       (sp-local-pair mode "'" nil :actions nil)
+       (sp-local-pair mode "`" nil :actions nil))))
 
 (defun ash/sanity-check ()
   (when (and (eq auto-fill-function 'c-do-auto-fill)
@@ -866,6 +799,16 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 
 (setq projectile-enable-caching t)
 
+(modify-coding-system-alist 'file "\\.org\\'" 'utf-8)
+
+(require 'edit-server)
+(edit-server-start)
+
+(require 'midnight)
+(midnight-delay-set 'midnight-delay "4:30am")
+
+(smartparens-global-mode)
+
 (require 'dynamic-fonts)
 ;; If we started with a frame, just setup the fonts, otherwise wait until
 ;; we make a frame.
@@ -875,3 +818,34 @@ This is the same as using \\[set-mark-command] with the prefix argument."
     (dynamic-fonts-setup)
   (add-to-list 'after-make-frame-functions
                (lambda (frame) (dynamic-fonts-setup))))
+(put 'narrow-to-region 'disabled nil)
+(put 'set-goal-column 'disabled nil)
+
+;; temporary fix for org-mode.  Why is this broken?  Must investigate...
+(defun org-indent-line-to (n))
+
+;; ido mode hack to get java to javatests rotation
+(defun ash/ido-mode-map-setup ()
+  (define-key ido-completion-map (kbd "C-;") 'ash/cycle-java))
+
+(defun ash/cycle-java ()
+  (interactive)
+  (cond ((string-match "java/" ido-current-directory)
+         (ido-set-current-directory (replace-regexp-in-string "java/" "javatests/" ido-current-directory)))
+        ((string-match "javatests/" ido-current-directory)
+         (ido-set-current-directory (replace-regexp-in-string "javatests/" "java/" ido-current-directory))))
+  (setq ido-exit 'refresh
+        ido-rescan t
+        ido-rotate-temp t)
+  (exit-minibuffer))
+
+(add-hook 'ido-setup-hook 'ash/ido-mode-map-setup)
+
+(require 'guide-key)
+(setq guide-key/guide-key-sequence '("C-x r" "C-x 4" "C-c ," "C-x x"))
+(guide-key-mode 1)
+
+(require 'ido-vertical-mode)
+(ido-vertical-mode 1)
+
+(require 'ahyatt-google nil t)
