@@ -23,7 +23,6 @@
                          ("gnu" . "http://elpa.gnu.org/packages/")
                          ("melpa" . "http://melpa.milkbox.net/packages/")
                          ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("technomancy" . "http://repo.technomancy.us/emacs/")
                          ("org" . "http://orgmode.org/elpa/")))
 
 ;; Package setup, taken from
@@ -31,7 +30,6 @@
 (setq ash-packages
       '(ace-jump-mode
         anaphora
-        autopair
         bang
         color-theme-solarized
         cppcheck
@@ -127,9 +125,6 @@
 (add-hook 'c++-mode-hook 'ash/c-like-initialization)
 (add-hook 'c++-mode-hook 'ash/show-trailing-whitespace)
 (add-hook 'java-mode-hook 'ash/c-like-initialization)
-
-(require 'autopair)
-(autopair-global-mode) ;; enable autopair in all buffers
 
 (add-hook 'after-save-hook
   'executable-make-buffer-file-executable-if-script-p)
