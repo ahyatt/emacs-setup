@@ -1,5 +1,14 @@
 backups/
 elpa/
 auto-save-list/
+ac-comphist.dat
 history
 custom.el
+bookmarks
+places
+projectile.cache
+url/cookies
+var/pcache/font-utils
+.smex-items
+.#.*
+projectile-bookmarks.eld
