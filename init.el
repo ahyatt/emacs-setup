@@ -22,10 +22,6 @@
  ns-function-modifier 'hyper
  custom-file "~/.emacs.d/custom.el")
 
-;; Load the customizations file, if it exists. If it doesn't exist,
-;; don't throw an error or complain.
-(load custom-file t t)
-
 ;; This seems to be needed due to some jabber-related auto-fill
 ;; corruption that happens, turning on c-do-auto-fill as the auto-fill
 ;; function for all buffers.  It is really mysterious.
@@ -33,6 +29,16 @@
 
 (put 'narrow-to-region 'disabled nil)
 (put 'set-goal-column 'disabled nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Per-machine variables ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar ash/org-home "~/org/")
+
+;; Load the customizations file, if it exists. If it doesn't exist,
+;; don't throw an error or complain.
+(load custom-file t t)
 
 (require 'package)
 ;; Load work-specific file, if there.
@@ -270,7 +276,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
          ("C-c c" . org-capture)
          ("C-c g" . org-store-link))
   :init
-  (progn  
+  (progn
     (setq org-clock-string-limit 80
           org-log-done t
           org-agenda-span 'day
@@ -278,8 +284,8 @@ This is the same as using \\[set-mark-command] with the prefix argument."
           org-deadline-warning-days 1
           org-clock-idle-time 10
           org-agenda-sticky t
-          org-agenda-start-with-log-mode nil)
-    (setq org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
+          org-agenda-start-with-log-mode nil
+          org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
                                         "WAITING(w@/!)" "|" "DONE(d)"
                                         "OBSOLETE(o)")
                               (type "PERMANENT")
@@ -298,7 +304,8 @@ This is the same as using \\[set-mark-command] with the prefix argument."
             ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
              ((org-agenda-overriding-header "Last week's completed TODO: ")
               (org-agenda-skip-archived-trees nil)
-              (org-agenda-files '("/home/ahyatt/org/work.org" "/home/ahyatt/org/journal.org")))))
+              (org-agenda-files '((concat ash/org-home "work.org")
+                                  (concat ash/org-home "journal.org"))))))
           org-enforce-todo-dependencies t
           org-agenda-todo-ignore-scheduled t
           org-agenda-dim-blocked-tasks 'invisible
@@ -315,14 +322,13 @@ This is the same as using \\[set-mark-command] with the prefix argument."
           org-clock-into-drawer nil
           org-clock-report-include-clocking-task t
           org-clock-history-length 20
-          org-archive-location "/home/ahyatt/org/journal.org::datetree/* Archived"
+          org-archive-location (concat ash/org-home "journal.org::datetree/* Archived")
           org-use-property-inheritance t
           org-hide-leading-stars nil
           org-startup-indented t
           org-agenda-clockreport-parameter-plist
-          '(:maxlevel 2 :link nil :scope ("/home/ahyatt/org/work.org"))
+          '(:maxlevel 2 :link nil :scope (concat ash/org-home "work.org"))
           org-refile-targets '((nil :maxlevel . 5)))
-    
 
     ;; I like to cycle in the agenda instead of jump to state
     ;;  (defadvice org-agenda-todo (before ash-agenda-todo-prefer-cycling
@@ -349,19 +355,19 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 
     (setq org-capture-templates
           '(("n" "Note" entry
-             (file+headline "/home/ahyatt/org/notes.org" "Unfiled notes")
+             (file+headline (concat ash/org-home "notes.org") "Unfiled notes")
              "* %a%?\n%u\n%i")
             ("j" "Journal" entry
-             (file+datetree "/home/ahyatt/org/journal.org")
+             (file+datetree (concat ash/org-home "journal.org"))
              "* %T %?")
             ("t" "Todo" entry
-             (file+headline "/home/ahyatt/org/work.org" "Inbox")
+             (file+headline (concat ash/org-home "work.org") "Inbox")
              "* TODO %?\n%a")
             ("a" "Act on email" entry
-             (file+headline "/home/ahyatt/org/work.org" "Inbox")
+             (file+headline (concat ash/org-home "work.org") "Inbox")
              "* TODO Respond to %:from on %:subject\n%U\n%a\n"
              :clock-in t :clock-resume t :immediate-finish t)
-            ("c" "Contacts" entry (file "/home/ahyatt/org/contacts.org")
+            ("c" "Contacts" entry (file (concat ash/org-home "contacts.org"))
              "* %(org-contacts-template-name)
                   :PROPERTIES:
                   :EMAIL: %(org-contacts-template-email)
@@ -394,7 +400,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
     (defadvice org-agenda-finalize (after ash/after-agenda-display activate)
       (ash-jabber-colorize-tags))
 
-    (setq org-default-notes-file "~/work/work.org")
+    (setq org-default-notes-file (concat ash/org-home "notes.org"))
     (define-key global-map [f12] 'org-capture)
 
     (add-hook 'jabber-post-connect-hook 'jabber-autoaway-start)
