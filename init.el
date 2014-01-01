@@ -30,32 +30,8 @@
 (put 'narrow-to-region 'disabled nil)
 (put 'set-goal-column 'disabled nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Per-machine variables ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defvar ash/org-home "~/org/")
-
-;; Load the customizations file, if it exists. If it doesn't exist,
-;; don't throw an error or complain.
-(load custom-file t t)
-
-(require 'package)
 ;; Load work-specific file, if there.
 (require 'ahyatt-google nil t)
-(setq package-archives '(("ELPA" . "http://tromey.com/elpa/")
-                         ("gnu" . "http://elpa.gnu.org/packages/")
-                         ("melpa" . "http://melpa.milkbox.net/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("org" . "http://orgmode.org/elpa/")))
-
-;; Package setup, taken from
-;; https://github.com/zane/dotemacs/blob/master/zane-packages.el#L62
-;; This is just the very basic set of packages.
-(setq ash/bootstrap-packages
-      '(use-package
-           bang
-         diminish))
 
 (defun ash/show-trailing-whitespace ()
   (set (make-local-variable 'whitespace-style)
@@ -123,7 +99,9 @@ Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
   (interactive)
   (push-mark (point) t nil)
   (message "Pushed mark to ring"))
+
 (global-set-key (kbd "C-;") 'push-mark-no-activate)
+
 (defun jump-to-mark ()
   "Jumps to the local mark, respecting the `mark-ring' order.
 This is the same as using \\[set-mark-command] with the prefix argument."
@@ -141,9 +119,34 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 
 (setq comint-input-ignoredups t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Per-machine variables ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar ash/org-home "~/org/")
+
+;; Load the customizations file, if it exists. If it doesn't exist,
+;; don't throw an error or complain.
+(load custom-file t t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Bootstrap for package setup ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'package)
+(setq package-archives '(("ELPA" . "http://tromey.com/elpa/")
+                         ("gnu" . "http://elpa.gnu.org/packages/")
+                         ("melpa" . "http://melpa.milkbox.net/packages/")
+                         ("marmalade" . "http://marmalade-repo.org/packages/")
+                         ("org" . "http://orgmode.org/elpa/")))
+
+;; Package setup, taken from
+;; https://github.com/zane/dotemacs/blob/master/zane-packages.el#L62
+;; This is just the very basic set of packages.
+(setq ash/bootstrap-packages
+      '(use-package
+           bang
+         diminish))
 
 (package-initialize)
 ;;; install missing packages
