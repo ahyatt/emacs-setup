@@ -182,12 +182,18 @@ This is the same as using \\[set-mark-command] with the prefix argument."
                  (lambda (frame) (dynamic-fonts-setup)))))
 
 (use-package projectile
-  :defer t
-  :config (setq projectile-enable-caching t))
+  :commands (projectile-mode projectile-global-mode)
+  :config (progn 
+            ;; The lack of TAGS file often causes my opens to fail
+            ;; unless I have a .projectile file.  I don't use tags, so
+            ;; let's not worry about it.
+            (defun projectile-visit-project-tags-table ()
+              "Visit the current project's tags table.")
+            (setq projectile-enable-caching t)))
 
 (use-package fill-column-indicator
   :ensure fill-column-indicator
-  :defer t
+  :commands fci-mode
   :init (progn (setq fci-style 'rule)
                (defun ash/c-fci ()
                  (setq fill-column 80)
@@ -196,24 +202,24 @@ This is the same as using \\[set-mark-command] with the prefix argument."
                (defun ash/java-fci ()
                  (setq fill-column 100)
                  (fci-mode))
-               (add-hook 'c++-mode-hook 'ash/c-cfi)
+               (add-hook 'c++-mode-hook 'ash/c-fci)
                (add-hook 'java-mode 'ash/java-fci)))
+
+;; This is much like change-inner, but doesn't require us to identify
+;; additional input.
+(defun ash-clear ()
+  (interactive)
+  (require 'expand-region)
+  (er/expand-region 1)
+  (kill-region (region-beginning) (region-end))
+  (er/expand-region 0))
 
 (use-package change-inner
   :ensure change-inner
   :bind (("\C-c i" . change-inner)
          ("s-i" . change-inner)
          ("\C-c u" . change-outer)
-         ("s-o" . change-outer))
-  :config (progn
-            ;; This is much like change-inner, but doesn't require us to identify
-            ;; additional input.
-            (defun ash-clear ()
-              (interactive)
-              (require 'expand-region)
-              (er/expand-region 1)
-              (kill-region (region-beginning) (region-end))
-              (er/expand-region 0))))
+         ("s-o" . change-outer)))
 
 (use-package go-mode
   :ensure go-mode
@@ -265,10 +271,13 @@ This is the same as using \\[set-mark-command] with the prefix argument."
                   "C-c o" "C-x RET" "C-x n"))
           (guide-key-mode 1)))
 
-(use-package org 
+(use-package org
   :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture)
          ("C-c g" . org-store-link))
+  ;; If we don't do this, we get an issue with org-defvaralias and
+  ;; also loading the agenda.
+  :pre-load (progn (load-library "org-compat") (load-library "org-agenda") (load-library "org-capture"))
   :init
   (progn  
     (setq org-clock-string-limit 80
@@ -452,7 +461,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
             (dolist (link (delete-duplicates org-stored-links :test 'equal))
               (org-insert-link nil (car link) (ash/org-link-description (car link)))))
         (setq org-stored-links nil)))
-    
+    (add-hook 'org-mode-hook (lambda () (define-key org-mode-map (kbd "C-c M-p") 'ash/org-paste-link)))
     (define-key org-mode-map (kbd "C-c p") 'ash/org-paste-link)
     ;; this function causes an annoying prompt for LAST_READ_MAIL.  Kill
     ;; the whole function for now.
@@ -463,20 +472,20 @@ This is the same as using \\[set-mark-command] with the prefix argument."
     (modify-coding-system-alist 'file "\\.org\\'" 'utf-8)))
 
 (use-package yasnippet
-  :ensure yasnippet
-  :diminish (yas-snippet . "")
-  :defer t
-  :init
-  (progn
-    (require 'dropdown-list)
-    (setq yas/prompt-functions '(yas/dropdown-prompt
-                                 yas/ido-prompt
-                                 yas/completing-prompt)
-          ;; Important to indent all the lines, including the first,
-          ;; otherwise the snippet has wrong indentation.
-          yas-also-auto-indent-first-line t
-          yas-snippet-dirs (quote ("~/.emacs.d/snippets")))
-    (yas-global-mode 1)))
+    :ensure yasnippet
+    :diminish (yas-snippet . "")
+    :defer t
+    :init
+    (progn
+      (require 'dropdown-list)
+      (setq yas/prompt-functions '(yas/dropdown-prompt
+                                   yas/ido-prompt
+                                   yas/completing-prompt)
+            ;; Important to indent all the lines, including the first,
+            ;; otherwise the snippet has wrong indentation.
+            yas-also-auto-indent-first-line t
+            yas-snippet-dirs (quote ("~/.emacs.d/snippets")))
+      (yas-global-mode 1)))
 
 (use-package jabber
   :ensure jabber
@@ -668,6 +677,7 @@ This is the same as using \\[set-mark-command] with the prefix argument."
     (dolist (mode '(emacs-lisp-mode lisp-interaction-mode inferior-emacs-lisp-mode))
       (sp-local-pair mode "'" nil :actions nil)
       (sp-local-pair mode "`" nil :actions nil))
+    (smartparens-global-mode)
     (show-smartparens-global-mode +1)))
 
 (use-package midnight
@@ -680,5 +690,61 @@ This is the same as using \\[set-mark-command] with the prefix argument."
 (use-package color-theme-solarized
   :ensure color-theme-solarized
   :defer t)
+
+(use-package eshell
+  :commands eshell
+  :config
+  (progn
+    (require 'em-rebind)
+    (require 'em-smart)
+    (setq eshell-where-to-jump 'begin)
+    (setq eshell-review-quick-commands nil)
+    (setq eshell-smart-space-goes-to-end t)))
+
+(use-package god-mode
+  :ensure god-mode
+  :commands god-mode
+  :bind (((kbd "C-c C-g") . god-local-mode)))
+
+(use-package evil
+  :ensure evil
+  :ensure evil-terminal-cursor-changer
+  :ensure evil-args
+  :config
+  (progn
+    ;; bind evil-args text objects
+    (define-key evil-inner-text-objects-map "a" 'evil-inner-arg)
+    (define-key evil-outer-text-objects-map "a" 'evil-outer-arg)
+    ;; bind evil-forward/backward-args
+    (define-key evil-normal-state-map "L" 'evil-forward-arg)
+    (define-key evil-normal-state-map "H" 'evil-backward-arg)
+    (define-key evil-motion-state-map "L" 'evil-forward-arg)
+    (define-key evil-motion-state-map "H" 'evil-backward-arg)
+    ;; bind evil-jump-out-args
+    (define-key evil-normal-state-map "K" 'evil-jump-out-args) 
+    (loop for (mode . state) in '((inferior-emacs-lisp-mode . emacs)
+                                  (emacs-lisp-mode . emacs)
+                                  (org-mode . emacs)
+                                  (nrepl-mode . insert)
+                                  (pylookup-mode . emacs)
+                                  (comint-mode . normal)
+                                  (shell-mode . insert)
+                                  (eshell-mode . insert)
+                                  (git-commit-mode . insert)
+                                  (git-rebase-mode . emacs)
+                                  (term-mode . emacs)
+                                  (help-mode . emacs)
+                                  (helm-grep-mode . emacs)
+                                  (grep-mode . emacs)
+                                  (bc-menu-mode . emacs)
+                                  (jabber-chat-mode . emacs)
+                                  (magit-branch-manager-mode . emacs)
+                                  (rdictcc-buffer-mode . emacs)
+                                  (dired-mode . emacs)
+                                  (wdired-mode . normal))
+          do (evil-set-initial-state mode state))
+    (unless (display-graphic-p)
+      (require 'evil-terminal-cursor-changer))))
+
 
 (require 'ahyatt-google nil t)
