@@ -47,8 +47,9 @@
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
+ reb-re-syntax 'string                            ; No double blacklashes in re-builder 
  recenter-positions '(5 top bottom)               ; Set re-centering positions
- scroll-conservatively most-positive-fixnum       ; Always scroll by one line
+ scroll-conservatively most-positive-fixnum       ; Always scroll by one line.
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
  sentence-end-double-space nil                    ; End a sentence after a dot and a space
@@ -218,7 +219,7 @@ _o_: open link
   (add-hook 'org-mode-hook #'typo-mode))
 
 (setq-default org-startup-indented t
-              org-bullets-bullet-list '("①②③④⑤⑥⑦⑧⑨") 
+              org-bullets-bullet-list '("①" "②" "③" "④" "⑤" "⑥" "⑦" "⑧" "⑨") 
               org-ellipsis "  " ;; folding symbol
               org-pretty-entities t
               org-hide-emphasis-markers t
@@ -234,3 +235,8 @@ _o_: open link
     :config
     (setq powerline-default-separator 'utf-8)
     (powerline-center-theme))
+
+(use-package emacs-org-dnd
+  :ensure nil
+  :load-path "~/src/emacs-org-dnd"
+  :config (require 'ox-dnd))
