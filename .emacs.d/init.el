@@ -101,6 +101,17 @@
   :load-path "~/src/objed"
   :config (objed-mode))
 
+(use-package multiple-cursors
+  :bind (("C->" . mc/mark-next-like-this)
+         ("C-<" . mc/mark-previous-like-this)
+         ("C-?" . mc/mark-all-like-this)))
+
+(use-package phi-search
+  :bind (("C-s" . phi-search)
+         ("C-r" . phi-search-backward)))
+
+(use-package expand-region)
+
 (use-package swiper
   :bind (("M-s" . swiper)))
 
@@ -140,9 +151,22 @@ _o_: open link
   (yas-reload-all)
   (yas-global-mode 1))
 
+(use-package magit
+  :bind (("C-= s" . magit-status)))
+
 (use-package smartparens
   :diminish ""
-  :init (add-hook 'prog-mode-hook #'smartparens-strict-mode))
+  :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
+  :bind (("C-' i" . sp-change-inner)
+         ("C-' k" . sp-kill-sexp)
+         ("C-' b" . sp-beginning-of-sexp)
+         ("C-' e" . sp-end-of-sexp)
+         ("C-' d" . sp-down-sexp)
+         ("C-' u" . sp-up-sexp)
+         ("C-' ]" . sp-slurp-hybrid-sexp)
+         ("C-' s" . sp-swap-enclosing-sexp)
+         ("C-' r" . sp-rewrap-sexp))
+  :config (require 'smartparens-config))
 
 (use-package aggressive-indent
   :ensure t
@@ -237,6 +261,7 @@ _o_: open link
     (powerline-center-theme))
 
 (use-package emacs-org-dnd
+  :disabled
   :ensure nil
   :load-path "~/src/emacs-org-dnd"
   :config (require 'ox-dnd))

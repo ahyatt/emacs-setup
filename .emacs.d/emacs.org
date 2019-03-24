@@ -170,6 +170,26 @@ it out. Frankly, it confuses me right now, but maybe I’ll get use to it.
     :config (objed-mode))
 #+END_SRC
 
+Multiple cursors is fun and provides quick feedback, allowing for visual
+inspection of the result as you change it.  phi-search is useful for this.
+#+BEGIN_SRC emacs-lisp
+  (use-package multiple-cursors
+    :bind (("C->" . mc/mark-next-like-this)
+           ("C-<" . mc/mark-previous-like-this)
+           ("C-?" . mc/mark-all-like-this)))
+
+  (use-package phi-search
+    :bind (("C-s" . phi-search)
+           ("C-r" . phi-search-backward)))
+
+#+END_SRC
+
+Expand-region is useful in lots of situations to quickly select expanding or
+contracting regions.
+#+BEGIN_SRC emacs-lisp
+  (use-package expand-region)
+#+END_SRC
+
 Swiper sort of combines isearch with occur.
 #+BEGIN_SRC emacs-lisp
   (use-package swiper
@@ -220,12 +240,27 @@ yassnippet is a great way to create templates and use them.
 #+END_SRC
 
 ** Programming
+Magit is essential for git users.
+#+BEGIN_SRC emacs-lisp
+  (use-package magit
+    :bind (("C-= s" . magit-status)))
+#+END_SRC
 There’s a lot of really good  editing tools. Smartparens is fairly universal, so it’s nice.
 
 #+BEGIN_SRC emacs-lisp
   (use-package smartparens
     :diminish ""
-    :init (add-hook 'prog-mode-hook #'smartparens-strict-mode))
+    :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
+    :bind (("C-' i" . sp-change-inner)
+           ("C-' k" . sp-kill-sexp)
+           ("C-' b" . sp-beginning-of-sexp)
+           ("C-' e" . sp-end-of-sexp)
+           ("C-' d" . sp-down-sexp)
+           ("C-' u" . sp-up-sexp)
+           ("C-' ]" . sp-slurp-hybrid-sexp)
+           ("C-' s" . sp-swap-enclosing-sexp)
+           ("C-' r" . sp-rewrap-sexp))
+    :config (require 'smartparens-config))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -361,6 +396,7 @@ Improve the looks of the modeline with Powerline.
 Add the ability to use org-mode for D&D
 #+BEGIN_SRC emacs-lisp
   (use-package emacs-org-dnd
+    :disabled
     :ensure nil
     :load-path "~/src/emacs-org-dnd"
     :config (require 'ox-dnd))
