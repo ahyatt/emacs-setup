@@ -140,7 +140,11 @@ First, let's just make sure use-package works the way we want it to.
   (setq-default use-package-always-ensure t)
   (require 'use-package)
 #+END_SRC
-
+** Helper packages
+General is an easier way to do keybindings.
+#+BEGIN_SRC emacs-lisp
+  (use-package general)
+#+END_SRC
 ** Minibuffer customization
 Although helm is nice, I prefer the lighter ivy style.
 
@@ -156,38 +160,47 @@ Avy for quick jumping & buffer navigation is great.
 
 #+BEGIN_SRC emacs-lisp
   (use-package avy
-    :bind (("C-c j j" . avy-goto-word-1)
-           ("C-c j l" . avy-goto-line)))
-#+END_SRC
-
-Objed is interesting & fits in well with existing emacs conventions. I’m trying
-it out. Frankly, it confuses me right now, but maybe I’ll get use to it.
-
-#+BEGIN_SRC emacs-lisp
-  (use-package objed
-    :ensure nil
-    :load-path "~/src/objed"
-    :config (objed-mode))
+    :general
+    (:prefix "C-c j"
+             "" '(nil :which-key "Jumps")
+             "j" 'avy-goto-word-1
+             "l" 'avy-goto-line
+             "c" 'avy-goto-char))
 #+END_SRC
 
 Multiple cursors is fun and provides quick feedback, allowing for visual
 inspection of the result as you change it.  phi-search is useful for this.
 #+BEGIN_SRC emacs-lisp
   (use-package multiple-cursors
-    :bind (("C->" . mc/mark-next-like-this)
-           ("C-<" . mc/mark-previous-like-this)
-           ("C-?" . mc/mark-all-like-this)))
+    :general
+    (:prefix "C-c m"
+             "" '(nil :which-key "Multiple cursors")
+             ">" 'mc/mark-next-like-this
+             "<" 'mc/mark-previous-like-this
+             "a" 'mc/mark-all-like-this
+             "m" 'mc/mark-all-dwim
+             "d" 'mc/mark-all-like-this-in-defun
+             "n" 'mc/mark-next-lines))
 
   (use-package phi-search
     :bind (("C-s" . phi-search)
            ("C-r" . phi-search-backward)))
-
 #+END_SRC
 
 Expand-region is useful in lots of situations to quickly select expanding or
 contracting regions.
 #+BEGIN_SRC emacs-lisp
-  (use-package expand-region)
+  (use-package expand-region
+    :general
+    (:prefix "C-c e"
+             "" '(nil :which-key "Expand / Contract")
+             "e" 'er/expand-region
+             "c" 'er/contract-region
+             "d" 'er/mark-defun
+             "\"" 'er/mark-inside-quotes
+             "'" 'er/mark-inside-quotes
+             "p" 'er/mark-inside-pairs
+             "." 'er/mark-method-call))
 #+END_SRC
 
 Swiper sort of combines isearch with occur.
@@ -243,7 +256,10 @@ yassnippet is a great way to create templates and use them.
 Magit is essential for git users.
 #+BEGIN_SRC emacs-lisp
   (use-package magit
-    :bind (("C-= s" . magit-status)))
+    :general
+    (:prefix "C-c s"
+             "" '(nil :which-key "Source code")
+             "m" 'magit-status))
 #+END_SRC
 There’s a lot of really good  editing tools. Smartparens is fairly universal, so it’s nice.
 
@@ -251,15 +267,18 @@ There’s a lot of really good  editing tools. Smartparens is fairly universal, 
   (use-package smartparens
     :diminish ""
     :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
-    :bind (("C-' i" . sp-change-inner)
-           ("C-' k" . sp-kill-sexp)
-           ("C-' b" . sp-beginning-of-sexp)
-           ("C-' e" . sp-end-of-sexp)
-           ("C-' d" . sp-down-sexp)
-           ("C-' u" . sp-up-sexp)
-           ("C-' ]" . sp-slurp-hybrid-sexp)
-           ("C-' s" . sp-swap-enclosing-sexp)
-           ("C-' r" . sp-rewrap-sexp))
+    :general
+    (:prefix "C-c p"
+             "" '(nil :which-key "Parens")
+             "i" 'sp-change-inner
+             "k" 'sp-kill-sexp
+             "b" 'sp-beginning-of-sexp
+             "e" 'sp-end-of-sexp
+             "d" 'sp-down-sexp
+             "u" 'sp-up-sexp
+             "]" 'sp-slurp-hybrid-sexp
+             "/" 'sp-swap-enclusing-sexp
+             "r" 'sp-rewrap-sexp)
     :config (require 'smartparens-config))
 #+END_SRC
 
@@ -267,19 +286,6 @@ There’s a lot of really good  editing tools. Smartparens is fairly universal, 
   (use-package aggressive-indent
     :ensure t
     :config (global-aggressive-indent-mode))
-#+END_SRC
-
-Multiple cursors is very easy to use. There’s a few similar packages, but this one seems most flexible.
-#+BEGIN_SRC emacs-lisp
-  (use-package multiple-cursors)
-#+END_SRC
-
-Magit is essential for git. Unfortunately, I don't know how to install it - it
-requires a specific version of git-commit that isn't available.
-#+BEGIN_SRC emacs-lisp
-  (use-package magit
-    :bind ("C-x g" . magit-status)
-    :disabled)
 #+END_SRC
 
 Git gutter highlights changes to files.
@@ -332,6 +338,13 @@ Flycheck will help check for all errors.  Taken from https://jamiecollinson.com/
         :fringe-bitmap 'flycheck-fringe-bitmap-ball
         :fringe-face 'flycheck-fringe-info))
 #+END_SRC
+
+Company mode is a standard for symbol completion.
+#+BEGIN_SRC emacs-lisp
+  (use-package company
+    :general ("C-c ." 'company-complete)
+    :init (add-hook 'after-init-hook 'global-company-mode))
+#+END_SRC
 ** Help
 
 Which-key pops up keys in a buffer when you are in the middle of a keystroke.
@@ -339,6 +352,16 @@ Which-key pops up keys in a buffer when you are in the middle of a keystroke.
     (use-package which-key
       :diminish
       :config (which-key-mode 1))
+#+END_SRC
+
+Helpful is a nice replacement that is more comprehensive than normal help.
+#+BEGIN_SRC emacs-lisp
+  (use-package helpful
+    :bind (("C-h f" . helpful-callable)
+           ("C-h v" . helpful-variable)
+           ("C-h k" . helpful-key)
+           ("C-h h" . helpful-at-point)
+           ("C-h c" . helpful-command)))
 #+END_SRC
 ** Appearance
 

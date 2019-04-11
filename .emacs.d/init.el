@@ -88,29 +88,46 @@
 (setq-default use-package-always-ensure t)
 (require 'use-package)
 
+(use-package general)
+
 (use-package ivy
   :diminish ""
   :config (ivy-mode))
 
 (use-package avy
-  :bind (("C-c j j" . avy-goto-word-1)
-         ("C-c j l" . avy-goto-line)))
-
-(use-package objed
-  :ensure nil
-  :load-path "~/src/objed"
-  :config (objed-mode))
+  :general
+  (:prefix "C-c j"
+           "" '(nil :which-key "Jumps")
+           "j" 'avy-goto-word-1
+           "l" 'avy-goto-line
+           "c" 'avy-goto-char))
 
 (use-package multiple-cursors
-  :bind (("C->" . mc/mark-next-like-this)
-         ("C-<" . mc/mark-previous-like-this)
-         ("C-?" . mc/mark-all-like-this)))
+  :general
+  (:prefix "C-c m"
+           "" '(nil :which-key "Multiple cursors")
+           ">" 'mc/mark-next-like-this
+           "<" 'mc/mark-previous-like-this
+           "a" 'mc/mark-all-like-this
+           "m" 'mc/mark-all-dwim
+           "d" 'mc/mark-all-like-this-in-defun
+           "n" 'mc/mark-next-lines))
 
 (use-package phi-search
   :bind (("C-s" . phi-search)
          ("C-r" . phi-search-backward)))
 
-(use-package expand-region)
+(use-package expand-region
+  :general
+  (:prefix "C-c e"
+           "" '(nil :which-key "Expand / Contract")
+           "e" 'er/expand-region
+           "c" 'er/contract-region
+           "d" 'er/mark-defun
+           "\"" 'er/mark-inside-quotes
+           "'" 'er/mark-inside-quotes
+           "p" 'er/mark-inside-pairs
+           "." 'er/mark-method-call))
 
 (use-package swiper
   :bind (("M-s" . swiper)))
@@ -152,31 +169,31 @@ _o_: open link
   (yas-global-mode 1))
 
 (use-package magit
-  :bind (("C-= s" . magit-status)))
+  :general
+  (:prefix "C-c s"
+           "" '(nil :which-key "Source code")
+           "m" 'magit-status))
 
 (use-package smartparens
   :diminish ""
   :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
-  :bind (("C-' i" . sp-change-inner)
-         ("C-' k" . sp-kill-sexp)
-         ("C-' b" . sp-beginning-of-sexp)
-         ("C-' e" . sp-end-of-sexp)
-         ("C-' d" . sp-down-sexp)
-         ("C-' u" . sp-up-sexp)
-         ("C-' ]" . sp-slurp-hybrid-sexp)
-         ("C-' s" . sp-swap-enclosing-sexp)
-         ("C-' r" . sp-rewrap-sexp))
+  :general
+  (:prefix "C-c p"
+           "" '(nil :which-key "Parens")
+           "i" 'sp-change-inner
+           "k" 'sp-kill-sexp
+           "b" 'sp-beginning-of-sexp
+           "e" 'sp-end-of-sexp
+           "d" 'sp-down-sexp
+           "u" 'sp-up-sexp
+           "]" 'sp-slurp-hybrid-sexp
+           "/" 'sp-swap-enclusing-sexp
+           "r" 'sp-rewrap-sexp)
   :config (require 'smartparens-config))
 
 (use-package aggressive-indent
   :ensure t
   :config (global-aggressive-indent-mode))
-
-(use-package multiple-cursors)
-
-(use-package magit
-  :bind ("C-x g" . magit-status)
-  :disabled)
 
 (use-package git-gutter
   :ensure t
@@ -223,9 +240,20 @@ _o_: open link
       :fringe-bitmap 'flycheck-fringe-bitmap-ball
       :fringe-face 'flycheck-fringe-info))
 
+(use-package company
+  :general ("C-c ." 'company-complete)
+  :init (add-hook 'after-init-hook 'global-company-mode))
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
+
+(use-package helpful
+  :bind (("C-h f" . helpful-callable)
+         ("C-h v" . helpful-variable)
+         ("C-h k" . helpful-key)
+         ("C-h h" . helpful-at-point)
+         ("C-h c" . helpful-command)))
 
 (set-face-attribute 'default nil :family "Iosevka" :height 130)
 (set-face-attribute 'fixed-pitch nil :family "Iosevka")
