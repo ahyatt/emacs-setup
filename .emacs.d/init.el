@@ -244,6 +244,15 @@ _o_: open link
   :general ("C-c ." 'company-complete)
   :init (add-hook 'after-init-hook 'global-company-mode))
 
+(general-define-key
+ :keymaps 'emacs-lisp-mode-map
+ :prefix "C-c C-c"
+ "" '(nil :which-key "elisp mode")
+ "e b" 'eval-buffer
+ "e e" 'eval-expression
+ "e d" 'eval-defun
+ "i" 'ielm)
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))

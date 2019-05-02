@@ -345,6 +345,18 @@ Company mode is a standard for symbol completion.
     :general ("C-c ." 'company-complete)
     :init (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
+
+** Major mode keybindings
+#+BEGIN_SRC emacs-lisp
+  (general-define-key
+   :keymaps 'emacs-lisp-mode-map
+   :prefix "C-c C-c"
+   "" '(nil :which-key "elisp mode")
+   "e b" 'eval-buffer
+   "e e" 'eval-expression
+   "e d" 'eval-defun
+   "i" 'ielm)
+#+END_SRC
 ** Help
 
 Which-key pops up keys in a buffer when you are in the middle of a keystroke.
