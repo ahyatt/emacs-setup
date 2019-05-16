@@ -100,12 +100,15 @@
   (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
   :general
   (:prefix "C-c j"
-	   "" '(nil :which-key "Jumps")
-	   "j" 'avy-goto-word-1
-	   "l" 'avy-goto-line
-	   "c" 'avy-goto-char))
+           "" '(nil :which-key "Jumps")
+           "j" 'avy-goto-word-1
+           "l" 'avy-goto-line
+           "c" 'avy-goto-char
+           "r" 'avy-resume))
 
 (use-package multiple-cursors
+  :pin melpa
+  :config (setq mc/always-run-for-all t)
   :general
   (:prefix "C-c m"
            "" '(nil :which-key "Multiple cursors")
@@ -254,6 +257,9 @@ _o_: open link
  "e b" 'eval-buffer
  "e e" 'eval-expression
  "e d" 'eval-defun
+ "e D" 'edebug-eval-defun
+ "e l" 'eval-last-sexp
+ "e L" 'edebug-eval-last-sexp
  "i" 'ielm)
 
 (use-package which-key
