@@ -92,15 +92,18 @@
 
 (use-package ivy
   :diminish ""
-  :config (ivy-mode))
+  :config (ivy-mode)
+  (setq ivy-initial-inputs-alist nil))
 
 (use-package avy
+  :config
+  (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
   :general
   (:prefix "C-c j"
-           "" '(nil :which-key "Jumps")
-           "j" 'avy-goto-word-1
-           "l" 'avy-goto-line
-           "c" 'avy-goto-char))
+	   "" '(nil :which-key "Jumps")
+	   "j" 'avy-goto-word-1
+	   "l" 'avy-goto-line
+	   "c" 'avy-goto-char))
 
 (use-package multiple-cursors
   :general
@@ -151,9 +154,9 @@ _o_: open link
     ("u" org-up-element)
     ("n" org-next-visible-heading)
     ("j" (lambda () (interactive)
-           (let ((org-goto-interface 'outline-path-completionp)
-                 (org-outline-path-complete-in-steps nil))
-             (org-goto))))
+	   (let ((org-goto-interface 'outline-path-completionp)
+		 (org-outline-path-complete-in-steps nil))
+	     (org-goto))))
     ("l" org-next-link)
     ("L" org-previous-link)
     ("b" org-next-block)
@@ -274,11 +277,6 @@ _o_: open link
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
 
-(use-package typo
-  :diminish ""
-  :init
-  (add-hook 'org-mode-hook #'typo-mode))
-
 (setq-default org-startup-indented t
               org-bullets-bullet-list '("①" "②" "③" "④" "⑤" "⑥" "⑦" "⑧" "⑨") 
               org-ellipsis "  " ;; folding symbol
@@ -302,3 +300,102 @@ _o_: open link
   :ensure nil
   :load-path "~/src/emacs-org-dnd"
   :config (require 'ox-dnd))
+
+(require 'org-checklist)
+(add-hook 'org-babel-after-execute-hook
+	  (lambda ()
+	    (when org-inline-image-overlays
+	      (org-redisplay-inline-images))))
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (auto-fill-mode)
+	    (variable-pitch-mode 1)))
+(setq org-clock-string-limit 80
+      org-log-done t
+      org-agenda-span 'day
+      org-agenda-include-diary t
+      org-deadline-warning-days 1
+      org-clock-idle-time 10
+      org-agenda-sticky t
+      org-agenda-start-with-log-mode nil
+      org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
+				    "WAITING(w@/!)" "|" "DONE(d)"
+				    "OBSOLETE(o)")
+			  (type "PERMANENT")
+			  (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
+				    "|" "SUBMITTED(b)"))
+      org-agenda-custom-commands
+      '(("w" todo "WAITING" nil)
+	("n" tags-todo "+someday"
+	 ((org-show-hierarchy-above nil) (org-agenda-todo-ignore-with-date t)
+	  (org-agenda-tags-todo-honor-ignore-options t)))
+	("0" "Critical tasks" ((agenda "") (tags-todo "+p0")))
+	("l" "Agenda and live tasks" ((agenda)
+				      (todo "PERMANENT")
+				      (todo "WAITING|EXTREVIEW")
+				      (tags-todo "-someday/!-WAITING-EXTREVIEW")))
+	("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
+	 ((org-agenda-overriding-header "Last week's completed TODO: ")
+	  (org-agenda-skip-archived-trees nil)
+	  (org-agenda-files '("/usr/local/google/home/ahyatt/org/work.org" "/usr/local/google/home/ahyatt/org/journal.org")))))
+      org-agenda-files '("/usr/local/google/home/ahyatt/org/work.org" "/usr/local/google/home/ahyatt/org/journal.org")
+      org-enforce-todo-dependencies t
+      org-agenda-todo-ignore-scheduled t
+      org-agenda-dim-blocked-tasks 'invisible
+      org-agenda-tags-todo-honor-ignore-options t
+      org-agenda-skip-deadline-if-done 't
+      org-agenda-skip-scheduled-if-done 't
+      org-src-window-setup 'other-window
+      org-src-tab-acts-natively t
+      org-fontify-whole-heading-line t
+      org-fontify-done-headline t
+      org-edit-src-content-indentation 0
+      org-fontify-quote-and-verse-blocks t
+      org-hide-emphasis-markers t
+      org-startup-with-inline-images t
+      org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s")
+				 (timeline . "  % s")
+				 (todo . " %i %-18:c")
+				 (tags . " %i %-18:c")
+				 (search . " %i %-18:c"))
+      org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
+      org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
+      org-clock-into-drawer nil
+      org-clock-report-include-clocking-task t
+      org-clock-history-length 20
+      org-archive-location "/usr/local/google/home/ahyatt/org/journal.org::datetree/* Archived"
+      org-use-property-inheritance t
+      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))
+      org-agenda-clockreport-parameter-plist
+      '(:maxlevel 2 :link nil :scope ("/usr/local/google/home/ahyatt/org/work.org"))
+      org-refile-targets '((nil :maxlevel . 5))
+      org-use-speed-commands t
+      org-refile-targets '((nil . (:maxlevel . 3)))
+      org-link-frame-setup '((gnus . gnus)
+			     (file . find-file-other-window))
+      org-speed-commands-user '(("w" . ash-org-start-work))
+      org-completion-use-ido t
+      org-use-fast-todo-selection t
+      org-habit-show-habits t
+      org-capture-templates
+      '(("n" "Note" entry
+	 (file+headline "/usr/local/google/home/ahyatt/org/notes.org" "Unfiled notes")
+	 "* %a%?\n%u\n%i")
+	("j" "Journal" entry
+	 (file+datetree "/usr/local/google/home/ahyatt/org/journal.org")
+	 "* %T %?")
+	("t" "Todo" entry
+	 (file+headline "/usr/local/google/home/ahyatt/org/work.org" "Inbox")
+	 "* TODO %?\n%a")
+	("a" "Act on email" entry
+	 (file+headline "/usr/local/google/home/ahyatt/org/work.org" "Inbox")
+	 "* TODO %?, Link: %a")
+	("c" "Contacts" entry (file "/usr/local/google/home/ahyatt/org/contacts.org")
+	 "* %(org-contacts-template-name)
+		  :PROPERTIES:
+		  :EMAIL: %(org-contacts-template-email)
+		  :END:")))
+
+(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
+
+(load "~/.emacs.d/google.el")
