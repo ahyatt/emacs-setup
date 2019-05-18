@@ -1,39 +1,37 @@
-(let ((package-archives '(("GELPA" . "http://gelpa-182518.googleplex.com/packages/")))
-      (package-check-signature nil))
-  (use-package git-gutter :demand :diminish "" :ensure t)
-  (use-package ob-dremel :demand :ensure t))
-
 (defvar ash-vc 'fig "Which VC to use, 'g4, 'git5, 'fig")
 (defvar ash-devel-host nil "Which hostname to use, or nil for localhost")
 
+(require 'google)
+
 (use-package notmuch
-	     :configure
-	     
-	     (defun ash-compose-summary-mail-notmuch ()
-	       (interactive)
-	       (notmuch-mua-mail "Local Search Quality <local-search-quality@google.com>, Geodoc Team <geodoc-team@google.com>, Geo Serving Integration Team <geo-serving-integration-team@google.com>, Geo Notes <geo-notes@google.com>, Localweb Indexing  <localweb-indexing-eng@google.com>, kczuba@google.com, nbenayoun@google.com" (concat "Local Search Infrastructure Status Update " (format-time-string "%m/%d/%Y"))))
+  :general
+  (:prefix "C-c n"
+           "" '(nil :which-key "Notmuch")
+           "n" 'notmuch-hello
+           "s" 'notmuch-search)
+  (:keymaps 'notmuch-search-mode-map
+            "A" (lambda () (interactive) (notmuch-search-tag-all '("-inbox" "-folder:INBOX" "-unread"))))
+  :config
+  (require 'org-notmuch)
+  (setq-default notmuch-archive-tags '("-inbox" "-folder:INBOX" "-unread")
+                notmuch-address-internal-completion '(sent "date:1y..now and not @gmail.com and not @docs.google.com and not from:buganizer-system and not hume and not noreply")
+                notmuch-fcc-dirs nil)
+  (add-hook 'notmuch-message-mode-hook (lambda () (variable-pitch-mode 1)))
+  (add-hook 'messages-buffer-mode-hook
+            (lambda () (variable-pitch-mode 1)))
+  (add-hook 'notmuch-show-mode-hook (lambda () (variable-pitch-mode 1)))
+  (defun ash-compose-summary-mail-notmuch ()
+    (interactive)
+    (notmuch-mua-mail "Local Search Quality <local-search-quality@google.com>, Geodoc Team <geodoc-team@google.com>, Geo Serving Integration Team <geo-serving-integration-team@google.com>, Geo Notes <geo-notes@google.com>, Localweb Indexing  <localweb-indexing-eng@google.com>, kczuba@google.com, nbenayoun@google.com" (concat "Local Search Infrastructure Status Update " (format-time-string "%m/%d/%Y"))))
 
-	     (defun ash-compose-things-at-places-summary-mail-notmuch ()
-	       (interactive)
-	       (notmuch-mua-mail "geo-offerings@google.com, Geo Notes <geo-notes@google.com>" (concat "Things at Places Status Update " (format-time-string "%Y-%m-%d"))))
+  (defun ash-compose-things-at-places-summary-mail-notmuch ()
+    (interactive)
+    (notmuch-mua-mail "geo-offerings@google.com, Geo Notes <geo-notes@google.com>" (concat "Things at Places Status Update " (format-time-string "%Y-%m-%d"))))
 
-	     (require 'org-notmuch)
-	     (setq notmuch-archive-tags '("-inbox" "-folder:INBOX" "-unread")
-		   notmuch-address-internal-completion '(sent "date:1y..now and not @gmail.com and not @docs.google.com and not from:buganizer-system and not hume and not noreply")
-		   notmuch-fcc-dirs nil)
-	     (add-hook 'messages-buffer-mode-hook
-		       (lambda () (variable-pitch-mode 1)))
-	     (add-hook 'notmuch-message-mode-hook (lambda () (variable-pitch-mode 1)))
-	     (add-hook 'notmuch-show-mode-hook (lambda () (variable-pitch-mode 1)))
-
-	     ;; from https://unix.stackexchange.com/questions/55638/can-emacs-use-gpg-agent-in-a-terminal-at-all/278875#278875
-	     ;; (setenv "INSIDE_EMACS" (format "%s,comint" emacs-version))
-	     ;; (pinentry-start)
-
-	     (setq
-	      user-full-name  "Andrew Hyatt"
-	      ;; include in message with C-c C-w
-	      message-signature nil))
+  (setq
+   user-full-name  "Andrew Hyatt"
+   ;; include in message with C-c C-w
+   message-signature nil))
 
 ;; I'm not so sure this works...
 ;; (defun ash-org-capture-replace ()
@@ -76,28 +74,6 @@
 
 (setq eww-search-prefix "https://google.com/search?q=")
 
-(with-eval-after-load "persp-mode"
-  (setq persp-kill-foreign-buffer-behaviour 'kill)
-  (with-eval-after-load "ivy"
-    (defun ivy-persp-ignore (b)
-      (when persp-mode
-	(let ((persp (get-current-persp)))
-	  (if persp
-	      (not (persp-contain-buffer-p (get-buffer b) persp))
-	    nil))))
-    (add-to-list 'ivy-ignore-buffers
-		 #'ivy-persp-ignore)
-    (setq ivy-sort-functions-alist
-	  (append ivy-sort-functions-alist
-		  '((persp-kill-buffer   . nil)
-		    (persp-remove-buffer . nil)
-		    (persp-add-buffer    . nil)
-		    (persp-switch        . nil)
-		    (persp-window-switch . nil)
-		    (persp-frame-switch  . nil))))))
-
-(require 'p4-google) ;; g4-annotate, improves find-file-at-point
-(require 'p4-files)
 (require 'compilation-colorization) ;; colorizes output of (i)grep
 (require 'rotate-among-files)       ;; google-rotate-among-files
 (require 'google3) ;; magically set paths for compiling google3 code
@@ -108,10 +84,19 @@
 (require 'google-coding-style)
 (require 'google3-build)
 
+(general-define-key
+ :prefix "C-c g"
+ "" '(nil :which-key "google")
+ "b" 'google3-build
+ "t" 'google3-test
+ "g" 'ash-grab-filename)
 
-   ;;; Eglot is broken currently - args out of range.
-;; (require 'google3-eglot)
-;; (google3-eglot-setup)
+;; Has to come after we load google libraries since we need to use url-sso
+;; TODO: This isn't working, it seems to be ignoring this entirely.
+;; (add-to-list 'package-archives '("GELPA" . "http://gelpa-182518.googleplex.com/packages/") t)
+;; (let ((package-check-signature nil))
+;;   (use-package git-gutter :demand :diminish "" :ensure t)
+;;   (use-package ob-dremel :demand :ensure t))
 
 (defun ash-notmuch-mark-all-read ()
   (interactive)
@@ -191,27 +176,27 @@
   (let ((vc (or vc (if (file-exists-p ".git") 'git 'g4))))
     (google-ascend-to-google3-dir
      (or (gethash (cons default-directory vc) ash/get-files-from-cl-cache)
-	 (let ((result (cond ((eq 'git vc)
-			      (mapcan (lambda (line)
-					(when (string-match "^\\(google3/\\)" line)
-					  (list (replace-match "" nil nil line))))
-				      (split-string
-				       (shell-command-to-string "git5 diff --name-only"))))
-			     ((eq 'g4 vc)
-			      (mapcar (lambda (line)
-					(replace-regexp-in-string
-					 "-unopened\\(edit\\|add\\)" ""
-					 (replace-regexp-in-string
-					  "#.*$" ""
-					  (replace-regexp-in-string
-					   "[[:space:]]+" "" line))))
-				      (remove-if-not
-				       (lambda (line) (string-match "^  " line))
-				       (split-string
-					(shell-command-to-string
-					 "g4 pending -s relativepath") "\n")))))))
-	   (puthash (cons default-directory vc) result ash/get-files-from-cl-cache)
-	   result)))))
+         (let ((result (cond ((eq 'git vc)
+                              (mapcan (lambda (line)
+                                        (when (string-match "^\\(google3/\\)" line)
+                                          (list (replace-match "" nil nil line))))
+                                      (split-string
+                                       (shell-command-to-string "git5 diff --name-only"))))
+                             ((eq 'g4 vc)
+                              (mapcar (lambda (line)
+                                        (replace-regexp-in-string
+                                         "-unopened\\(edit\\|add\\)" ""
+                                         (replace-regexp-in-string
+                                          "#.*$" ""
+                                          (replace-regexp-in-string
+                                           "[[:space:]]+" "" line))))
+                                      (remove-if-not
+                                       (lambda (line) (string-match "^  " line))
+                                       (split-string
+                                        (shell-command-to-string
+                                         "g4 pending -s relativepath") "\n")))))))
+           (puthash (cons default-directory vc) result ash/get-files-from-cl-cache)
+           result)))))
 
 (defun ash-find-file-in-client ()
   (interactive)
@@ -225,10 +210,8 @@
 (defun ash-switch-to-genfiles ()
   (interactive)
   (find-file (replace-regexp-in-string "google3/"
-				       "google3/blaze-genfiles/"
-				       (file-name-directory (buffer-file-name)))))
-
-(spacemacs/set-leader-keys "fF" 'ash-find-file-in-client)
+                                       "google3/blaze-genfiles/"
+                                       (file-name-directory (buffer-file-name)))))
 
 (defun ash-open-file-in-build ()
   "Open current file in /home/build/google3."
@@ -328,12 +311,12 @@
   "From an org item open a perpsective for that item."
   (interactive)
   (let* ((name (or name (ash-org-item-to-name)))
-	 (bufname (format "*%s-org*" name))
-	 (buf (or (get-buffer name) (make-indirect-buffer (current-buffer) name t))))
+         (bufname (format "*%s-org*" name))
+         (buf (or (get-buffer name) (make-indirect-buffer (current-buffer) name t))))
     (with-current-buffer buf
       (org-narrow-to-subtree))
     (if (persp-get-by-name name)
-	(persp-switch name)
+        (persp-switch name)
       (persp-add-new name)
       (persp-switch name))
     (persp-add-buffer buf)
@@ -374,10 +357,6 @@
 (define-key global-map "\C-cxc" 'org-projprop-open)
 (define-key global-map "\C-cxb" 'ash-switch-buffer-in-client)
 (define-key global-map "\C-cxf" 'ash-find-file-in-client)
-(define-key global-map "\C-cxF" 'google-clang-format)
-
-(spacemacs/set-leader-keys "pG" 'ash-go-client
-			   "pN" 'ash-new-client)
 
 (defun ash-copy-url (url &optional new-window)
   (x-select-text url))
@@ -478,9 +457,9 @@ shorten it.  Only the first one to match takes effect.")
     (kill-new
      (let ((new-kill nil))
        (dolist (shortener-cons google-yank-shorteners new-kill)
-	 (when (and (not new-kill)
-		    (string-match (car shortener-cons) kill))
-	   (setq new-kill (funcall (cdr shortener-cons) kill))))))))
+         (when (and (not new-kill)
+                    (string-match (car shortener-cons) kill))
+           (setq new-kill (funcall (cdr shortener-cons) kill))))))))
 
 ;; (eval-after-load "org"
 ;;   '(add-to-list 'org-property-allowed-value-functions 'ash-org-projprop-property))
@@ -527,13 +506,7 @@ Also auto-selects a perpsective."
   (interactive)
   (browse-url (concat "http://go/srjump/" (or dc "vj") "/searchz")))
 
-(spacemacs/set-leader-keys "Us" 'ash-goto-searchz)
-(spacemacs/set-leader-keys "Uq" 'ash-try-squery)
-
 (setq user-mail-address "ahyatt@google.com")
-
-(define-key p4-prefix-map "e" 'p4-edit-open-asynchronously)
-(setq p4-executable "/usr/bin/g4")
 
 (defun ash-grab-filename ()
   "Grab the google3-relative filename at buffer."
@@ -541,28 +514,18 @@ Also auto-selects a perpsective."
   (let ((filename (google-imports-make-relative (or buffer-file-name default-directory))))
     (save-excursion
       (with-temp-buffer
-	(insert filename)
-	(kill-ring-save (point-min) (point-max))))))
+        (insert filename)
+        (kill-ring-save (point-min) (point-max))))))
 
-
-(spacemacs/set-leader-keys "fG" 'ash-grab-filename)
 
 ;; Get rid of that annoying output filter calculation...
 (defun google3-build-make-options ()
   )
 
-(require 'google-ycmd)
-;; If you do want parsing on every change, you can adapt ycmd-parse-conditions
-;; to contain idle-change.
-;; Note: when using this in google3, you will run into points where completion
-;; is not possible due to parsing in the background, which is why this feature
-;; is switched off by default.
-;;  (add-to-list 'ycmd-parse-conditions 'idle-change)
-
-;; If you enable 'idle-change, you might want to tweak the 'ycmd-idle-change-delay,
-;; which is set to 0.5 by default. If you lower it, syntax markers will show up
-;; faster, but the chances that parsing interferes with completion go up.
-;;  (setq ycmd-idle-change-delay 0.5)
+(require 'google-lsp)
+(google-lsp-init)
+;; Optional: Set keybinding for documentation with Kythe.
+(global-set-key (kbd "C-c h") #'google-lsp-describe-thing-at-point)
 
 (setq g4-gutter:update-threshold 5)
 
@@ -797,14 +760,15 @@ Also auto-selects a perpsective."
 	  eshell-prompt-string))
 
 (esh-section esh-dir
-	     "\xf07c"  ;  (faicon folder)
-	     (abbreviate-file-name (eshell/pwd))
-	     '(:foreground "blue" :bold ultra-bold :underline t))
+             "\xf07c"  ;  (faicon folder)
+             (abbreviate-file-name (eshell/pwd))
+             '(:foreground "blue" :bold ultra-bold :underline t))
 
+(require 'magit-branch)
 (esh-section esh-git
-	     "\xe907"  ;  (git icon)
-	     (magit-get-current-branch)
-	     '(:foreground "pink"))
+             "\xe907"  ;  (git icon)
+             (magit-get-current-branch)
+             '(:foreground "pink"))
 
 (esh-section esh-clock
 	     "\xf017"  ;  (clock icon)
@@ -861,11 +825,13 @@ Also auto-selects a perpsective."
 ;; auth-source-xoauth2
 (load "~/src/auth-source-xoauth2/auth-source-xoauth2.el")
 
-;; Fix issue in avy-goto-url
-(defun spacemacs/avy-goto-url()
-  "Use avy to go to an URL in the buffer."
-  (interactive)
-  (avy-jump "https?://"))
-
 ;; Fix an issue with sendgmr pointing to the wrong place
 (setq google-sendgmr-program "/google/data/ro/projects/gws-sre/sendgmr")
+
+(persp-def-auto-persp "Mail"
+                      :parameters '((dont-save-to-file . t))
+                      :predicate (lambda (b state)
+                                   (when (or
+                                          (string-match "notmuch" (buffer-name b))
+                                          (string-match "message" (buffer-name b)))
+                                     (or state t))))
