@@ -5,10 +5,6 @@
 
 (use-package notmuch
   :general
-  (:prefix "C-c n"
-           "" '(nil :which-key "Notmuch")
-           "n" 'notmuch-hello
-           "s" 'notmuch-search)
   (:keymaps 'notmuch-search-mode-map
             "A" (lambda () (interactive) (notmuch-search-tag-all '("-inbox" "-folder:INBOX" "-unread"))))
   :config
@@ -31,7 +27,8 @@
   (setq
    user-full-name  "Andrew Hyatt"
    ;; include in message with C-c C-w
-   message-signature nil))
+   message-signature nil)
+  )
 
 ;; I'm not so sure this works...
 ;; (defun ash-org-capture-replace ()
@@ -83,13 +80,34 @@
 (require 'google-cc-extras)
 (require 'google-coding-style)
 (require 'google3-build)
+(require 'google3-eglot)
+(require 'google-yasnippets)
+(yas-global-mode 1)
+(google3-eglot-setup)
+(setq google3-eglot-c++-server 'clangd)
 
-(general-define-key
- :prefix "C-c g"
- "" '(nil :which-key "google")
- "b" 'google3-build
- "t" 'google3-test
- "g" 'ash-grab-filename)
+(defhydra hydra-google ()
+  ("b" google3-build "build" :exit t)
+  ("t" google3-test "test" :exit t)
+  ("g" ash-grab-filename "grab filename")
+  ("x" google3-build-fix "fix BUILD")
+  ("c" google3-build-cleaner "clean BUILD")
+  ("f" google3-format-region "format region"))
+(defhydra+ hydra-all ()
+  ("g" hydra-google/body "google" :exit t))
+(major-mode-hydra-bind c-mode "Format"
+  ("f" clang-format "format")
+  ("r" clang-format-region "format region"))
+(major-mode-hydra-bind c-mode "Code"
+  ("u" google-cc-add-using-at-point "add using")
+  ("i" google-cc-add-include-and-using-at-point "add include/using")
+  ("I" google-imports-iwyu "iwyu")
+  ("o" google-imports-organize-imports "organize imports")
+  ("p" google3-build-put-import-in-build "put import in build")
+  ("h" eglot-help-at-point "docs at point")
+  ("d" xref-find-definitions "definitions")
+  ("x" xref-find-references "references")
+  ("r" eglot-rename "rename"))
 
 ;; Has to come after we load google libraries since we need to use url-sso
 ;; TODO: This isn't working, it seems to be ignoring this entirely.
@@ -611,15 +629,26 @@ Also auto-selects a perpsective."
 
 (defconst ash-citc-root "/google/src/cloud/ahyatt/")
 
-(eval-after-load 'ivy
-  '(progn
-     (setq ivy-use-virtual-buffers t)
-     (global-set-key (kbd "C-c v") 'ivy-push-view)
-     (global-set-key (kbd "C-c V")  'ivy-pop-view)
-     ;; No regex by default
-     (setq ivy-initial-inputs-alist nil)))
-
-(pixel-scroll-mode)
+(persp-def-auto-persp "projects"
+                      :parameters '((dont-save-to-file . t))
+                      :hooks '(find-file-hook eshell-mode-hook dired-mode-hook fig-status-mode-hook)
+                      :switch 'frame
+                      :predicate
+                      #'(lambda (buffer &optional state)
+                          (when (and
+                                 (buffer-live-p buffer)
+                                 (string-match "/google/src/cloud/ahyatt/\\([^/]+\\)" (with-current-buffer buffer default-directory)))
+                            (or state t)))
+                      :get-name
+                      #'(lambda (state)
+                          (push (cons 'persp-name
+                                      (with-current-buffer (alist-get 'buffer state)
+                                        (string-match "/google/src/cloud/ahyatt/\\([^/]+\\)" default-directory)
+                                        (match-string 1 default-directory)))
+                                state)
+                          (message "The new name is %s " (alist-get 'name state))
+                          state)
+                      )
 
 (add-to-list 'load-path "/google/data/ro/projects/cymbal/tools/include-fixer")
 (require 'clang-include-fixer)
@@ -628,11 +657,6 @@ Also auto-selects a perpsective."
 (defadvice system-users (around  fix pre act comp)
   "Just return user real name."
   (list user-real-login-name))
-(global-set-key [f4] (lambda ()
-		       (interactive)
-		       (persp-switch "@gnus")
-		       (unless (get-buffer "*Group*")
-			 (gnus))))
 
 ;; Stop asking me about freaking .org-gcal-token all the time
 (defun ash-ignore-file-threats (original &rest arguments)
@@ -652,8 +676,6 @@ Also auto-selects a perpsective."
 (google3-language-services-setup)
 (setq help-at-pt-timer-delay 0
       help-at-pt-display-when-idle 'flymake-diagnostic)
-
-(require 'browse-url)
 
 (setenv "GOPATH" "/usr/local/google/home/ahyatt/go")
 (setenv "PATH" (concat (concat (getenv "GOPATH") "/bin") ":" (getenv "PATH")))
@@ -830,8 +852,17 @@ Also auto-selects a perpsective."
 
 (persp-def-auto-persp "Mail"
                       :parameters '((dont-save-to-file . t))
-                      :predicate (lambda (b state)
-                                   (when (or
-                                          (string-match "notmuch" (buffer-name b))
-                                          (string-match "message" (buffer-name b)))
-                                     (or state t))))
+                      :hooks '(notmuch-show-mode-hook notmuch-hello-mode-hook message-mode-hook notmuch-message-mode-hook notmuch-search-mode-hook notmuch-tree-mode-hook)
+                      :predicate #'(lambda (b &optional state)
+                                     (when (or
+                                            (eq major-mode 'notmuch-show-mode)
+                                            (string-match "notmuch" (buffer-name b))
+                                            (string-match "message" (buffer-name b)))
+                                       (or state t))))
+
+(defun eshell/g4d (&optional client)
+  "Change directory to the given CitC CLIENT in an eshell buffer.
+Similar to the g4d bash/ksh/zsh command."
+  (if client
+      (eshell/cd (g4-citc-client-path client))
+    (eshell-eval-command (concat "/usr/bin/g4d " (shell-command-to-string "hg exportedcl")))))
