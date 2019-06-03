@@ -1,7 +1,7 @@
 * Bootstrapping
 Let's start by making sure we have MELPA stable, which is a
 requirement for a lot that follows.
-
+pp
 Code comes from http://melpa.org/#/getting-started.
 #+BEGIN_SRC emacs-lisp
   (require 'package)
@@ -10,34 +10,11 @@ Code comes from http://melpa.org/#/getting-started.
          (proto (if no-ssl "http" "https")))
     ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
     (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-    (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-    (setq package-archive-priorities '(("melpa" . 0) ("melpa-stable" . 1)))
+    (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
     (when (< emacs-major-version 24)
       ;; For important compatibility libraries like cl-lib
       (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
   (package-initialize)
-#+END_SRC
-
-* Tangling-related
-
-We need to add some functions to make dealing with this file easier.
-
-This part is partially taken from
-https://jamiecollinson.com/blog/my-emacs-config/#make-it-easy-to-edit-this-file.
-
-#+BEGIN_SRC emacs-lisp
-  (defun ash/tangle-config ()
-    "Tangle the config file to a standard config file."
-    (interactive)
-    (org-babel-tangle 0 "~/.emacs.d/init.el"))
-
-  (defun ash/find-config ()
-    "Edit config.org"
-    (interactive)
-    (find-file "~/.emacs.d/emacs.org")
-    (local-set-key (kbd "C-c T") 'ash/tangle-config))
-
-  (global-set-key (kbd "C-c I") 'ash/find-config)
 #+END_SRC
 
 * Better defaults
@@ -127,8 +104,8 @@ customization to live in a different file.
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'after-save-hook
-            'executable-make-buffer-file-executable-if-script-p)
+(add-hook 'after-save-hook
+          'executable-make-buffer-file-executable-if-script-p)
 
 #+END_SRC
 * Packages
@@ -143,67 +120,66 @@ First, let's just make sure use-package works the way we want it to.
 ** Helper packages
 General is an easier way to do keybindings.
 #+BEGIN_SRC emacs-lisp
-  (use-package general)
+(use-package general
+  :config
+  ;; Let's make the top-level key categories here
+  (general-create-definer ash/key-def :prefix "C-c"))
 #+END_SRC
 ** Minibuffer customization
 Although helm is nice, I prefer the lighter ivy style.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package ivy
-    :diminish ""
-    :config (ivy-mode))
+(use-package ivy
+  :diminish ""
+  :config (ivy-mode)
+  (setq ivy-initial-inputs-alist nil
+        ivy-use-virtual-buffers t
+        ivy-use-selectable-prompt t))
 #+END_SRC
 
 ** Movement
-
 Avy for quick jumping & buffer navigation is great.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package avy
-    :general
-    (:prefix "C-c j"
-             "" '(nil :which-key "Jumps")
-             "j" 'avy-goto-word-1
-             "l" 'avy-goto-line
-             "c" 'avy-goto-char
-             "r" 'avy-resume))
+(use-package avy
+  :config
+  (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
+  (defun ash/avy-goto-url()
+    "Use avy to go to an URL in the buffer."
+    (interactive)
+    ;; avy-action is a global that sometimes is stuck in a weird state, so we
+    ;; have to specifically set it here via :action.
+    (avy-jump "https?://" :action 'avy-action-goto))
+  (defun ash/avy-open-url ()
+    "Use avy to select an URL in the buffer and open it."
+    (interactive)
+    (save-excursion
+      (ash/avy-goto-url)
+      (browse-url-at-point))))
 #+END_SRC
 
+Counsel is also nice for imenu jumping.
+#+BEGIN_SRC emacs-lisp
+  (require 'ivy)
+  (use-package counsel)
+#+END_SRC
 Multiple cursors is fun and provides quick feedback, allowing for visual
 inspection of the result as you change it.  phi-search is useful for this.
 #+BEGIN_SRC emacs-lisp
-  (use-package multiple-cursors
-    :pin melpa
-    :config (setq mc/always-run-for-all t)
-    :general
-    (:prefix "C-c m"
-             "" '(nil :which-key "Multiple cursors")
-             ">" 'mc/mark-next-like-this
-             "<" 'mc/mark-previous-like-this
-             "a" 'mc/mark-all-like-this
-             "m" 'mc/mark-all-dwim
-             "d" 'mc/mark-all-like-this-in-defun
-             "n" 'mc/mark-next-lines))
+(use-package multiple-cursors
+  :pin melpa
+  :config (setq mc/always-run-for-all t)
+  :general)
 
-  (use-package phi-search
-    :bind (("C-s" . phi-search)
-           ("C-r" . phi-search-backward)))
+(use-package phi-search
+  :bind (("C-s" . phi-search)
+         ("C-r" . phi-search-backward)))
 #+END_SRC
 
 Expand-region is useful in lots of situations to quickly select expanding or
 contracting regions.
 #+BEGIN_SRC emacs-lisp
-  (use-package expand-region
-    :general
-    (:prefix "C-c e"
-             "" '(nil :which-key "Expand / Contract")
-             "e" 'er/expand-region
-             "c" 'er/contract-region
-             "d" 'er/mark-defun
-             "\"" 'er/mark-inside-quotes
-             "'" 'er/mark-inside-quotes
-             "p" 'er/mark-inside-pairs
-             "." 'er/mark-method-call))
+(use-package expand-region)
 #+END_SRC
 
 Swiper sort of combines isearch with occur.
@@ -214,75 +190,173 @@ Swiper sort of combines isearch with occur.
 
 Hydra is useful for doing lots of things in succession.
 #+BEGIN_SRC emacs-lisp
-  (use-package hydra
-    :config
-    (require 'org)
-    (defhydra hydra-org (org-mode-map "C-;")
-      "
-  ^Navigation^         ^Inserting^
-  ^^^^^^^^^^^^^------------------------------
-  _u_: up to parent    _i_: insert heading
-  _n_: next heading  
-  _j_: jump          
-  _L_: prev link
-  _l_: next link
-  _B_: prev block
-  _b_: next block
-  _o_: open link
-  "
-      ("u" org-up-element)
-      ("n" org-next-visible-heading)
-      ("j" (lambda () (interactive)
-             (let ((org-goto-interface 'outline-path-completionp)
-                   (org-outline-path-complete-in-steps nil))
-               (org-goto))))
-      ("l" org-next-link)
-      ("L" org-previous-link)
-      ("b" org-next-block)
-      ("B" org-prev-block)
-      ("o" org-open-at-point)
-      ("i" org-insert-heading-respect-content)))
+(use-package hydra
+  :config
+  ;; define everything here
+  
+  (defhydra hydra-jumps ()
+    "
+^Jump visually^    ^Jump via minibuffer^   ^Jump & go^  
+---------------------------------------------------------
+_j_: to word       _i_: to func heading      _u_: open url
+_l_: to line                               _k_: open link
+_c_: to char                               _b_: open bookmark
+_r_: resume
+"
+    ("j" avy-goto-word-1)
+    ("l" avy-goto-line)
+    ("c" avy-goto-char)
+    ("r" avy-resume)
+    ("u" ash/avy-open-url)
+    ("b" counsel-bookmark)
+    ("i" counsel-imenu)
+    ("k" counsel-ace-link)
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-persp ()
+    ("a" persp-add-buffer "add buffer")
+    ("n" persp-add-new "new")
+    ("r" persp-remove-bubber "remove buffer")
+    ("s" persp-switch "switch")
+    ("k" persp-kill "kill")
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-structural ()
+    ("i" sp-change-inner "change inner")
+    ("k" sp-kill-sexp "kill sexp")
+    ("b" sp-beginning-of-sexp "beginning of sexp")
+    ("e" sp-end-of-sexp "end of sexp")
+    ("d" sp-down-sexp "down sexp")
+    ("e" sp-up-sexp "up sexp")
+    ("]" sp-slurp-hybrid-sexp "slurp")
+    ("/" sp-swap-enclusing-sexp "swap enclusing")
+    ("r" sp-rewrap-sexp "rewrap")
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-multiple-cursors ()
+    (">" mc/mark-next-like-this "mark next")
+    ("<" mc/mark-previous-like-this "mark prev")
+    ("a" mc/mark-all-like-this "mark all")
+    ("d" mc/mark-all-dwim "mark dwim")
+    ("n" mc/mark-next-lines "mark next")
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-expand ()
+    ("e" er/expand-region "expand")
+    ("c" er/contract-region "contract")
+    ("d" er/mark-defun "defun")
+    ("\"" er/mark-inside-quotes "quotes")
+    ("'" er/mark-inside-quotes "quotes")
+    ("p" er/mark-inside-pairs "pairs")
+    ("." er/mark-method-call "call")
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-flycheck ()
+    ("n" flymake-goto-next-error "next error")
+    ("p" flymake-goto-prev-error "previous error")
+    ("d" flymake-goto-diagnostic "diagnostic")
+    ("<" flycheck-prev-error "previous flycheck error")
+    (">" flycheck-next-error "next flycheck error")
+    ("l" flycheck-list-errors "list")
+    ("=" hydra-all/body "back" :exit t))
+  ;; notmuch is too specialized to be set up here, it varies from machine to
+  ;; machine. At some point I should break it down into the general &
+  ;; specialized parts.
+  (defhydra hydra-mail ()
+    ("n" notmuch-hello "notmuch")
+    ("s" notmuch-search "search")
+    ("c" notmuch-mua-new-mail "compose")
+    ("=" hydra-all/body "back" :exit t))
+  (defhydra hydra-all ()
+    ("j" hydra-jumps/body "jumps" :exit t)
+    ("p" hydra-persp/body "perspective" :exit t)
+    ("s" hydra-structural/body  "structural" :exit t)
+    ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
+    ("e" hydra-expand/body "expand region" :exit t)
+    ("m" hydra-mail/body "mail" :exit t)
+    ("E" hydra-flycheck/body "errors" :exit t))
+  
+  (global-set-key (kbd "M-p") 'hydra-all/body)
+  (global-set-key (kbd "C-c c") 'hydra-all/body)
+  (global-set-key (kbd "S-c") 'hydra-all/body))
+
+(use-package major-mode-hydra
+  :bind
+  ("M-o" . major-mode-hydra)
+  :config
+  ;; Mode maps
+  (major-mode-hydra-bind org-mode "Movement"
+    ("u" org-up-element "up")
+    ("n" org-next-visible-heading "next visible heading")
+    ("j" (lambda () (interactive)
+           (let ((org-goto-interface 'outline-path-completionp)
+                 (org-outline-path-complete-in-steps nil))
+             (org-goto))) "jump")
+    ("l" org-next-link "next link")
+    ("L" org-previous-link "previous link")
+    ("b" org-next-block "next block")
+    ("B" org-prev-block "previous block")
+    ("o" org-open-at-point "open at point")
+    ("i" org-insert-heading-respect-content "insert heading"))
+  (major-mode-hydra-bind emacs-lisp-mode "Eval"
+    ("b" eval-buffer "eval buffer")
+    (";" eval-expression "eval expression")
+    ("d" eval-defun "eval defun")
+    ("D" edebug-defun "edebug defun")
+    ("e" eval-last-sexp "eval last sexp")
+    ("E" edebug-eval-last-sexp "edebug last sexp")
+    ("i" ielm "ielm")))
 #+END_SRC
+** Projects
+
+#+BEGIN_SRC emacs-lisp
+(use-package persp-mode
+  :general
+  ("C-x b" 'persp-switch-to-buffer)
+  :config
+  (setq persp-kill-foreign-buffer-behaviour 'kill)
+  (with-eval-after-load "persp-mode"
+    (with-eval-after-load "ivy"
+      (add-hook 'ivy-ignore-buffers
+                #'(lambda (b)
+                    (when persp-mode
+                      (let ((persp (get-current-persp)))
+                        (if persp
+                            (not (persp-contain-buffer-p b persp))
+                          nil)))))
+
+      (setq ivy-sort-functions-alist
+            (append ivy-sort-functions-alist
+                    '((persp-kill-buffer   . nil)
+                      (persp-remove-buffer . nil)
+                      (persp-add-buffer    . nil)
+                      (persp-switch        . nil)
+                      (persp-window-switch . nil)
+                      (persp-frame-switch  . nil))))))
+  
+  (persp-set-keymap-prefix (kbd "C-c l"))
+  (persp-mode 1))
+#+END_SRC
+
 ** Expansion
 yassnippet is a great way to create templates and use them.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package yasnippet
-    :diminish yas-minor-mode
-    :config
-    (setq-default yas-snippet-dirs `(,(expand-file-name "snippets/" user-emacs-directory)))
-    (yas-reload-all)
-    (yas-global-mode 1))
+(use-package yasnippet
+  :diminish yas-minor-mode
+  :config
+  (setq-default yas-snippet-dirs `(,(expand-file-name "snippets/" user-emacs-directory)))
+  (yas-reload-all)
+  (yas-global-mode 1))
 #+END_SRC
 
 ** Programming
 Magit is essential for git users.
 #+BEGIN_SRC emacs-lisp
-  (use-package magit
-    :general
-    (:prefix "C-c s"
-             "" '(nil :which-key "Source code")
-             "m" 'magit-status))
+(use-package magit)
 #+END_SRC
 There’s a lot of really good  editing tools. Smartparens is fairly universal, so it’s nice.
 
 #+BEGIN_SRC emacs-lisp
-  (use-package smartparens
-    :diminish ""
-    :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
-    :general
-    (:prefix "C-c p"
-             "" '(nil :which-key "Parens")
-             "i" 'sp-change-inner
-             "k" 'sp-kill-sexp
-             "b" 'sp-beginning-of-sexp
-             "e" 'sp-end-of-sexp
-             "d" 'sp-down-sexp
-             "u" 'sp-up-sexp
-             "]" 'sp-slurp-hybrid-sexp
-             "/" 'sp-swap-enclusing-sexp
-             "r" 'sp-rewrap-sexp)
-    :config (require 'smartparens-config))
+(use-package smartparens
+  :diminish ""
+  :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
+  :config (require 'smartparens-config))
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
@@ -349,20 +423,6 @@ Company mode is a standard for symbol completion.
     :init (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
 
-** Major mode keybindings
-#+BEGIN_SRC emacs-lisp
-  (general-define-key
-   :keymaps 'emacs-lisp-mode-map
-   :prefix "C-c C-c"
-   "" '(nil :which-key "elisp mode")
-   "e b" 'eval-buffer
-   "e e" 'eval-expression
-   "e d" 'eval-defun
-   "e D" 'edebug-eval-defun
-   "e l" 'eval-last-sexp
-   "e L" 'edebug-eval-last-sexp
-   "i" 'ielm)
-#+END_SRC
 ** Help
 
 Which-key pops up keys in a buffer when you are in the middle of a keystroke.
@@ -398,14 +458,6 @@ Make org prettier.
     :init (add-hook 'org-mode-hook #'org-bullets-mode))
 #+END_SRC
 
-Use real typographical symbols.  Useful in Org.
-#+BEGIN_SRC emacs-lisp
-  (use-package typo
-    :diminish ""
-    :init
-    (add-hook 'org-mode-hook #'typo-mode))
-#+END_SRC
-
 Also, set up Org buffers to look prettier, see https://lepisma.github.io/2017/10/28/ricing-org-mode/.
 #+BEGIN_SRC emacs-lisp
   (setq-default org-startup-indented t
@@ -425,7 +477,6 @@ Also, long lines are bad.  I prefer to actually keep shorter lines via auto-fill
 #+BEGIN_SRC emacs-lisp
   (add-hook 'org-mode-hook #'auto-fill-mode)
 #+END_SRC
-
 Improve the looks of the modeline with Powerline.
 #+BEGIN_SRC emacs-lisp
   (use-package powerline
@@ -442,3 +493,126 @@ Add the ability to use org-mode for D&D
     :load-path "~/src/emacs-org-dnd"
     :config (require 'ox-dnd))
 #+END_SRC
+* Org config
+#+BEGIN_SRC emacs-lisp
+(use-package org
+  :ensure org-plus-contrib
+  :config
+  (require 'org-checklist)
+  :general
+  ("C-c a" 'org-agenda))
+
+(add-hook 'org-babel-after-execute-hook
+          (lambda ()
+            (when org-inline-image-overlays
+              (org-redisplay-inline-images))))
+(add-hook 'org-mode-hook
+      (lambda ()
+        (auto-fill-mode)
+        (variable-pitch-mode 1)))
+(setq org-clock-string-limit 80
+      org-log-done t
+      org-agenda-span 'day
+      org-agenda-include-diary t
+      org-deadline-warning-days 1
+      org-clock-idle-time 10
+      org-agenda-sticky t
+      org-agenda-start-with-log-mode nil
+      org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
+                                    "WAITING(w@/!)" "|" "DONE(d)"
+                                    "OBSOLETE(o)")
+                          (type "PERMANENT")
+                          (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
+                                    "|" "SUBMITTED(b)"))
+      org-agenda-custom-commands
+      '(("w" todo "WAITING" nil)
+        ("n" tags-todo "+someday"
+         ((org-show-hierarchy-above nil) (org-agenda-todo-ignore-with-date t)
+          (org-agenda-tags-todo-honor-ignore-options t)))
+        ("0" "Critical tasks" ((agenda "") (tags-todo "+p0")))
+        ("l" "Agenda and live tasks" ((agenda)
+                                      (todo "PERMANENT")
+                                      (todo "WAITING|EXTREVIEW")
+                                      (tags-todo "-someday/!-WAITING-EXTREVIEW")))
+        ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
+         ((org-agenda-overriding-header "Last week's completed TODO: ")
+          (org-agenda-skip-archived-trees nil)
+          (org-agenda-files '("$HOME/org/work.org" "$HOME/org/journal.org")))))
+      org-agenda-files '("$HOME/org/work.org" "$HOME/org/journal.org")
+      org-enforce-todo-dependencies t
+      org-agenda-todo-ignore-scheduled t
+      org-agenda-dim-blocked-tasks 'invisible
+      org-agenda-tags-todo-honor-ignore-options t
+      org-agenda-skip-deadline-if-done 't
+      org-agenda-skip-scheduled-if-done 't
+      org-src-window-setup 'other-window
+      org-src-tab-acts-natively t
+      org-fontify-whole-heading-line t
+      org-fontify-done-headline t
+      org-edit-src-content-indentation 0
+      org-fontify-quote-and-verse-blocks t
+      org-hide-emphasis-markers t
+      org-startup-with-inline-images t
+      org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s")
+                                 (timeline . "  % s")
+                                 (todo . " %i %-18:c")
+                                 (tags . " %i %-18:c")
+                                 (search . " %i %-18:c"))
+      org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
+      org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
+      org-clock-into-drawer nil
+      org-clock-report-include-clocking-task t
+      org-clock-history-length 20
+      org-archive-location "$HOME/org/journal.org::datetree/* Archived"
+      org-use-property-inheritance t
+      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))
+      org-agenda-clockreport-parameter-plist
+      '(:maxlevel 2 :link nil :scope ("$HOME/org/work.org"))
+      org-refile-targets '((nil :maxlevel . 5))
+      org-use-speed-commands t
+      org-refile-targets '((nil . (:maxlevel . 3)))
+      org-link-frame-setup '((gnus . gnus)
+                             (file . find-file-other-window))
+      org-speed-commands-user '(("w" . ash-org-start-work))
+      org-completion-use-ido t
+      org-use-fast-todo-selection t
+      org-habit-show-habits t
+      org-capture-templates
+      '(("n" "Note" entry
+         (file+headline "notes.org" "Unfiled notes")
+         "* %a%?\n%u\n%i")
+        ("j" "Journal" entry
+         (file+datetree "journal.org")
+         "* %T %?")
+        ("t" "Todo" entry
+         (file+headline "work.org" "Inbox")
+         "* TODO %?\n%a")
+        ("a" "Act on email" entry
+         (file+headline "work.org" "Inbox")
+         "* TODO %?, Link: %a")))
+
+(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
+#+END_SRC
+* Tangling-related
+
+We need to add some functions to make dealing with this file easier.
+
+This part is partially taken from
+https://jamiecollinson.com/blog/my-emacs-config/#make-it-easy-to-edit-this-file.
+
+#+BEGIN_SRC emacs-lisp
+(defun ash/tangle-config ()
+  "Tangle the config file to a standard config file."
+  (interactive)
+  (org-babel-tangle 0 "~/.emacs.d/init.el"))
+
+(general-define-key :keymaps 'org-mode-map
+                    :predicate '(string-equal "emacs.org" (buffer-name))
+                    "C-c t" 'ash/tangle-config)
+
+(defun ash/find-config ()
+  "Edit config.org"
+  (interactive)
+  (find-file "~/.emacs.d/emacs.org"))
+#+END_SRC
+
