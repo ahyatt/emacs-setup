@@ -323,7 +323,9 @@ _r_: resume
 
 (use-package company
   :general ("C-c ." 'company-complete)
-  :init (add-hook 'after-init-hook 'global-company-mode))
+  :init
+  (add-hook 'after-init-hook 'global-company-mode)
+  (setq company-minimum-prefix-length 0))
 
 (use-package which-key
   :diminish

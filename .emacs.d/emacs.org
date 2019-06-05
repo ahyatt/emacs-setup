@@ -418,9 +418,11 @@ Flycheck will help check for all errors.  Taken from https://jamiecollinson.com/
 
 Company mode is a standard for symbol completion.
 #+BEGIN_SRC emacs-lisp
-  (use-package company
-    :general ("C-c ." 'company-complete)
-    :init (add-hook 'after-init-hook 'global-company-mode))
+(use-package company
+  :general ("C-c ." 'company-complete)
+  :init
+  (add-hook 'after-init-hook 'global-company-mode)
+  (setq company-minimum-prefix-length 0))
 #+END_SRC
 
 ** Help
