@@ -122,7 +122,7 @@
 (use-package hydra
   :config
   ;; define everything here
-  
+
   (defhydra hydra-jumps ()
     "
 ^Jump visually^    ^Jump via minibuffer^   ^Jump & go^  
@@ -162,9 +162,9 @@ _r_: resume
   (defhydra hydra-multiple-cursors ()
     (">" mc/mark-next-like-this "mark next")
     ("<" mc/mark-previous-like-this "mark prev")
-    ("a" mc/mark-all-like-this "mark all")
-    ("d" mc/mark-all-dwim "mark dwim")
-    ("n" mc/mark-next-lines "mark next")
+    ("a" mc/mark-all-like-this "mark all" :exit t)
+    ("d" mc/mark-all-dwim "mark dwim" :exit t)
+    ("n" mc/mark-next-lines "mark next lines" : exit t)
     ("=" hydra-all/body "back" :exit t))
   (defhydra hydra-expand ()
     ("e" er/expand-region "expand")
@@ -199,7 +199,7 @@ _r_: resume
     ("e" hydra-expand/body "expand region" :exit t)
     ("m" hydra-mail/body "mail" :exit t)
     ("E" hydra-flycheck/body "errors" :exit t))
-  
+
   (global-set-key (kbd "M-p") 'hydra-all/body)
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "S-c") 'hydra-all/body))
@@ -232,28 +232,12 @@ _r_: resume
     ("i" ielm "ielm")))
 
 (use-package persp-mode
-  :general
-  ("C-x b" 'persp-switch-to-buffer)
   :config
   (setq persp-kill-foreign-buffer-behaviour 'kill)
-  (with-eval-after-load "persp-mode"
-    (with-eval-after-load "ivy"
-      (add-hook 'ivy-ignore-buffers
-                #'(lambda (b)
-                    (when persp-mode
-                      (let ((persp (get-current-persp)))
-                        (if persp
-                            (not (persp-contain-buffer-p b persp))
-                          nil)))))
-
-      (setq ivy-sort-functions-alist
-            (append ivy-sort-functions-alist
-                    '((persp-kill-buffer   . nil)
-                      (persp-remove-buffer . nil)
-                      (persp-add-buffer    . nil)
-                      (persp-switch        . nil)
-                      (persp-window-switch . nil)
-                      (persp-frame-switch  . nil))))))
+  (defun persp-uncontained-buffer-p (buffer)
+    (not (persp-contain-buffer-p buffer)))
+  
+  (add-to-list 'ivy-ignore-buffers #'persp-uncontained-buffer-p)
   
   (persp-set-keymap-prefix (kbd "C-c l"))
   (persp-mode 1))
