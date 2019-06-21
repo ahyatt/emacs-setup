@@ -17,6 +17,7 @@ Code comes from http://melpa.org/#/getting-started.
   (package-initialize)
 #+END_SRC
 
+We use use-package so before first running, install this with `package-install`.
 * Better defaults
 
 Most of this is taken from
@@ -160,8 +161,10 @@ Avy for quick jumping & buffer navigation is great.
 
 Counsel is also nice for imenu jumping.
 #+BEGIN_SRC emacs-lisp
-  (require 'ivy)
-  (use-package counsel)
+(require 'ivy)
+(use-package counsel)
+
+
 #+END_SRC
 Multiple cursors is fun and provides quick feedback, allowing for visual
 inspection of the result as you change it.  phi-search is useful for this.
@@ -190,144 +193,128 @@ Swiper sort of combines isearch with occur.
 
 Hydra is useful for doing lots of things in succession.
 #+BEGIN_SRC emacs-lisp
-(use-package hydra
-  :config
-  ;; define everything here
+  (use-package hydra
+    :config
+    ;; define everything here
   
-  (defhydra hydra-jumps ()
-    "
-^Jump visually^    ^Jump via minibuffer^   ^Jump & go^  
----------------------------------------------------------
-_j_: to word       _i_: to func heading      _u_: open url
-_l_: to line                               _k_: open link
-_c_: to char                               _b_: open bookmark
-_r_: resume
-"
-    ("j" avy-goto-word-1)
-    ("l" avy-goto-line)
-    ("c" avy-goto-char)
-    ("r" avy-resume)
-    ("u" ash/avy-open-url)
-    ("b" counsel-bookmark)
-    ("i" counsel-imenu)
-    ("k" counsel-ace-link)
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-persp ()
-    ("a" persp-add-buffer "add buffer")
-    ("n" persp-add-new "new")
-    ("r" persp-remove-bubber "remove buffer")
-    ("s" persp-switch "switch")
-    ("k" persp-kill "kill")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-structural ()
-    ("i" sp-change-inner "change inner")
-    ("k" sp-kill-sexp "kill sexp")
-    ("b" sp-beginning-of-sexp "beginning of sexp")
-    ("e" sp-end-of-sexp "end of sexp")
-    ("d" sp-down-sexp "down sexp")
-    ("e" sp-up-sexp "up sexp")
-    ("]" sp-slurp-hybrid-sexp "slurp")
-    ("/" sp-swap-enclusing-sexp "swap enclusing")
-    ("r" sp-rewrap-sexp "rewrap")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-multiple-cursors ()
-    (">" mc/mark-next-like-this "mark next")
-    ("<" mc/mark-previous-like-this "mark prev")
-    ("a" mc/mark-all-like-this "mark all")
-    ("d" mc/mark-all-dwim "mark dwim")
-    ("n" mc/mark-next-lines "mark next")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-expand ()
-    ("e" er/expand-region "expand")
-    ("c" er/contract-region "contract")
-    ("d" er/mark-defun "defun")
-    ("\"" er/mark-inside-quotes "quotes")
-    ("'" er/mark-inside-quotes "quotes")
-    ("p" er/mark-inside-pairs "pairs")
-    ("." er/mark-method-call "call")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-flycheck ()
-    ("n" flymake-goto-next-error "next error")
-    ("p" flymake-goto-prev-error "previous error")
-    ("d" flymake-goto-diagnostic "diagnostic")
-    ("<" flycheck-prev-error "previous flycheck error")
-    (">" flycheck-next-error "next flycheck error")
-    ("l" flycheck-list-errors "list")
-    ("=" hydra-all/body "back" :exit t))
-  ;; notmuch is too specialized to be set up here, it varies from machine to
-  ;; machine. At some point I should break it down into the general &
-  ;; specialized parts.
-  (defhydra hydra-mail ()
-    ("n" notmuch-hello "notmuch")
-    ("s" notmuch-search "search")
-    ("c" notmuch-mua-new-mail "compose")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-all ()
-    ("j" hydra-jumps/body "jumps" :exit t)
-    ("p" hydra-persp/body "perspective" :exit t)
-    ("s" hydra-structural/body  "structural" :exit t)
-    ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
-    ("e" hydra-expand/body "expand region" :exit t)
-    ("m" hydra-mail/body "mail" :exit t)
-    ("E" hydra-flycheck/body "errors" :exit t))
+    (defhydra hydra-jumps ()
+      "
+  ^Jump visually^    ^Jump via minibuffer^   ^Jump & go^  
+  ---------------------------------------------------------
+  _j_: to word       _i_: to func heading      _u_: open url
+  _l_: to line                               _k_: open link
+  _c_: to char                               _b_: open bookmark
+  _r_: resume
+  "
+      ("j" avy-goto-word-1)
+      ("l" avy-goto-line)
+      ("c" avy-goto-char)
+      ("r" avy-resume)
+      ("u" ash/avy-open-url)
+      ("b" counsel-bookmark)
+      ("i" counsel-imenu)
+      ("k" counsel-ace-link)
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-persp ()
+      ("a" persp-add-buffer "add buffer")
+      ("n" persp-add-new "new")
+      ("r" persp-remove-bubber "remove buffer")
+      ("s" persp-switch "switch")
+      ("k" persp-kill "kill")
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-structural ()
+      ("i" sp-change-inner "change inner")
+      ("k" sp-kill-sexp "kill sexp")
+      ("b" sp-beginning-of-sexp "beginning of sexp")
+      ("e" sp-end-of-sexp "end of sexp")
+      ("d" sp-down-sexp "down sexp")
+      ("e" sp-up-sexp "up sexp")
+      ("]" sp-slurp-hybrid-sexp "slurp")
+      ("/" sp-swap-enclusing-sexp "swap enclusing")
+      ("r" sp-rewrap-sexp "rewrap")
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-multiple-cursors ()
+      (">" mc/mark-next-like-this "mark next")
+      ("<" mc/mark-previous-like-this "mark prev")
+      ("a" mc/mark-all-like-this "mark all" :exit t)
+      ("d" mc/mark-all-dwim "mark dwim" :exit t)
+      ("n" mc/mark-next-lines "mark next lines" : exit t)
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-expand ()
+      ("e" er/expand-region "expand")
+      ("c" er/contract-region "contract")
+      ("d" er/mark-defun "defun")
+      ("\"" er/mark-inside-quotes "quotes")
+      ("'" er/mark-inside-quotes "quotes")
+      ("p" er/mark-inside-pairs "pairs")
+      ("." er/mark-method-call "call")
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-flycheck ()
+      ("n" flymake-goto-next-error "next error")
+      ("p" flymake-goto-prev-error "previous error")
+      ("d" flymake-goto-diagnostic "diagnostic")
+      ("<" flycheck-prev-error "previous flycheck error")
+      (">" flycheck-next-error "next flycheck error")
+      ("l" flycheck-list-errors "list")
+      ("=" hydra-all/body "back" :exit t))
+    ;; notmuch is too specialized to be set up here, it varies from machine to
+    ;; machine. At some point I should break it down into the general &
+    ;; specialized parts.
+    (defhydra hydra-mail ()
+      ("n" notmuch-hello "notmuch")
+      ("s" notmuch-search "search")
+      ("c" notmuch-mua-new-mail "compose")
+      ("=" hydra-all/body "back" :exit t))
+    (defhydra hydra-all ()
+      ("j" hydra-jumps/body "jumps" :exit t)
+      ("p" hydra-persp/body "perspective" :exit t)
+      ("s" hydra-structural/body  "structural" :exit t)
+      ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
+      ("e" hydra-expand/body "expand region" :exit t)
+      ("m" hydra-mail/body "mail" :exit t)
+      ("E" hydra-flycheck/body "errors" :exit t))
   
-  (global-set-key (kbd "M-p") 'hydra-all/body)
-  (global-set-key (kbd "C-c c") 'hydra-all/body)
-  (global-set-key (kbd "S-c") 'hydra-all/body))
+    (global-set-key (kbd "M-p") 'hydra-all/body)
+    (global-set-key (kbd "C-c c") 'hydra-all/body)
+    (global-set-key (kbd "S-c") 'hydra-all/body))
 
-(use-package major-mode-hydra
-  :bind
-  ("M-o" . major-mode-hydra)
-  :config
-  ;; Mode maps
-  (major-mode-hydra-bind org-mode "Movement"
-    ("u" org-up-element "up")
-    ("n" org-next-visible-heading "next visible heading")
-    ("j" (lambda () (interactive)
-           (let ((org-goto-interface 'outline-path-completionp)
-                 (org-outline-path-complete-in-steps nil))
-             (org-goto))) "jump")
-    ("l" org-next-link "next link")
-    ("L" org-previous-link "previous link")
-    ("b" org-next-block "next block")
-    ("B" org-prev-block "previous block")
-    ("o" org-open-at-point "open at point")
-    ("i" org-insert-heading-respect-content "insert heading"))
-  (major-mode-hydra-bind emacs-lisp-mode "Eval"
-    ("b" eval-buffer "eval buffer")
-    (";" eval-expression "eval expression")
-    ("d" eval-defun "eval defun")
-    ("D" edebug-defun "edebug defun")
-    ("e" eval-last-sexp "eval last sexp")
-    ("E" edebug-eval-last-sexp "edebug last sexp")
-    ("i" ielm "ielm")))
+  (use-package major-mode-hydra
+    :bind
+    ("M-o" . major-mode-hydra)
+    :config
+    ;; Mode maps
+    (major-mode-hydra-bind org-mode "Movement"
+      ("u" org-up-element "up")
+      ("n" org-next-visible-heading "next visible heading")
+      ("j" (lambda () (interactive)
+             (let ((org-goto-interface 'outline-path-completionp)
+                   (org-outline-path-complete-in-steps nil))
+               (org-goto))) "jump")
+      ("l" org-next-link "next link")
+      ("L" org-previous-link "previous link")
+      ("b" org-next-block "next block")
+      ("B" org-prev-block "previous block")
+      ("o" org-open-at-point "open at point")
+      ("i" org-insert-heading-respect-content "insert heading"))
+    (major-mode-hydra-bind emacs-lisp-mode "Eval"
+      ("b" eval-buffer "eval buffer")
+      (";" eval-expression "eval expression")
+      ("d" eval-defun "eval defun")
+      ("D" edebug-defun "edebug defun")
+      ("e" eval-last-sexp "eval last sexp")
+      ("E" edebug-eval-last-sexp "edebug last sexp")
+      ("i" ielm "ielm")))
 #+END_SRC
 ** Projects
 
 #+BEGIN_SRC emacs-lisp
 (use-package persp-mode
-  :general
-  ("C-x b" 'persp-switch-to-buffer)
   :config
   (setq persp-kill-foreign-buffer-behaviour 'kill)
-  (with-eval-after-load "persp-mode"
-    (with-eval-after-load "ivy"
-      (add-hook 'ivy-ignore-buffers
-                #'(lambda (b)
-                    (when persp-mode
-                      (let ((persp (get-current-persp)))
-                        (if persp
-                            (not (persp-contain-buffer-p b persp))
-                          nil)))))
-
-      (setq ivy-sort-functions-alist
-            (append ivy-sort-functions-alist
-                    '((persp-kill-buffer   . nil)
-                      (persp-remove-buffer . nil)
-                      (persp-add-buffer    . nil)
-                      (persp-switch        . nil)
-                      (persp-window-switch . nil)
-                      (persp-frame-switch  . nil))))))
+  (defun persp-uncontained-buffer-p (buffer)
+    (not (persp-contain-buffer-p buffer)))
+  
+  (add-to-list 'ivy-ignore-buffers #'persp-uncontained-buffer-p)
   
   (persp-set-keymap-prefix (kbd "C-c l"))
   (persp-mode 1))
@@ -603,18 +590,18 @@ This part is partially taken from
 https://jamiecollinson.com/blog/my-emacs-config/#make-it-easy-to-edit-this-file.
 
 #+BEGIN_SRC emacs-lisp
-(defun ash/tangle-config ()
-  "Tangle the config file to a standard config file."
-  (interactive)
-  (org-babel-tangle 0 "~/.emacs.d/init.el"))
+  (defun ash/tangle-config ()
+    "Tangle the config file to a standard config file."
+    (interactive)
+    (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
-(general-define-key :keymaps 'org-mode-map
-                    :predicate '(string-equal "emacs.org" (buffer-name))
-                    "C-c t" 'ash/tangle-config)
+  (general-define-key :keymaps 'org-mode-map
+                      :predicate '(string-equal "emacs.org" (buffer-name))
+                      "C-c t" 'ash/tangle-config)
 
-(defun ash/find-config ()
-  "Edit config.org"
-  (interactive)
-  (find-file "~/.emacs.d/emacs.org"))
+  (defun ash/find-config ()
+    "Edit config.org"
+    (interactive)
+    (find-file "~/.emacs.d/emacs.org"))
 #+END_SRC
 
