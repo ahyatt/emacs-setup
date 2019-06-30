@@ -134,8 +134,10 @@ General is an easier way to do keybindings.
          ("C-x C-f" . helm-find-files)
          ("C-x f" . helm-recentf)
          ("M-y" . helm-show-kill-ring)
+         ("M-i" . helm-mini)
          ("C-x b" . helm-buffers-list))
   :config (progn
+            (require 'helm-config)
             (setq helm-buffers-fuzzy-matching t)
             (helm-mode 1)))
 (use-package helm-proc)
@@ -286,6 +288,18 @@ _r_: resume
   (defhydra hydra-org-main ()
     ("a" org-agenda "agenda")    
     ("r" helm-org-rifle "rifle"))
+  (defhydra hydra-helm ()
+    ("c" helm-calcul-expression "calc" :exit t)
+    ("i" helm-semantic-or-imenu "imenu" :exit t)
+    ("m" helm-mini "mini" :exit t)
+    ("w" helm-man-woman "[wo]man" :exit t)
+    ("l" helm-locate "locate" :exit t)
+    ("o" helm-occur "occur" :exit t)
+    ("a" helm-apropos "apropos" :exit t)
+    ("r" helm-resume "resume" :exit t)
+    ("M" helm-all-mark-rings "mark rings" :exit t)
+    ("R" helm-register "register" :exit t)
+    ("s" helm-swoop "swoop" :exit t))
   (defhydra hydra-all ()
     ("j" hydra-jumps/body "jumps" :exit t)
     ("p" hydra-persp/body "perspective" :exit t)
@@ -293,6 +307,7 @@ _r_: resume
     ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
     ("e" hydra-expand/body "expand region" :exit t)
     ("m" hydra-mail/body "mail" :exit t)
+    ("h" hydra-helm/body "helm" :exit t)
     ("E" hydra-flycheck/body "errors" :exit t)
     ("o" hydra-org-main/body "org" :exit t))
 
@@ -325,7 +340,10 @@ _r_: resume
     ("D" edebug-defun "edebug defun")
     ("e" eval-last-sexp "eval last sexp")
     ("E" edebug-eval-last-sexp "edebug last sexp")
-    ("i" ielm "ielm")))
+    ("i" ielm "ielm"))
+  (major-mode-hydra-bind eshell-mode "Movement"
+    ("h" helm-eshell-history :exit t)
+    ("p" helm-eshell-prompts :exit t)))
 #+END_SRC
 ** Projects
 
