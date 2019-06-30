@@ -181,7 +181,6 @@ it doesn't work on long files, so let's bind it to special-commands.
 #+BEGIN_SRC emacs-lisp
 (use-package multiple-cursors
   :pin melpa
-  :config (setq mc/always-run-for-all t)
   :general)
 
 (use-package phi-search
@@ -244,11 +243,19 @@ _r_: resume
     ("r" sp-rewrap-sexp "rewrap")
     ("=" hydra-all/body "back" :exit t))
   (defhydra hydra-multiple-cursors ()
-    (">" mc/mark-next-like-this "mark next")
-    ("<" mc/mark-previous-like-this "mark prev")
+    ("l" mc/edit-lines "edit lines" :exit t)
+    ("n" mc/mark-next-like-this "mark next like this")
+    ("N" mc/skip-to-next-like-this "skip to next like this")
+    ("M-n" mc/unmark-next-like-this "unmark next like this")
+    ("p" mc/mark-previous-like-this "mark previous like this")
+    ("P" mc/skip-to-previous-like-this "skip to previous like this")
+    ("M-p" mc/unmark-previous-like-this "unmark previous like this")
+    ("s" mc/mark-all-in-region-regexp "mark all in region re" :exit t)
+    ("0" mc/insert-numbers "insert numbers" :exit t)
     ("a" mc/mark-all-like-this "mark all" :exit t)
+    ("A" mc/insert-letters "insert letters" :exit t)
     ("d" mc/mark-all-dwim "mark dwim" :exit t)
-    ("n" mc/mark-next-lines "mark next lines" :exit t)
+    ("n" mc/mark-next-lines "mark next lines")
     ("=" hydra-all/body "back" :exit t))
   (defhydra hydra-expand ()
     ("e" er/expand-region "expand")
