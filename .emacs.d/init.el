@@ -102,6 +102,9 @@
   (bind-key "M-m" 'helm-swoop-from-isearch isearch-mode-map))
 (use-package helm-org-rifle)
 
+(use-package winum
+  :config (winum-mode 1))
+
 (use-package avy
   :config
   (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
@@ -228,7 +231,7 @@ _r_: resume
     ("R" helm-register "register" :exit t)
     ("s" helm-swoop "swoop" :exit t))
   (defhydra hydra-all ()
-    ("j" hydra-jumps/body "jumps" :exit t)    
+    ("j" hydra-jumps/body "jumps" :exit t)
     ("s" hydra-structural/body  "structural" :exit t)
     ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
     ("e" hydra-expand/body "expand region" :exit t)
@@ -374,16 +377,70 @@ _r_: resume
 
 (add-hook 'org-mode-hook #'auto-fill-mode)
 
-(use-package powerline
-    :config
-    (setq powerline-default-separator 'utf-8)
-    (powerline-center-theme))
+(use-package spaceline)
+(use-package spaceline-all-the-icons 
+  :after spaceline
+  :config (spaceline-all-the-icons-theme))
 
 (use-package emacs-org-dnd
   :disabled
   :ensure nil
   :load-path "~/src/emacs-org-dnd"
   :config (require 'ox-dnd))
+
+(use-package centaur-tabs
+  :demand
+  :config
+  (centaur-tabs-mode t)
+  (centaur-tabs-headline-match)
+  (setq centaur-tabs-set-modified-marker t
+        centaur-tabs-modified-marker "●"
+        centaur-tabs-cycle-scope 'tabs
+        centaur-tabs-height 30
+        centaur-tabs-set-icons t)
+  :bind
+  ("C-TAB" . centaur-tabs-forward)
+  ("C-M-TAB" . centaur-tabs-backward)
+  ("C-c TAB" . centaur-tabs-forward-group))
+
+(use-package treemacs
+  :ensure t
+  :defer t
+  :init
+  (with-eval-after-load 'winum
+    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+  :config
+  (progn
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode t)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null (treemacs--find-python3))))
+      (`(t . t)
+       (treemacs-git-mode 'deferred))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
+  :bind
+  (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+(use-package treemacs-projectile
+  :after treemacs projectile
+  :ensure t)
+
+(use-package treemacs-icons-dired
+  :after treemacs dired
+  :ensure t
+  :config (treemacs-icons-dired-mode))
+
+(use-package treemacs-magit
+  :after treemacs magit
+  :ensure t)
 
 (use-package org
   :ensure org-plus-contrib
