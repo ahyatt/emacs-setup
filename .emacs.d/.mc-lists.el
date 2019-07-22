@@ -3,12 +3,16 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        forward-sexp
         sp-backward-delete-char
+        sp-kill-region
+        sp-kill-word
         ))
 
 (setq mc/cmds-to-run-once
       '(
         helm-M-x
+        hydra-multiple-cursors/mc/edit-lines-and-exit
         hydra-multiple-cursors/mc/insert-letters-and-exit
         hydra-multiple-cursors/mc/mark-all-dwim-and-exit
         hydra-multiple-cursors/mc/mark-all-like-this-and-exit
