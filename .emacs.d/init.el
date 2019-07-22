@@ -372,10 +372,10 @@ _r_: resume
 
 (add-hook 'org-mode-hook #'auto-fill-mode)
 
-(use-package powerline
-    :config
-    (setq powerline-default-separator 'utf-8)
-    (powerline-center-theme))
+(use-package spaceline)
+(use-package spaceline-all-the-icons 
+  :after spaceline
+  :config (spaceline-all-the-icons-theme))
 
 (use-package emacs-org-dnd
   :disabled

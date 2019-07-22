@@ -492,10 +492,10 @@ Also, long lines are bad.  I prefer to actually keep shorter lines via auto-fill
 #+END_SRC
 Improve the looks of the modeline with Powerline.
 #+BEGIN_SRC emacs-lisp
-  (use-package powerline
-      :config
-      (setq powerline-default-separator 'utf-8)
-      (powerline-center-theme))
+(use-package spaceline)
+(use-package spaceline-all-the-icons 
+  :after spaceline
+  :config (spaceline-all-the-icons-theme))
 #+END_SRC
 
 Add the ability to use org-mode for D&D
@@ -525,7 +525,7 @@ Centaur mode is a nice looking way to see buffers as tabs
   ("C-c TAB" . centaur-tabs-forward-group))
 #+end_src
 
-Treemacs offers tree-based navigation
+Treemacs offers tree-based navigation.  Is it actually useful for me?  Not sure yet.
 #+begin_src emacs-lisp
 (use-package treemacs
   :ensure t
