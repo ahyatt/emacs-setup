@@ -136,6 +136,37 @@
 (use-package swiper
   :bind (("M-s" . swiper)))
 
+;; Before hydra because we use pretty-hydra-define in the hydra confg.
+(use-package major-mode-hydra
+  :bind
+  ("M-o" . major-mode-hydra)
+  :config
+  ;; Mode maps
+  (major-mode-hydra-define org-mode nil ("Movement"
+                                         (("u" org-up-element "up")
+                                          ("n" org-next-visible-heading "next visible heading")
+                                          ("j" (lambda () (interactive)
+                                                 (let ((org-goto-interface 'outline-path-completionp)
+                                                       (org-outline-path-complete-in-steps nil))
+                                                   (org-goto))) "jump")
+                                          ("l" org-next-link "next link")
+                                          ("L" org-previous-link "previous link")
+                                          ("b" org-next-block "next block")
+                                          ("B" org-prev-block "previous block"))
+                                         "Opening" (("o" org-open-at-point "open at point"))
+                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
+  (major-mode-hydra-bind emacs-lisp-mode "Eval"
+    ("b" eval-buffer "eval buffer")
+    (";" eval-expression "eval expression")
+    ("d" eval-defun "eval defun")
+    ("D" edebug-defun "edebug defun")
+    ("e" eval-last-sexp "eval last sexp")
+    ("E" edebug-eval-last-sexp "edebug last sexp")
+    ("i" ielm "ielm"))
+  (major-mode-hydra-bind eshell-mode "Movement"
+    ("h" helm-eshell-history :exit t)
+    ("p" helm-eshell-prompts :exit t)))
+
 (use-package hydra
   :config
   ;; define everything here
@@ -230,49 +261,25 @@ _r_: resume
     ("M" helm-all-mark-rings "mark rings" :exit t)
     ("R" helm-register "register" :exit t)
     ("s" helm-swoop "swoop" :exit t))
-  (defhydra hydra-all ()
-    ("j" hydra-jumps/body "jumps" :exit t)
-    ("s" hydra-structural/body  "structural" :exit t)
-    ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
-    ("e" hydra-expand/body "expand region" :exit t)
-    ("m" hydra-mail/body "mail" :exit t)
-    ("h" hydra-helm/body "helm" :exit t)
-    ("E" hydra-flycheck/body "errors" :exit t)
-    ("o" hydra-org-main/body "org" :exit t))
+  (pretty-hydra-define hydra-all
+    (:quit-key "q" :title "All" :pre (centaur-tabs-local-mode))
+    ("Applications"
+     (("m" hydra-mail/body "mail" :exit t)
+      ("o" hydra-org-main/body "org" :exit t))
+     "Editing"
+     (("s" hydra-structural/body  "structural" :exit t)
+      ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
+      ("e" hydra-expand/body "expand region" :exit t))
+     "Movement"
+     (("j" hydra-jumps/body "jumps" :exit t)
+      ("E" hydra-flycheck/body "errors" :exit t))
+     "Misc"
+     (("h" hydra-helm/body "helm" :exit t))
+     ))
 
   (global-set-key (kbd "M-p") 'hydra-all/body)
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
-
-(use-package major-mode-hydra
-  :bind
-  ("M-o" . major-mode-hydra)
-  :config
-  ;; Mode maps
-  (major-mode-hydra-define org-mode nil ("Movement"
-                                         (("u" org-up-element "up")
-                                          ("n" org-next-visible-heading "next visible heading")
-                                          ("j" (lambda () (interactive)
-                                                 (let ((org-goto-interface 'outline-path-completionp)
-                                                       (org-outline-path-complete-in-steps nil))
-                                                   (org-goto))) "jump")
-                                          ("l" org-next-link "next link")
-                                          ("L" org-previous-link "previous link")
-                                          ("b" org-next-block "next block")
-                                          ("B" org-prev-block "previous block"))
-                                         "Opening" (("o" org-open-at-point "open at point"))
-                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
-  (major-mode-hydra-bind emacs-lisp-mode "Eval"
-    ("b" eval-buffer "eval buffer")
-    (";" eval-expression "eval expression")
-    ("d" eval-defun "eval defun")
-    ("D" edebug-defun "edebug defun")
-    ("e" eval-last-sexp "eval last sexp")
-    ("E" edebug-eval-last-sexp "edebug last sexp")
-    ("i" ielm "ielm"))
-  (major-mode-hydra-bind eshell-mode "Movement"
-    ("h" helm-eshell-history :exit t)
-    ("p" helm-eshell-prompts :exit t)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -357,8 +364,9 @@ _r_: resume
 (set-face-attribute 'default nil :family "Iosevka" :height 130)
 (set-face-attribute 'fixed-pitch nil :family "Iosevka")
 (set-face-attribute 'variable-pitch nil :family "EtBembo")
-(dolist (hook '(text-mode-hook org-mode-hook))
-  (add-hook hook (lambda () (variable-pitch-mode 1))))
+(dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
+  (when (boundp hook)
+    (add-hook hook (lambda () (variable-pitch-mode 1)))))
 (use-package poet-theme)
 
 (use-package org-bullets
@@ -486,8 +494,8 @@ _r_: resume
         ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil)
-          (org-agenda-files '("$HOME/org/work.org" "$HOME/org/journal.org")))))
-      org-agenda-files '("$HOME/org/work.org" "$HOME/org/journal.org")
+          (org-agenda-files '("~/org/work.org" "~/org/journal.org")))))
+      org-agenda-files '("~/org/work.org" "~/org/journal.org")
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled t
       org-agenda-dim-blocked-tasks 'invisible
@@ -513,11 +521,11 @@ _r_: resume
       org-clock-into-drawer nil
       org-clock-report-include-clocking-task t
       org-clock-history-length 20
-      org-archive-location "$HOME/org/journal.org::datetree/* Archived"
+      org-archive-location "~/org/journal.org::datetree/* Archived"
       org-use-property-inheritance t
       org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))
       org-agenda-clockreport-parameter-plist
-      '(:maxlevel 2 :link nil :scope ("$HOME/org/work.org"))
+      '(:maxlevel 2 :link nil :scope ("~/org/work.org"))
       org-refile-targets '((nil :maxlevel . 5))
       org-use-speed-commands t
       org-refile-targets '((nil . (:maxlevel . 3)))
