@@ -82,25 +82,37 @@
 (use-package helm
   :ensure t
   :bind (("M-x" . helm-M-x)
-         ("C-x C-f" . helm-find-files)
-         ("C-x f" . helm-recentf)
-         ("M-y" . helm-show-kill-ring)
-         ("M-i" . helm-mini)
-         ("C-x b" . helm-buffers-list))
+	 ("C-x C-f" . helm-find-files)
+	 ("C-x f" . helm-recentf)
+	 ("M-y" . helm-show-kill-ring)
+	 ("M-i" . helm-mini)
+	 ("C-x b" . helm-buffers-list))
   :config (progn
-            (require 'helm-config)
-            (setq helm-buffers-fuzzy-matching t)
-            (helm-mode 1)))
+	    (require 'helm-config)
+	    (setq helm-buffers-fuzzy-matching t)
+	    (helm-mode 1)))
 (use-package helm-proc)
 (use-package helm-flycheck)
 (use-package helm-notmuch)
 (use-package helm-swoop
   :ensure t
   :bind (("M-m" . helm-swoop)
-         ("M-M" . helm-swoop-back-to-last-point))
+	 ("M-M" . helm-swoop-back-to-last-point))
   :init
   (bind-key "M-m" 'helm-swoop-from-isearch isearch-mode-map))
 (use-package helm-org-rifle)
+
+(use-package helm-posframe
+  :config
+  (helm-posframe-enable)
+  (setq helm-posframe-parameters '((internal-border-width . 2) (left-fringe . 3)
+				   (right-fringe . 3))
+	helm-posframe-poshandler #'posframe-poshandler-frame-center
+	helm-posframe-width 150)
+  (add-hook 'helm-before-initialize-hook (lambda (&rest _) (setq helm-display-function
+								 (if (display-graphic-p)
+								     #'helm-posframe-display
+								   #'helm-default-display-buffer)))))
 
 (use-package winum
   :config (winum-mode 1))
@@ -141,6 +153,12 @@
   :bind
   ("M-o" . major-mode-hydra)
   :config
+  (advice-add 'hydra-show-hint :before
+              (lambda (&rest _)
+                (setq hydra-hint-display-type
+                      (if (display-graphic-p)
+                          'posframe
+                        'lv))))
   ;; Mode maps
   (major-mode-hydra-define org-mode nil ("Movement"
                                          (("u" org-up-element "up")
@@ -171,96 +189,117 @@
   :config
   ;; define everything here
 
-  (defhydra hydra-jumps ()
-    "
-^Jump visually^    ^Jump via minibuffer^   ^Jump & go^  
----------------------------------------------------------
-_j_: to word       _i_: to func heading      _u_: open url
-_l_: to line                               _k_: open link
-_c_: to char                               _b_: open bookmark
-_r_: resume
-"
-    ("j" avy-goto-word-1)
-    ("l" avy-goto-line)
-    ("c" avy-goto-char)
-    ("r" avy-resume)
-    ("u" ash/avy-open-url)
-    ("b" counsel-bookmark)
-    ("i" counsel-imenu)
-    ("k" counsel-ace-link)
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-structural ()
-    ("i" sp-change-inner "change inner")
-    ("k" sp-kill-sexp "kill sexp")
-    ("b" sp-beginning-of-sexp "beginning of sexp")
-    ("e" sp-end-of-sexp "end of sexp")
-    ("d" sp-down-sexp "down sexp")
-    ("e" sp-up-sexp "up sexp")
-    ("]" sp-slurp-hybrid-sexp "slurp")
-    ("/" sp-swap-enclusing-sexp "swap enclusing")
-    ("r" sp-rewrap-sexp "rewrap")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-multiple-cursors ()
-    ("l" mc/edit-lines "edit lines" :exit t)
-    ("n" mc/mark-next-like-this "mark next like this")
-    ("N" mc/skip-to-next-like-this "skip to next like this")
-    ("M-n" mc/unmark-next-like-this "unmark next like this")
-    ("p" mc/mark-previous-like-this "mark previous like this")
-    ("P" mc/skip-to-previous-like-this "skip to previous like this")
-    ("M-p" mc/unmark-previous-like-this "unmark previous like this")
-    ("s" mc/mark-all-in-region-regexp "mark all in region re" :exit t)
-    ("0" mc/insert-numbers "insert numbers" :exit t)
-    ("a" mc/mark-all-like-this "mark all" :exit t)
-    ("A" mc/insert-letters "insert letters" :exit t)
-    ("d" mc/mark-all-dwim "mark dwim" :exit t)
-    ("n" mc/mark-next-lines "mark next lines")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-expand ()
-    ("e" er/expand-region "expand")
-    ("c" er/contract-region "contract")
-    ("d" er/mark-defun "defun")
-    ("\"" er/mark-inside-quotes "quotes")
-    ("'" er/mark-inside-quotes "quotes")
-    ("p" er/mark-inside-pairs "pairs")
-    ("." er/mark-method-call "call")
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-flycheck ()
-    ("n" flymake-goto-next-error "next error")
-    ("p" flymake-goto-prev-error "previous error")
-    ("d" flymake-goto-diagnostic "diagnostic")
-    ("<" flycheck-prev-error "previous flycheck error")
-    (">" flycheck-next-error "next flycheck error")
-    ("l" flycheck-list-errors "list")
-    ("=" hydra-all/body "back" :exit t))
+  (pretty-hydra-define hydra-jumps ()
+    ("Jump visually"
+     (("j" avy-goto-word-1 "to word")
+      ("l" avy-goto-line "to line")
+      ("c" avy-goto-char "to char")
+      ("r" avy-resume "resume"))
+     "Jump via minibuffer"
+     (("i" counsel-imenu "via imenu"))
+     "Jump & go"
+     (("u" ash/avy-open-url "open url")
+      ("b" counsel-bookmark "open bookmark")
+      ("k" counsel-ace-link "open link"))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-structural ()
+    ("Change"
+     (("i" sp-change-inner "change inner")
+      ("k" sp-kill-sexp "kill sexp")
+      ("]" sp-slurp-hybrid-sexp "slurp")
+      ("/" sp-swap-enclusing-sexp "swap enclusing"))
+     "Movement"
+     (("b" sp-beginning-of-sexp "beginning of sexp")
+      ("e" sp-end-of-sexp "end of sexp")
+      ("d" sp-down-sexp "down sexp")
+      ("e" sp-up-sexp "up sexp"))
+     "Formatting"
+     (("r" sp-rewrap-sexp "rewrap"))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-multiple-cursors ()
+    ("Mark via region"
+     (("l" mc/edit-lines "edit lines" :exit t)
+      ("s" mc/mark-all-in-region-regexp "mark all in region re" :exit t))
+     "Mark"
+     (("a" mc/mark-all-like-this "mark all" :exit t)
+      ("d" mc/mark-all-dwim "mark dwim" :exit t))
+     "Mark incrementally"
+     (("n" mc/mark-next-like-this "mark next like this")
+      ("N" mc/skip-to-next-like-this "skip to next like this")
+      ("M-n" mc/unmark-next-like-this "unmark next like this")
+      ("p" mc/mark-previous-like-this "mark previous like this")
+      ("P" mc/skip-to-previous-like-this "skip to previous like this")
+      ("M-p" mc/unmark-previous-like-this "unmark previous like this")
+      ("n" mc/mark-next-lines "mark next lines"))
+     "Insert"
+     (("0" mc/insert-numbers "insert numbers" :exit t)
+      ("A" mc/insert-letters "insert letters" :exit t))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-expand ()
+    ("Expand/Contract"
+     (("e" er/expand-region "expand")
+      ("c" er/contract-region "contract"))
+     "Expand to..."
+     (("d" er/mark-defun "defun")
+      ("\"" er/mark-inside-quotes "quotes")
+      ("'" er/mark-inside-quotes "quotes")
+      ("p" er/mark-inside-pairs "pairs")
+      ("." er/mark-method-call "call"))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-flycheck ()
+    ("Movement"
+     (("n" flymake-goto-next-error "next error")
+      ("p" flymake-goto-prev-error "previous error")
+      ("d" flymake-goto-diagnostic "diagnostic")
+      ("<" flycheck-prev-error "previous flycheck error")
+      (">" flycheck-next-error "next flycheck error")
+      ("l" flycheck-list-errors "list"))
+     "Display"
+     (("." flymake-show-diagnostic "show diagnostic")
+      ("B" flymake-show-diagnostics-buffer "diagnostics buffers"))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
   ;; notmuch is too specialized to be set up here, it varies from machine to
   ;; machine. At some point I should break it down into the general &
   ;; specialized parts.
   (defun ash/inbox ()
     (interactive)
     (notmuch-search "tag:inbox" t))
-  (defhydra hydra-mail ()
-    ("i" ash/inbox "notmuch" :exit t)
-    ("n" notmuch-hello "notmuch")
-    ("s" notmuch-search "search")
-    ("h" helm-notmuch "helm search" :exit t)
-    ("c" notmuch-mua-new-mail "compose" :exit t)
-    ("=" hydra-all/body "back" :exit t))
-  (defhydra hydra-org-main ()
-    ("a" org-agenda "agenda")    
-    ("r" helm-org-rifle "rifle"))
-  (defhydra hydra-helm ()
-    ("c" helm-calcul-expression "calc" :exit t)
-    ("i" helm-semantic-or-imenu "imenu" :exit t)
-    ("m" helm-mini "mini" :exit t)
-    ("w" helm-man-woman "[wo]man" :exit t)
-    ("l" helm-locate "locate" :exit t)
-    ("o" helm-occur "occur" :exit t)
-    ("p" helm-browse-project "project" :exit t)
-    ("a" helm-apropos "apropos" :exit t)
-    ("r" helm-resume "resume" :exit t)
-    ("M" helm-all-mark-rings "mark rings" :exit t)
-    ("R" helm-register "register" :exit t)
-    ("s" helm-swoop "swoop" :exit t))
+  (pretty-hydra-define hydra-mail ()
+    ("Search"
+     (("s" notmuch-search "search" :exit t)
+      ("h" helm-notmuch "helm search" :exit t))
+     "Application"
+     (("n" notmuch-hello "notmuch" :exit t)
+      ("i" ash/inbox "notmuch" :exit t)
+      ("c" notmuch-mua-new-mail "compose" :exit t))
+     "Misc"
+     (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-org-main ()
+    ("Misc"
+     (("a" org-agenda "agenda")    
+      ("r" helm-org-rifle "rifle"))))
+  (pretty-hydra-define hydra-helm ()
+    ("Applications"
+     (("c" helm-calcul-expression "calc" :exit t)
+      ("w" helm-man-woman "[wo]man" :exit t)
+      ("l" helm-locate "locate" :exit t)
+      ("a" helm-apropos "apropos" :exit t))
+     "In-Buffer"
+     (("i" helm-semantic-or-imenu "imenu" :exit t)
+      ("o" helm-occur "occur" :exit t)
+      ("M" helm-all-mark-rings "mark rings" :exit t)
+      ("s" helm-swoop "swoop" :exit t))
+     "Switching Buffers"
+     (("m" helm-mini "mini" :exit t)
+      ("p" helm-browse-project "project" :exit t))
+     "Other"
+     (("r" helm-resume "resume" :exit t)
+      ("R" helm-register "register" :exit t))))
   (pretty-hydra-define hydra-all
     (:quit-key "q" :title "All" :pre (centaur-tabs-local-mode))
     ("Applications"
@@ -388,7 +427,22 @@ _r_: resume
 (use-package spaceline)
 (use-package spaceline-all-the-icons 
   :after spaceline
-  :config (spaceline-all-the-icons-theme))
+  :config
+  (defun ash/flymake-num-severity (severity)
+    (count-if (lambda (i) (= (warning-numeric-level severity) (flymake--severity (flymake-diagnostic-type i)))) issues))
+  (defun ash/flymake-status ()
+    (let* ((issues (flymake-diagnostics))
+           (num-note (ash/flymake-num-severity :debug))
+           (num-error (ash/flymake-num-severity :error))
+           (num-warning (ash/flymake-num-severity :warning))
+           (text-and-face (cond ((null issues) `(("✔ No Issues" . (:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'success)))))
+                                (t (list (cons (number-to-string num-error) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'error)))
+                                         (cons (number-to-string num-warning) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'warning)))
+                                         (cons (number-to-string num-note) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'warning))))))))
+      (mapconcat (lambda (c) (propertize (car c) 'face (cdr c) 'display '(raise 0.1))) text-and-face "|")))
+  (spaceline-define-segment ash/flymake-segment
+    (ash/flymake-status))
+  (spaceline-all-the-icons-theme 'ash/flymake-segment))
 
 (use-package emacs-org-dnd
   :disabled
@@ -494,8 +548,8 @@ _r_: resume
         ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil)
-          (org-agenda-files '("~/org/work.org" "~/org/journal.org")))))
-      org-agenda-files '("~/org/work.org" "~/org/journal.org")
+          (org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))))))
+      org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled t
       org-agenda-dim-blocked-tasks 'invisible
@@ -557,8 +611,8 @@ _r_: resume
   (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
 (general-define-key :keymaps 'org-mode-map
-                    :predicate '(string-equal "emacs.org" (buffer-name))
-                    "C-c t" 'ash/tangle-config)
+		    :predicate '(string-equal "emacs.org" (buffer-name))
+		    "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
