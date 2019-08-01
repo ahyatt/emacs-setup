@@ -29,12 +29,13 @@
  help-window-select t                             ; Focus new help windows when opened
  indent-tabs-mode nil                             ; Stop using tabs to indent
  inhibit-startup-screen t                         ; Disable start-up screen
- initial-scratch-message ""                       ; Empty the initial *scratch* buffer
+ initial-scratch-message ""                        ; Empty the initial *scratch* buffer
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
- reb-re-syntax 'string                            ; No double blacklashes in re-builder 
+ reb-re-syntax 'string                            ; No double blacklashes in re-builder
  recenter-positions '(5 top bottom)               ; Set re-centering positions
+ redisplay-dont-pause t                           ; As recommended by Mastering Emacs
  scroll-conservatively most-positive-fixnum       ; Always scroll by one line.
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
@@ -43,6 +44,7 @@
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
  tab-width 4                                      ; Set width for tabs
+ tooltip-use-echo-area t                          ; Good for non-mouse-users
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
@@ -548,8 +550,8 @@
         ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil)
-          (org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))))))
-      org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))
+          (org-agenda-files '("~/org/work.org" "~/org/journal.org")))))
+      org-agenda-files '("~/org/work.org" "~/org/journal.org")
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled t
       org-agenda-dim-blocked-tasks 'invisible
