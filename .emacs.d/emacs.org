@@ -1,7 +1,7 @@
 * Bootstrapping
 Let's start by making sure we have MELPA stable, which is a
 requirement for a lot that follows.
-pp
+
 Code comes from http://melpa.org/#/getting-started.
 #+BEGIN_SRC emacs-lisp
   (require 'package)
@@ -55,8 +55,9 @@ the same file.
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
- reb-re-syntax 'string                            ; No double blacklashes in re-builder 
+ reb-re-syntax 'string                            ; No double blacklashes in re-builder
  recenter-positions '(5 top bottom)               ; Set re-centering positions
+ redisplay-dont-pause t                           ; As recommended by Mastering Emacs
  scroll-conservatively most-positive-fixnum       ; Always scroll by one line.
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
@@ -65,6 +66,7 @@ the same file.
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
  tab-width 4                                      ; Set width for tabs
+ tooltip-use-echo-area t                          ; Good for non-mouse-users
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
