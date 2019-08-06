@@ -19,6 +19,8 @@
 (setq-default
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
  auto-window-vscroll nil                          ; Lighten vertical scroll
+ compilation-ask-about-save nil                   ; Don't save anything, don't ask
+ compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
@@ -134,6 +136,8 @@
       (browse-url-at-point))))
 
 (use-package counsel)
+
+(use-package ace-link)
 
 (use-package multiple-cursors
   :pin melpa
@@ -275,14 +279,18 @@
       ("h" helm-notmuch "helm search" :exit t))
      "Application"
      (("n" notmuch-hello "notmuch" :exit t)
-      ("i" ash/inbox "notmuch" :exit t)
+      ("i" ash/inbox "inbox" :exit t)
       ("c" notmuch-mua-new-mail "compose" :exit t))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-org-main ()
     ("Misc"
      (("a" org-agenda "agenda")    
-      ("r" helm-org-rifle "rifle"))))
+      ("r" helm-org-rifle "rifle")
+      ("c" org-capture "capture"))
+     "Links"
+     (("s" org-store-link "store")
+      ("p" ash/org-paste-link "paste"))))
   (pretty-hydra-define hydra-helm ()
     ("Applications"
      (("c" helm-calcul-expression "calc" :exit t)
@@ -385,6 +393,8 @@
 
 (use-package company
   :general ("C-c ." 'company-complete)
+  :config
+  (setq company-global-modes '(c-mode c++-mode go-mode java-mode))
   :init
   (add-hook 'after-init-hook 'global-company-mode)
   (setq company-minimum-prefix-length 0))
@@ -406,7 +416,9 @@
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
-(use-package poet-theme)
+;; (use-package poet-theme)
+(use-package doom-themes
+  :config (load-theme 'doom-city-lights t))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
