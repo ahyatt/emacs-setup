@@ -31,7 +31,7 @@
  help-window-select t                             ; Focus new help windows when opened
  indent-tabs-mode nil                             ; Stop using tabs to indent
  inhibit-startup-screen t                         ; Disable start-up screen
- initial-scratch-message ""                        ; Empty the initial *scratch* buffer
+ initial-scratch-message ""                       ; Empty the initial *scratch* buffer
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
@@ -106,20 +106,13 @@
   (bind-key "M-m" 'helm-swoop-from-isearch isearch-mode-map))
 (use-package helm-org-rifle)
 
-(use-package helm-posframe
-  :config
-  (helm-posframe-enable)
-  (setq helm-posframe-parameters '((internal-border-width . 2) (left-fringe . 3)
-				   (right-fringe . 3))
-	helm-posframe-poshandler #'posframe-poshandler-frame-center
-	helm-posframe-width 150)
-  (add-hook 'helm-before-initialize-hook (lambda (&rest _) (setq helm-display-function
-								 (if (display-graphic-p)
-								     #'helm-posframe-display
-								   #'helm-default-display-buffer)))))
-
 (use-package winum
-  :config (winum-mode 1))
+  :config (winum-mode 1)
+  :general
+  ("M-1" 'winum-select-window-1)
+  ("M-2" 'winum-select-window-2)
+  ("M-3" 'winum-select-window-3)
+  ("M-4" 'winum-select-window-4))
 
 (use-package avy
   :config
@@ -159,12 +152,6 @@
   :bind
   ("M-o" . major-mode-hydra)
   :config
-  (advice-add 'hydra-show-hint :before
-              (lambda (&rest _)
-                (setq hydra-hint-display-type
-                      (if (display-graphic-p)
-                          'posframe
-                        'lv))))
   ;; Mode maps
   (major-mode-hydra-define org-mode nil ("Movement"
                                          (("u" org-up-element "up")
@@ -178,6 +165,7 @@
                                           ("b" org-next-block "next block")
                                           ("B" org-prev-block "previous block"))
                                          "Opening" (("o" org-open-at-point "open at point"))
+                                         "Clock" (("p" org-pomodoro "Start pomodoro"))
                                          "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
   (major-mode-hydra-bind emacs-lisp-mode "Eval"
     ("b" eval-buffer "eval buffer")
@@ -261,7 +249,7 @@
      (("n" flymake-goto-next-error "next error")
       ("p" flymake-goto-prev-error "previous error")
       ("d" flymake-goto-diagnostic "diagnostic")
-      ("<" flycheck-prev-error "previous flycheck error")
+      ("<" flycheck-previous-error "previous flycheck error")
       (">" flycheck-next-error "next flycheck error")
       ("l" flycheck-list-errors "list"))
      "Display"
@@ -311,7 +299,7 @@
      (("r" helm-resume "resume" :exit t)
       ("R" helm-register "register" :exit t))))
   (pretty-hydra-define hydra-all
-    (:quit-key "q" :title "All" :pre (centaur-tabs-local-mode))
+    (:quit-key "q" :title "All")
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t))
@@ -337,7 +325,7 @@
   (yas-reload-all)
   (yas-global-mode 1))
 
-(use-package magit)
+(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
 (use-package smartparens
   :diminish ""
@@ -412,9 +400,9 @@
          ("C-h h" . helpful-at-point)
          ("C-h c" . helpful-command)))
 
-(set-face-attribute 'default nil :family "Iosevka" :height 130)
-(set-face-attribute 'fixed-pitch nil :family "Iosevka")
-(set-face-attribute 'variable-pitch nil :family "EtBembo")
+(set-face-attribute 'default nil :family "FiraCode" :height 160)
+(set-face-attribute 'fixed-pitch nil :family "FiraCode")
+(set-face-attribute 'variable-pitch nil :family "LibreBaskerville")
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
@@ -456,74 +444,25 @@
       (mapconcat (lambda (c) (propertize (car c) 'face (cdr c) 'display '(raise 0.1))) text-and-face "|")))
   (spaceline-define-segment ash/flymake-segment
     (ash/flymake-status))
-  (spaceline-all-the-icons-theme 'ash/flymake-segment))
+  (require 'spaceline-segments)  ;; where org-pomodoro is defined
+  (spaceline-all-the-icons-theme 'ash/flymake-segment 'org-pomodoro))
 
-(use-package emacs-org-dnd
-  :disabled
-  :ensure nil
-  :load-path "~/src/emacs-org-dnd"
-  :config (require 'ox-dnd))
-
-(use-package centaur-tabs
-  :demand
-  :config
-  (centaur-tabs-mode t)
-  (centaur-tabs-headline-match)
-  (setq centaur-tabs-set-modified-marker t
-        centaur-tabs-modified-marker "●"
-        centaur-tabs-cycle-scope 'tabs
-        centaur-tabs-height 30
-        centaur-tabs-set-icons t)
-  :bind
-  ("C-TAB" . centaur-tabs-forward)
-  ("C-M-TAB" . centaur-tabs-backward)
-  ("C-c TAB" . centaur-tabs-forward-group))
-
-(use-package treemacs
-  :ensure t
-  :defer t
-  :init
-  (with-eval-after-load 'winum
-    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-  :config
-  (progn
-    (treemacs-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode t)
-    (pcase (cons (not (null (executable-find "git")))
-                 (not (null (treemacs--find-python3))))
-      (`(t . t)
-       (treemacs-git-mode 'deferred))
-      (`(t . _)
-       (treemacs-git-mode 'simple))))
-  :bind
-  (:map global-map
-        ("M-0"       . treemacs-select-window)
-        ("C-x t 1"   . treemacs-delete-other-windows)
-        ("C-x t t"   . treemacs)
-        ("C-x t B"   . treemacs-bookmark)
-        ("C-x t C-t" . treemacs-find-file)
-        ("C-x t M-t" . treemacs-find-tag)))
-
-(use-package treemacs-projectile
-  :after treemacs projectile
-  :ensure t)
-
-(use-package treemacs-icons-dired
-  :after treemacs dired
-  :ensure t
-  :config (treemacs-icons-dired-mode))
-
-(use-package treemacs-magit
-  :after treemacs magit
-  :ensure t)
+(defun ash-goto-agenda (&optional _)
+  (interactive)
+  (let ((buf (get-buffer "*Org Agenda(l)*")))
+    (if buf
+        (progn (switch-to-buffer buf)
+               (delete-other-windows))
+      (org-agenda))))
 
 (use-package org
   :ensure org-plus-contrib
   :config
   (require 'org-checklist)
   :general
-  ("C-c a" 'org-agenda))
+  ("C-c a" 'ash-goto-agenda)
+  (:keymaps 'org-agenda-mode-map
+            "P" 'org-pomodoro))
 
 (require 'org-tempo)
 
@@ -562,8 +501,8 @@
         ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil)
-          (org-agenda-files '("~/org/work.org" "~/org/journal.org")))))
-      org-agenda-files '("~/org/work.org" "~/org/journal.org")
+          (org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))))))
+      org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled t
       org-agenda-dim-blocked-tasks 'invisible
@@ -589,7 +528,7 @@
       org-clock-into-drawer nil
       org-clock-report-include-clocking-task t
       org-clock-history-length 20
-      org-archive-location "~/org/journal.org::datetree/* Archived"
+      org-archive-location (expand-file-name "~/org/journal.org::datetree/* Archived")
       org-use-property-inheritance t
       org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))
       org-agenda-clockreport-parameter-plist
@@ -609,15 +548,45 @@
          "* %a%?\n%u\n%i")
         ("j" "Journal" entry
          (file+datetree "journal.org")
-         "* %T %?")
+         "* %T %?\n#+BEGIN: clocktable :maxlevel 4 :emphasize nil :block today :scope agenda\n#+END: clocktable")
+        ("z" "Clocked note" plain
+         (clock)
+         " %a"
+         :empty-lines-before 1)
         ("t" "Todo" entry
          (file+headline "work.org" "Inbox")
          "* TODO %?\n%a")
+        ("s" "Remember for status update" item (id "d69dfc30-86ca-47b6-aabb-de0658b8d0a4")
+         "")
         ("a" "Act on email" entry
          (file+headline "work.org" "Inbox")
          "* TODO %?, Link: %a")))
 
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
+
+(defun org-agenda-show-new-time (marker stamp &optional prefix)
+  "Show new date stamp via text properties."
+  ;; We use text properties to make this undoable
+  (let ((inhibit-read-only t))
+    (setq stamp (concat prefix " => " stamp " "))
+    (save-excursion
+      (goto-char (point-max))
+      (while (not (bobp))
+        (message "Agenda line: %d point: %d marker: %s" (current-line) (point) (org-get-at-bol 'org-marker))
+	    (when (equal marker (org-get-at-bol 'org-marker))
+          (remove-text-properties (point-at-bol) (point-at-eol) '(display nil))
+          (let ((buffer-invisibility-spec nil))
+            (org-move-to-column (- (window-width) (length stamp)) t))
+          (add-text-properties
+	       (1- (point)) (point-at-eol)
+	       (list 'display (org-add-props stamp nil
+			                'face '(secondary-selection default))))
+	      (beginning-of-line 1))
+	    (beginning-of-line 0)))))
+
+(use-package org-pomodoro)
+
+(use-package org-present)
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
@@ -632,3 +601,5 @@
   "Edit config.org"
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
+
+(load "~/.emacs.d/google.el")

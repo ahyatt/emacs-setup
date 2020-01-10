@@ -3,8 +3,10 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        delete-horizontal-space
         forward-sexp
         sp-backward-delete-char
+        sp-delete-char
         sp-kill-region
         sp-kill-word
         ))
@@ -12,6 +14,8 @@
 (setq mc/cmds-to-run-once
       '(
         helm-M-x
+        hydra-all/body
+        hydra-all/hydra-multiple-cursors/body-and-exit
         hydra-multiple-cursors/mc/edit-lines-and-exit
         hydra-multiple-cursors/mc/insert-letters-and-exit
         hydra-multiple-cursors/mc/mark-all-dwim-and-exit
@@ -21,5 +25,6 @@
         hydra-multiple-cursors/mc/mark-next-lines
         hydra-multiple-cursors/mc/mark-next-lines-and-exit
         hydra-multiple-cursors/mc/mark-previous-like-this
+        major-mode-hydra
         mc/mark-next-lines
         ))
