@@ -10,6 +10,19 @@
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
 (when window-system
   (blink-cursor-mode 0)                           ; Disable the cursor blinking
   (scroll-bar-mode 0)                             ; Disable the scroll bar
@@ -130,10 +143,6 @@
       (ash/avy-goto-url)
       (browse-url-at-point))))
 
-(use-package counsel)
-
-(use-package ace-link)
-
 (use-package multiple-cursors
   :pin melpa
   :general)
@@ -190,11 +199,10 @@
       ("c" avy-goto-char "to char")
       ("r" avy-resume "resume"))
      "Jump via minibuffer"
-     (("i" counsel-imenu "via imenu"))
+     (("i" helm-imenu "via imenu"))
      "Jump & go"
      (("u" ash/avy-open-url "open url")
-      ("b" counsel-bookmark "open bookmark")
-      ("k" counsel-ace-link "open link"))
+      ("b" helm-bookmarks "open bookmark"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
@@ -314,7 +322,7 @@
      (("h" hydra-helm/body "helm" :exit t))
      ))
 
-  (global-set-key (kbd "M-p") 'hydra-all/body)
+  (global-set-key (kbd "M-[") 'hydra-all/body)
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
 
@@ -331,10 +339,6 @@
   :diminish ""
   :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
   :config (require 'smartparens-config))
-
-(use-package aggressive-indent
-  :ensure t
-  :config (global-aggressive-indent-mode))
 
 (use-package git-gutter
   :ensure t
@@ -384,7 +388,7 @@
 (use-package company
   :general ("C-c ." 'company-complete)
   :config
-  (setq company-global-modes '(c-mode c++-mode go-mode java-mode))
+  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode))
   :init
   (add-hook 'after-init-hook 'global-company-mode)
   (setq company-minimum-prefix-length 0))
@@ -500,9 +504,7 @@
                                       (tags-todo "-someday/!-WAITING-EXTREVIEW")))
         ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
          ((org-agenda-overriding-header "Last week's completed TODO: ")
-          (org-agenda-skip-archived-trees nil)
-          (org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))))))
-      org-agenda-files (mapcar #'expand-file-name '("~/org/work.org" "~/org/journal.org"))
+          (org-agenda-skip-archived-trees nil))))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled t
       org-agenda-dim-blocked-tasks 'invisible
@@ -528,11 +530,8 @@
       org-clock-into-drawer nil
       org-clock-report-include-clocking-task t
       org-clock-history-length 20
-      org-archive-location (expand-file-name "~/org/journal.org::datetree/* Archived")
       org-use-property-inheritance t
-      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))
-      org-agenda-clockreport-parameter-plist
-      '(:maxlevel 2 :link nil :scope ("~/org/work.org"))
+      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))     
       org-refile-targets '((nil :maxlevel . 5))
       org-use-speed-commands t
       org-refile-targets '((nil . (:maxlevel . 3)))
@@ -548,45 +547,42 @@
          "* %a%?\n%u\n%i")
         ("j" "Journal" entry
          (file+datetree "journal.org")
-         "* %T %?\n#+BEGIN: clocktable :maxlevel 4 :emphasize nil :block today :scope agenda\n#+END: clocktable")
+         "* %T %?\n#+BEGIN: clocktable :maxlevel 4 :emphasize nil :block today :scope agenda\n#+END: clocktable")        
         ("z" "Clocked note" plain
          (clock)
          " %a"
-         :empty-lines-before 1)
-        ("t" "Todo" entry
-         (file+headline "work.org" "Inbox")
-         "* TODO %?\n%a")
-        ("s" "Remember for status update" item (id "d69dfc30-86ca-47b6-aabb-de0658b8d0a4")
-         "")
-        ("a" "Act on email" entry
-         (file+headline "work.org" "Inbox")
-         "* TODO %?, Link: %a")))
+         :empty-lines-before 1)))
+(load "~/src/ob-racket/ob-racket.el")
+(setq org-babel-command:racket "/usr/local/bin/racket")
 
-(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
-
-(defun org-agenda-show-new-time (marker stamp &optional prefix)
-  "Show new date stamp via text properties."
-  ;; We use text properties to make this undoable
-  (let ((inhibit-read-only t))
-    (setq stamp (concat prefix " => " stamp " "))
-    (save-excursion
-      (goto-char (point-max))
-      (while (not (bobp))
-        (message "Agenda line: %d point: %d marker: %s" (current-line) (point) (org-get-at-bol 'org-marker))
-	    (when (equal marker (org-get-at-bol 'org-marker))
-          (remove-text-properties (point-at-bol) (point-at-eol) '(display nil))
-          (let ((buffer-invisibility-spec nil))
-            (org-move-to-column (- (window-width) (length stamp)) t))
-          (add-text-properties
-	       (1- (point)) (point-at-eol)
-	       (list 'display (org-add-props stamp nil
-			                'face '(secondary-selection default))))
-	      (beginning-of-line 1))
-	    (beginning-of-line 0)))))
+(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
+                                                         (racket . t)))
 
 (use-package org-pomodoro)
 
-(use-package org-present)
+(use-package org-roam
+      :hook 
+      (after-init . org-roam-mode)
+      :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
+      :custom
+      (org-roam-directory "~/Google Drive/org/notes/")
+      :bind (:map org-roam-mode-map
+              (("C-c n l" . org-roam)
+               ("C-c n f" . org-roam-find-file)
+               ("C-c n b" . org-roam-switch-to-buffer)
+               ("C-c n g" . org-roam-show-graph))
+              :map org-mode-map
+              (("C-c n i" . org-roam-insert))))
+
+(use-package deft
+  :after org
+  :bind
+  ("C-c n d" . deft)
+  :custom
+  (deft-recursive t)
+  (deft-use-filter-string-for-filename t)
+  (deft-default-extension "org")
+  (deft-directory "~/Google Drive/org/notes/"))
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
@@ -594,12 +590,12 @@
   (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
 (general-define-key :keymaps 'org-mode-map
-		    :predicate '(string-equal "emacs.org" (buffer-name))
-		    "C-c t" 'ash/tangle-config)
+            :predicate '(string-equal "emacs.org" (buffer-name))
+            "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 
-(load "~/.emacs.d/google.el")
+(setq epa-pinentry-mode 'loopback)
