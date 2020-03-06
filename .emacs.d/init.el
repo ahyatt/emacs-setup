@@ -304,7 +304,8 @@
      (("m" helm-mini "mini" :exit t)
       ("p" helm-browse-project "project" :exit t))
      "Other"
-     (("r" helm-resume "resume" :exit t)
+     (("g" helm-do-grep-ag "grep" :exit t)
+      ("r" helm-resume "resume" :exit t)
       ("R" helm-register "register" :exit t))))
   (pretty-hydra-define hydra-all
     (:quit-key "q" :title "All")
@@ -393,6 +394,9 @@
   (add-hook 'after-init-hook 'global-company-mode)
   (setq company-minimum-prefix-length 0))
 
+(use-package company-posframe
+  :config (company-posframe-mode 1))
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
@@ -430,6 +434,11 @@
 
 (add-hook 'org-mode-hook #'auto-fill-mode)
 
+(use-package messages-are-flowing
+  :config
+  (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
+  (add-hook 'message-mode-hook 'visual-line-mode))
+
 (use-package spaceline)
 (use-package spaceline-all-the-icons 
   :after spaceline
@@ -459,8 +468,7 @@
                (delete-other-windows))
       (org-agenda))))
 
-(use-package org
-  :ensure org-plus-contrib
+(use-package org-plus-contrib
   :config
   (require 'org-checklist)
   :general
@@ -483,7 +491,7 @@
       org-agenda-span 'day
       org-agenda-include-diary t
       org-deadline-warning-days 1
-      org-clock-idle-time 10
+      org-clock-idle-time 30
       org-agenda-sticky t
       org-agenda-start-with-log-mode nil
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"

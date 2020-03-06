@@ -379,7 +379,8 @@ Hydra is useful for doing lots of things in succession.
      (("m" helm-mini "mini" :exit t)
       ("p" helm-browse-project "project" :exit t))
      "Other"
-     (("r" helm-resume "resume" :exit t)
+     (("g" helm-do-grep-ag "grep" :exit t)
+      ("r" helm-resume "resume" :exit t)
       ("R" helm-register "register" :exit t))))
   (pretty-hydra-define hydra-all
     (:quit-key "q" :title "All")
@@ -491,6 +492,12 @@ Company mode is a standard for symbol completion.
   (setq company-minimum-prefix-length 0))
 #+END_SRC
 
+Plus when company is used in a variable-pitch buffer, it's important that it
+still be fixed width.  For that you need posframes.
+#+begin_src emacs-lisp
+(use-package company-posframe
+  :config (company-posframe-mode 1))
+#+end_src
 ** Help
 
 Which-key pops up keys in a buffer when you are in the middle of a keystroke.
@@ -548,6 +555,16 @@ Also, long lines are bad.  I prefer to actually keep shorter lines via auto-fill
 #+BEGIN_SRC emacs-lisp
   (add-hook 'org-mode-hook #'auto-fill-mode)
 #+END_SRC
+
+But long line in emails are necessary, so let's make sure the right things
+happen
+#+begin_src emacs-lisp
+(use-package messages-are-flowing
+  :config
+  (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
+  (add-hook 'message-mode-hook 'visual-line-mode))
+#+end_src
+
 Improve the looks of the modeline with Powerline.
 #+BEGIN_SRC emacs-lisp
 (use-package spaceline)
@@ -582,8 +599,7 @@ Improve the looks of the modeline with Powerline.
                (delete-other-windows))
       (org-agenda))))
 
-(use-package org
-  :ensure org-plus-contrib
+(use-package org-plus-contrib
   :config
   (require 'org-checklist)
   :general
@@ -606,7 +622,7 @@ Improve the looks of the modeline with Powerline.
       org-agenda-span 'day
       org-agenda-include-diary t
       org-deadline-warning-days 1
-      org-clock-idle-time 10
+      org-clock-idle-time 30
       org-agenda-sticky t
       org-agenda-start-with-log-mode nil
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
@@ -681,12 +697,13 @@ Improve the looks of the modeline with Powerline.
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
                                                          (racket . t)))
 #+END_SRC
+** Other org related packages
 *** org-pomodoro
 To me, org-pomodoro is very effective to maintain focus.
 #+BEGIN_SRC emacs-lisp
   (use-package org-pomodoro)
 #+END_SRC
-** Org roam
+*** Org roam
 #+begin_src emacs-lisp
 (use-package org-roam
       :hook 
@@ -715,7 +732,6 @@ And if you're using org-roam you probably want to use org-deft to search it.
   (deft-default-extension "org")
   (deft-directory "~/Google Drive/org/notes/"))
 #+end_src
->>>>>>> Add org-roam and deft, remove various other packages.
 * Tangling-related
 
 We need to add some functions to make dealing with this file easier.

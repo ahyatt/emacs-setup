@@ -3,10 +3,21 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        backward-sexp
+        c-electric-colon
+        c-electric-delete-forward
+        c-electric-paren
+        dabbrev-expand
         delete-horizontal-space
+        down-list
         forward-sexp
+        org-beginning-of-line
+        org-end-of-line
+        org-force-self-insert
+        org-self-insert-command
         sp-backward-delete-char
         sp-delete-char
+        sp-kill-hybrid-sexp
         sp-kill-region
         sp-kill-word
         ))
@@ -27,4 +38,7 @@
         hydra-multiple-cursors/mc/mark-previous-like-this
         major-mode-hydra
         mc/mark-next-lines
+        org-cycle
+        phi-search-backward
+        toggle-input-method
         ))
