@@ -23,6 +23,9 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
+(straight-use-package 'use-package)
+(setq straight-use-package-by-default t)
+
 (when window-system
   (blink-cursor-mode 0)                           ; Disable the cursor blinking
   (scroll-bar-mode 0)                             ; Disable the scroll bar

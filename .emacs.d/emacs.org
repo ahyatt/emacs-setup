@@ -33,6 +33,17 @@ We use use-package so before first running, install this with `package-install`.
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 #+end_src
+
+Finally, let's switch to the straight vesion of use-package, so everything is
+consistent (otherwise straight could be trying to use packages that overlap with
+the ELPA packages that use-package straight).
+
+#+begin_src emacs-lisp
+(straight-use-package 'use-package)
+(setq straight-use-package-by-default t)
+
+#+end_src
+
 * Better defaults
 
 Most of this is taken from
