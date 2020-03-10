@@ -255,6 +255,19 @@
       ("." er/mark-method-call "call"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
+  (pretty-hydra-define hydra-roam ()
+    ("Navigation"
+     (("o" org-roam-find-file "open" :exit t)
+      ("O" org-roam-open-at-point "open at point" :exit t)
+      ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
+      ("s" deft "search" :exit t)
+      ("t" org-roam-today "today" :exit t)
+      ("y" org-roam-yesterday "yesterday" :exit t)
+      ("d" org-roam-date "date" :exit t))
+    "Sidebar"
+    (("r" org-roam "toggle"))
+    "Content"
+    (("i" org-roam-insert "insert" :exit t))))
   (pretty-hydra-define hydra-flycheck ()
     ("Movement"
      (("n" flymake-goto-next-error "next error")
@@ -575,8 +588,6 @@
       :hook 
       (after-init . org-roam-mode)
       :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
-      :custom
-      (org-roam-directory "~/Google Drive/org/notes/")
       :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
@@ -593,7 +604,7 @@
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org")
-  (deft-directory "~/Google Drive/org/notes/"))
+  (deft-directory org-roam-directory))
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
