@@ -413,6 +413,15 @@
 (use-package company-posframe
   :config (company-posframe-mode 1))
 
+(use-package twittering-mode
+  :config
+  (twittering-enable-unread-status-notifier)
+  (setq twittering-use-master-password t)
+  (add-hook 'twittering-edit-mode-hook
+          (lambda ()
+            (auto-fill-mode -1)
+            (visual-line-mode))))
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
@@ -424,9 +433,6 @@
          ("C-h h" . helpful-at-point)
          ("C-h c" . helpful-command)))
 
-(set-face-attribute 'default nil :family "FiraCode" :height 160)
-(set-face-attribute 'fixed-pitch nil :family "FiraCode")
-(set-face-attribute 'variable-pitch nil :family "LibreBaskerville")
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
@@ -475,6 +481,12 @@
     (ash/flymake-status))
   (require 'spaceline-segments)  ;; where org-pomodoro is defined
   (spaceline-all-the-icons-theme 'ash/flymake-segment 'org-pomodoro))
+
+(use-package highlight-indent-guides
+  :hook (prog-mode org-mode)
+  :config
+  (setq highlight-indent-guides-responsive 'top
+        highlight-indent-guides-method 'character))
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
