@@ -327,7 +327,8 @@
     (:quit-key "q" :title "All")
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
-      ("o" hydra-org-main/body "org" :exit t))
+      ("o" hydra-org-main/body "org" :exit t)
+      ("r" hyrda-roam/body "roam" :exit t))
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
@@ -336,8 +337,7 @@
      (("j" hydra-jumps/body "jumps" :exit t)
       ("E" hydra-flycheck/body "errors" :exit t))
      "Misc"
-     (("h" hydra-helm/body "helm" :exit t))
-     ))
+     (("h" hydra-helm/body "helm" :exit t))))
 
   (global-set-key (kbd "M-[") 'hydra-all/body)
   (global-set-key (kbd "C-c c") 'hydra-all/body)
@@ -454,8 +454,6 @@
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
-(add-hook 'org-mode-hook #'auto-fill-mode)
-
 (use-package messages-are-flowing
   :config
   (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
@@ -499,6 +497,7 @@
 (use-package org-plus-contrib
   :config
   (require 'org-checklist)
+  :hook (org-mode . visual-line-mode)
   :general
   ("C-c a" 'ash-goto-agenda)
   (:keymaps 'org-agenda-mode-map
@@ -615,8 +614,7 @@
   :custom
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
-  (deft-default-extension "org")
-  (deft-directory org-roam-directory))
+  (deft-default-extension "org"))
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
