@@ -155,6 +155,22 @@ General is an easier way to do keybindings.
   ;; Let's make the top-level key categories here
   (general-create-definer ash/key-def :prefix "C-c"))
 #+END_SRC
+** Org
+This just loads the package, which we want to do before anything else ends up loading the default built-in org package.
+#+BEGIN_SRC emacs-lisp
+  (use-package org-plus-contrib
+    :straight (org-plus-contrib
+               :repo "https://code.orgmode.org/bzg/org-mode.git"
+               :local-repo "org"
+               :includes (org))
+    :config
+    (require 'org-checklist)
+    :hook (org-mode . visual-line-mode)
+    :general
+    ("C-c a" 'ash-goto-agenda)
+    (:keymaps 'org-agenda-mode-map
+              "P" 'org-pomodoro))
+#+END_SRC
 ** Minibuffer customization
 
 #+BEGIN_SRC emacs-lisp
@@ -411,7 +427,7 @@ Hydra is useful for doing lots of things in succession.
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
-      ("r" hyrda-roam/body "roam" :exit t))
+      ("r" hydra-roam/body "roam" :exit t))
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
@@ -440,6 +456,12 @@ yassnippet is a great way to create templates and use them.
 #+END_SRC
 
 ** Programming
+*** Magit
+#+begin_src emacs-lisp
+(use-package magit
+  :general ("C-x g" 'magit-status))
+#+end_src
+*** Programming modes
 Let's assume .h files are c++, because I mostly don't program in c.
 #+BEGIN_SRC emacs-lisp
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
@@ -618,11 +640,12 @@ Improve the looks of the modeline with Powerline.
 Add indentation lines
 #+begin_src emacs-lisp
 (use-package highlight-indent-guides
-  :hook (prog-mode org-mode)
+  :hook (prog-mode . highlight-indent-guides-mode)
   :config
   (setq highlight-indent-guides-responsive 'top
         highlight-indent-guides-method 'character))
 #+end_src
+
 * Org config
 #+BEGIN_SRC emacs-lisp
 (defun ash-goto-agenda (&optional _)
@@ -632,15 +655,6 @@ Add indentation lines
         (progn (switch-to-buffer buf)
                (delete-other-windows))
       (org-agenda))))
-
-(use-package org-plus-contrib
-  :config
-  (require 'org-checklist)
-  :hook (org-mode . visual-line-mode)
-  :general
-  ("C-c a" 'ash-goto-agenda)
-  (:keymaps 'org-agenda-mode-map
-            "P" 'org-pomodoro))
 
 (require 'org-tempo)
 
@@ -736,21 +750,26 @@ Add indentation lines
 *** org-pomodoro
 To me, org-pomodoro is very effective to maintain focus.
 #+BEGIN_SRC emacs-lisp
-  (use-package org-pomodoro)
+(use-package org-pomodoro
+  :after (org-plus-contrib))
 #+END_SRC
 *** Org roam
 #+begin_src emacs-lisp
 (use-package org-roam
-      :hook 
-      (after-init . org-roam-mode)
-      :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
-      :bind (:map org-roam-mode-map
+  :after (org-plus-contrib)
+  :hook (after-init . org-roam-mode)
+  :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
+  :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
                ("C-c n b" . org-roam-switch-to-buffer)
                ("C-c n g" . org-roam-show-graph))
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
+
+;; Need to require it immediately so hydra works - there evidently aren't the
+;; correct autoloads.
+(require 'org-roam)
 #+end_src
 
 And if you're using org-roam you probably want to use org-deft to search it.
