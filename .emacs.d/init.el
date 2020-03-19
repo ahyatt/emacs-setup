@@ -453,8 +453,8 @@
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
 ;; (use-package poet-theme)
-(use-package doom-themes
-  :config (load-theme 'doom-city-lights t))
+(use-package solarized-theme
+  :config (load-theme 'solarized-light t))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -469,6 +469,8 @@
               org-fontify-whole-heading-line t
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
+
+(add-hook 'org-mode-hook #'auto-fill-mode)
 
 (use-package messages-are-flowing
   :config
