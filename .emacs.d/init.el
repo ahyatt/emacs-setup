@@ -668,4 +668,13 @@
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 
+(defun ash/strdec-to-hex (n)
+  "Given a decimal as a string, convert to hex.
+This has to be done as a string to handle 64-bit or larger ints."
+  (concat "0x" (replace-regexp-in-string "16#" "" (calc-eval `(,n calc-number-radix 16)))))
+
+(let ((per-machine-filename "~/.emacs.d/permachine.el"))
+  (when (file-exists-p per-machine-filename)
+    (load-file per-machine-filename)))
+
 (setq epa-pinentry-mode 'loopback)

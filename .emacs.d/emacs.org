@@ -840,4 +840,22 @@ Without this, I can't open a gpg file.
 #+begin_src elisp
 (setq epa-pinentry-mode 'loopback)
 #+end_src
+* Useful functions
+Emacs doesn't have 64-bit-int processing except via calc. 
+#+begin_src emacs-lisp
+(defun ash/strdec-to-hex (n)
+  "Given a decimal as a string, convert to hex.
+This has to be done as a string to handle 64-bit or larger ints."
+  (concat "0x" (replace-regexp-in-string "16#" "" (calc-eval `(,n calc-number-radix 16)))))
+#+end_src
+* Per-environment config
+Most of my per-environment config done via =customize= and is in .custom.el.
+However, some config is more involved, such as packages I just want in one
+environment and not the others.  To that end, let's load a file that can contain
+those customizations.
+#+begin_src emacs-lisp
+(let ((per-machine-filename "~/.emacs.d/permachine.el"))
+  (when (file-exists-p per-machine-filename)
+    (load-file per-machine-filename)))
+#+end_src
 

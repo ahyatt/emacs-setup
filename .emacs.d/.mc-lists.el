@@ -9,6 +9,7 @@
         c-electric-paren
         dabbrev-expand
         delete-horizontal-space
+        delete-indentation
         down-list
         forward-sexp
         org-beginning-of-line

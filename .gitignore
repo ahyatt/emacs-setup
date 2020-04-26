@@ -12,3 +12,4 @@ var/pcache/font-utils
 .smex-items
 .#.*
 projectile-bookmarks.eld
+permachine.el
