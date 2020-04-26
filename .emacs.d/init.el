@@ -189,25 +189,39 @@
                                           ("L" org-previous-link "previous link")
                                           ("b" org-next-block "next block")
                                           ("B" org-prev-block "previous block"))
+                                         "Subtrees" (("k" org-cut-subtree "kill")
+                                                     (">" org-promote-subtree "promote")
+                                                     ("<" org-demote-subtree "demote")
+                                                     ("N" org-narrow-to-subtree "narrow"))
                                          "Opening" (("o" org-open-at-point "open at point"))
-                                         "Clock" (("p" org-pomodoro "Start pomodoro"))
+                                         "Clock" (("p" org-pomodoro "Start pomodoro")
+                                                  ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
                                          "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
-  (major-mode-hydra-bind emacs-lisp-mode "Eval"
-    ("b" eval-buffer "eval buffer")
-    (";" eval-expression "eval expression")
-    ("d" eval-defun "eval defun")
-    ("D" edebug-defun "edebug defun")
-    ("e" eval-last-sexp "eval last sexp")
-    ("E" edebug-eval-last-sexp "edebug last sexp")
-    ("i" ielm "ielm"))
-  (major-mode-hydra-bind eshell-mode "Movement"
-    ("h" helm-eshell-history :exit t)
-    ("p" helm-eshell-prompts :exit t)))
+  (major-mode-hydra-define emacs-lisp-mode nil
+    ("Eval"
+     (("b" eval-buffer "eval buffer")
+      (";" eval-expression "eval expression")
+      ("d" eval-defun "eval defun")
+      ("D" edebug-defun "edebug defun")
+      ("e" eval-last-sexp "eval last sexp")
+      ("E" edebug-eval-last-sexp "edebug last sexp")
+      ("i" ielm "ielm"))
+     "Test"
+     (("t" ert "prompt")
+      ("T" (ert t) "all")
+      ("F" (ert :failed) "failed"))
+     "Doc"
+     (("f" describe-function "function")
+      ("v" describe-variable "variable")
+      ("i" info-lookup-symbol "info lookup"))))
+  (major-mode-hydra-define eshell-mode nil
+    ("Movement"
+     (("h" helm-eshell-history :exit t)
+      ("p" helm-eshell-prompts :exit t)))))
 
 (use-package hydra
   :config
   ;; define everything here
-
   (pretty-hydra-define hydra-jumps ()
     ("Jump visually"
      (("j" avy-goto-word-1 "to word")
@@ -281,6 +295,23 @@
     (("r" org-roam "toggle"))
     "Content"
     (("i" org-roam-insert "insert" :exit t))))
+  (pretty-hydra-define hydra-straight ()
+    ("Package specific"
+     (("c" straight-check-package "check" :exit t)
+      ("n" straight-normalize-package "normalize" :exit t)
+      ("r" straight-rebuild-package "rebuild" :exit t)
+      ("f" straight-fetch-package "fetch" :exit t)
+      ("p" straight-pull-package "pull" :exit t))
+     "All packages"
+     (("C" straight-check-all "check" :exit t)
+      ("N" straight-normalize-all "normalize" :exit t)
+      ("R" straight-rebuild-all "rebuild" :exit t)
+      ("F" straight-fetch-all "fetch" :exit t)
+      ("P" straight-pull-all "pull" :exit t))
+     "State"
+     (("v" straight-freeze-versions "freeze" :exit t)
+      ("t" straight-thaw-versions "thaw" :exit t)
+      ("d" straight-prune-build "prune" :exit t))))
   (pretty-hydra-define hydra-flycheck ()
     ("Movement"
      (("n" flymake-goto-next-error "next error")
@@ -341,7 +372,9 @@
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
-      ("r" hydra-roam/body "roam" :exit t))
+      ("r" hydra-roam/body "roam" :exit t)
+      ("S" hydra-straight/body "straight" :exit t)
+      ("g" magit-status "magit" :exit t))
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
@@ -470,12 +503,15 @@
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
-(add-hook 'org-mode-hook #'auto-fill-mode)
-
 (use-package messages-are-flowing
   :config
   (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
   (add-hook 'message-mode-hook 'visual-line-mode))
+
+(with-eval-after-load 'message
+  (setq message-cite-style message-cite-style-gmail)
+  (setq message-citation-line-function 'message-insert-formatted-citation-line)
+  (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:"))
 
 (use-package spaceline)
 (use-package spaceline-all-the-icons 
@@ -513,6 +549,7 @@
       (org-agenda))))
 
 (require 'org-tempo)
+(require 'org-checklist)
 
 (add-hook 'org-babel-after-execute-hook
           (lambda ()
@@ -584,23 +621,8 @@
       org-speed-commands-user '(("w" . ash-org-start-work))
       org-completion-use-ido t
       org-use-fast-todo-selection t
-      org-habit-show-habits t
-      org-capture-templates
-      '(("n" "Note" entry
-         (file+headline "notes.org" "Unfiled notes")
-         "* %a%?\n%u\n%i")
-        ("j" "Journal" entry
-         (file+datetree "journal.org")
-         "* %T %?\n#+BEGIN: clocktable :maxlevel 4 :emphasize nil :block today :scope agenda\n#+END: clocktable")        
-        ("z" "Clocked note" plain
-         (clock)
-         " %a"
-         :empty-lines-before 1)))
-(load "~/src/ob-racket/ob-racket.el")
-(setq org-babel-command:racket "/usr/local/bin/racket")
-
-(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
-                                                         (racket . t)))
+      org-habit-show-habits t)
+(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
 
 (use-package org-pomodoro
   :after (org-plus-contrib))
@@ -609,6 +631,8 @@
   :after (org-plus-contrib)
   :hook (after-init . org-roam-mode)
   :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
+  :config
+  (run-with-idle-timer 60 t 'org-roam-build-cache)
   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
