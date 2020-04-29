@@ -656,26 +656,10 @@ Also fix the message quoting in gmail
 
 Improve the looks of the modeline with Powerline.
 #+BEGIN_SRC emacs-lisp
-(use-package spaceline)
-(use-package spaceline-all-the-icons 
-  :after spaceline
-  :config
-  (defun ash/flymake-num-severity (severity)
-    (count-if (lambda (i) (= (warning-numeric-level severity) (flymake--severity (flymake-diagnostic-type i)))) issues))
-  (defun ash/flymake-status ()
-    (let* ((issues (flymake-diagnostics))
-           (num-note (ash/flymake-num-severity :debug))
-           (num-error (ash/flymake-num-severity :error))
-           (num-warning (ash/flymake-num-severity :warning))
-           (text-and-face (cond ((null issues) `(("✔ No Issues" . (:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'success)))))
-                                (t (list (cons (number-to-string num-error) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'error)))
-                                         (cons (number-to-string num-warning) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'warning)))
-                                         (cons (number-to-string num-note) `(:height ,(spaceline-all-the-icons--height 0.9) :foreground ,(spaceline-all-the-icons--face-foreground 'warning))))))))
-      (mapconcat (lambda (c) (propertize (car c) 'face (cdr c) 'display '(raise 0.1))) text-and-face "|")))
-  (spaceline-define-segment ash/flymake-segment
-    (ash/flymake-status))
-  (require 'spaceline-segments)  ;; where org-pomodoro is defined
-  (spaceline-all-the-icons-theme 'ash/flymake-segment 'org-pomodoro))
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1))
+
 #+END_SRC
 
 Add indentation lines
