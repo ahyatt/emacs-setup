@@ -104,6 +104,7 @@
              :repo "https://code.orgmode.org/bzg/org-mode.git"
              :local-repo "org"
              :includes (org))
+  :load-path "straight/repos/org/contrib/lisp"
   :config
   (require 'org-checklist)
   :hook (org-mode . visual-line-mode)
@@ -486,8 +487,12 @@
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
 ;; (use-package poet-theme)
-(use-package solarized-theme
-  :config (load-theme 'solarized-light t))
+(use-package solarized-theme)
+
+(straight-use-package
+ `(ayu-themes :host github :repo "vutran1710/Ayu-Theme-Emacs" :type git))
+(add-to-list 'custom-theme-load-path "~/.emacs.d/straight/repos/Ayu-Theme-Emacs/")
+(load-theme 'ayu-grey)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
