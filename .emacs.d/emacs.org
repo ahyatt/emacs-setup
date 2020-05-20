@@ -619,7 +619,8 @@ Helpful is a nice replacement that is more comprehensive than normal help.
 (straight-use-package
  `(ayu-themes :host github :repo "vutran1710/Ayu-Theme-Emacs" :type git))
 (add-to-list 'custom-theme-load-path "~/.emacs.d/straight/repos/Ayu-Theme-Emacs/")
-(load-theme 'ayu-grey)
+
+(load-theme 'solarized-wombat-dark)
 #+END_SRC
 
 Make org prettier.
@@ -772,11 +773,11 @@ To me, org-pomodoro is very effective to maintain focus.
 *** Org roam
 #+begin_src emacs-lisp
 (use-package org-roam
-  :after (org-plus-contrib)
-  :hook (after-init . org-roam-mode)
-  :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
+  :straight (:host github :repo "jethrokuan/org-roam")
   :config
   (run-with-idle-timer 60 t 'org-roam-build-cache)
+  (require 'org-roam)
+  (org-roam-mode)
   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
@@ -785,9 +786,7 @@ To me, org-pomodoro is very effective to maintain focus.
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
 
-;; Need to require it immediately so hydra works - there evidently aren't the
-;; correct autoloads.
-(require 'org-roam)
+
 #+end_src
 
 And if you're using org-roam you probably want to use org-deft to search it.

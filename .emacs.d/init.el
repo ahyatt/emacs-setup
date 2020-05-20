@@ -492,7 +492,8 @@
 (straight-use-package
  `(ayu-themes :host github :repo "vutran1710/Ayu-Theme-Emacs" :type git))
 (add-to-list 'custom-theme-load-path "~/.emacs.d/straight/repos/Ayu-Theme-Emacs/")
-(load-theme 'ayu-grey)
+
+(load-theme 'solarized-wombat-dark)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -616,11 +617,11 @@
   :after (org-plus-contrib))
 
 (use-package org-roam
-  :after (org-plus-contrib)
-  :hook (after-init . org-roam-mode)
-  :straight (:host github :repo "jethrokuan/org-roam" :branch "develop")
+  :straight (:host github :repo "jethrokuan/org-roam")
   :config
   (run-with-idle-timer 60 t 'org-roam-build-cache)
+  (require 'org-roam)
+  (org-roam-mode)
   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam)
                ("C-c n f" . org-roam-find-file)
@@ -628,10 +629,6 @@
                ("C-c n g" . org-roam-show-graph))
               :map org-mode-map
               (("C-c n i" . org-roam-insert))))
-
-;; Need to require it immediately so hydra works - there evidently aren't the
-;; correct autoloads.
-(require 'org-roam)
 
 (use-package deft
   :after org
