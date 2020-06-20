@@ -191,9 +191,11 @@
                                           ("b" org-next-block "next block")
                                           ("B" org-prev-block "previous block"))
                                          "Subtrees" (("k" org-cut-subtree "kill")
-                                                     (">" org-promote-subtree "demote")
-                                                     ("<" org-demote-subtree "promote")
-                                                     ("N" org-narrow-to-subtree "narrow"))
+                                                     (">" org-demote-subtree "demote")
+                                                     ("<" org-promote-subtree "promote")
+                                                     ("N" org-narrow-to-subtree "narrow")
+                                                     ("r" org-refile "refile")
+                                                     ("." org-tree-to-indirect-buffer "indirect buffer"))
                                          "Opening" (("o" org-open-at-point "open at point"))
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
@@ -463,15 +465,6 @@
 (use-package company-posframe
   :config (company-posframe-mode 1))
 
-(use-package twittering-mode
-  :config
-  (twittering-enable-unread-status-notifier)
-  (setq twittering-use-master-password t)
-  (add-hook 'twittering-edit-mode-hook
-          (lambda ()
-            (auto-fill-mode -1)
-            (visual-line-mode))))
-
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
@@ -554,6 +547,7 @@
       org-agenda-include-diary t
       org-deadline-warning-days 1
       org-clock-idle-time 30
+      org-catch-invisible-edits 'error
       org-agenda-sticky t
       org-agenda-start-with-log-mode nil
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
@@ -597,6 +591,8 @@
                                  (search . " %i %-18:c"))
       org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
       org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
+      org-cycle-separator-lines 0
+      org-blank-before-new-entry '((heading) (plain-list-item . auto))
       org-clock-into-drawer nil
       org-clock-report-include-clocking-task t
       org-clock-history-length 20
