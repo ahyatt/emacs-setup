@@ -180,19 +180,19 @@
   :config
   ;; Mode maps
   (major-mode-hydra-define org-mode nil ("Movement"
-                                         (("u" org-up-element "up")
-                                          ("n" org-next-visible-heading "next visible heading")
+                                         (("u" org-up-element "up" :exit nil)
+                                          ("n" org-next-visible-heading "next visible heading" :exit nil)
                                           ("j" (lambda () (interactive)
                                                  (let ((org-goto-interface 'outline-path-completionp)
                                                        (org-outline-path-complete-in-steps nil))
                                                    (org-goto))) "jump")
-                                          ("l" org-next-link "next link")
-                                          ("L" org-previous-link "previous link")
-                                          ("b" org-next-block "next block")
-                                          ("B" org-prev-block "previous block"))
+                                          ("l" org-next-link "next link" :exit nil)
+                                          ("L" org-previous-link "previous link" :exit nil)
+                                          ("b" org-next-block "next block" :exit nil)
+                                          ("B" org-prev-block "previous block" :exit nil))
                                          "Subtrees" (("k" org-cut-subtree "kill")
-                                                     (">" org-demote-subtree "demote")
-                                                     ("<" org-promote-subtree "promote")
+                                                     (">" org-demote-subtree "demote" :exit nil)
+                                                     ("<" org-promote-subtree "promote" :exit nil)
                                                      ("N" org-narrow-to-subtree "narrow")
                                                      ("r" org-refile "refile")
                                                      ("." org-tree-to-indirect-buffer "indirect buffer"))
@@ -486,7 +486,27 @@
  `(ayu-themes :host github :repo "vutran1710/Ayu-Theme-Emacs" :type git))
 (add-to-list 'custom-theme-load-path "~/.emacs.d/straight/repos/Ayu-Theme-Emacs/")
 
-(load-theme 'solarized-wombat-dark)
+(use-package modus-operandi-theme
+  :ensure t
+  :init
+  (setq modus-operandi-theme-slanted-constructs t
+        modus-operandi-theme-bold-constructs t
+        modus-operandi-theme-visible-fringes t
+        modus-operandi-theme-3d-modeline t
+        modus-operandi-theme-subtle-diffs t
+        modus-operandi-theme-intense-standard-completions t
+        modus-operandi-theme-org-blocks 'greyscale
+        modus-operandi-theme-proportional-fonts t
+        modus-operandi-theme-rainbow-headings t
+        modus-operandi-theme-section-headings t
+        modus-operandi-theme-scale-headings t
+        modus-operandi-theme-scale-1 1.05
+        modus-operandi-theme-scale-2 1.1
+        modus-operandi-theme-scale-3 1.15
+        modus-operandi-theme-scale-4 1.2
+        modus-operandi-theme-scale-5 1.3)
+  :config
+  (load-theme 'modus-operandi t))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
