@@ -51,11 +51,10 @@ https://github.com/angrybacon/dotemacs/blob/master/dotemacs.org#bootstrap.
 
 I also prefer a minimal UI.
 #+BEGIN_SRC emacs-lisp
-(when window-system
-  (blink-cursor-mode 0)                           ; Disable the cursor blinking
-  (scroll-bar-mode 0)                             ; Disable the scroll bar
-  (tool-bar-mode 0)                               ; Disable the tool bar
-  (tooltip-mode 0))                               ; Disable the tooltips
+(blink-cursor-mode 0)                           ; Disable the cursor blinking
+(scroll-bar-mode 0)                             ; Disable the scroll bar
+(tool-bar-mode 0)                               ; Disable the tool bar
+(tooltip-mode 0) ; Disable the tooltips
 #+END_SRC
 
 Various better variable defaults & other basic defaults, mostly from
@@ -510,6 +509,7 @@ There’s a lot of really good  editing tools. Smartparens is fairly universal, 
 (use-package smartparens
   :diminish ""
   :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
+  :hook (org-mode . smartparens-mode)
   :config (require 'smartparens-config))
 #+END_SRC
 
@@ -569,7 +569,8 @@ Company mode is a standard for symbol completion.
 (use-package company
   :general ("C-c ." 'company-complete)
   :config
-  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode))
+  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
+  (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
   :init
   (add-hook 'after-init-hook 'global-company-mode)
   (setq company-minimum-prefix-length 0))
@@ -676,7 +677,6 @@ Improve the looks of the modeline with Powerline.
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1))
-
 #+END_SRC
 
 Add indentation lines
@@ -687,7 +687,13 @@ Add indentation lines
   (setq highlight-indent-guides-responsive 'top
         highlight-indent-guides-method 'character))
 #+end_src
-
+** Window management
+winner-mode allows you to navigate through window configurations.
+#+begin_src emacs-lisp
+(winner-mode 1)
+(define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
+(define-key winner-mode-map (kbd "<M-right>") #'winner-redo)
+#+end_src
 * Org config
 #+BEGIN_SRC emacs-lisp
 (defun ash-goto-agenda (&optional _)

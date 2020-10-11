@@ -26,11 +26,10 @@
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
 
-(when window-system
-  (blink-cursor-mode 0)                           ; Disable the cursor blinking
-  (scroll-bar-mode 0)                             ; Disable the scroll bar
-  (tool-bar-mode 0)                               ; Disable the tool bar
-  (tooltip-mode 0))                               ; Disable the tooltips
+(blink-cursor-mode 0)                           ; Disable the cursor blinking
+(scroll-bar-mode 0)                             ; Disable the scroll bar
+(tool-bar-mode 0)                               ; Disable the tool bar
+(tooltip-mode 0) ; Disable the tooltips
 
 (setq-default
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
@@ -407,6 +406,7 @@
 (use-package smartparens
   :diminish ""
   :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
+  :hook (org-mode . smartparens-mode)
   :config (require 'smartparens-config))
 
 (use-package git-gutter
@@ -457,7 +457,8 @@
 (use-package company
   :general ("C-c ." 'company-complete)
   :config
-  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode))
+  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
+  (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
   :init
   (add-hook 'after-init-hook 'global-company-mode)
   (setq company-minimum-prefix-length 0))
@@ -541,6 +542,10 @@
   :config
   (setq highlight-indent-guides-responsive 'top
         highlight-indent-guides-method 'character))
+
+(winner-mode 1)
+(define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
+(define-key winner-mode-map (kbd "<M-right>") #'winner-redo)
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
