@@ -314,6 +314,14 @@
      (("v" straight-freeze-versions "freeze" :exit t)
       ("t" straight-thaw-versions "thaw" :exit t)
       ("d" straight-prune-build "prune" :exit t))))
+  (pretty-hydra-define hydra-yas ()
+    ("Snippets"
+     (("n" yas-new-snippet "new" :exit t)
+      ("r" yas-reload-all "reload" :exit t)
+      ("v" yas-visit-snippet-file "visit" :exit t))
+     "Movement"
+     (("f" yas-next-field "forward field" :exit nil)
+      ("b" yas-prev-field "previous field" :exit nil))))
   (pretty-hydra-define hydra-flycheck ()
     ("Movement"
      (("n" flymake-goto-next-error "next error")
@@ -380,7 +388,8 @@
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
-      ("e" hydra-expand/body "expand region" :exit t))
+      ("e" hydra-expand/body "expand region" :exit t)
+      ("y" hydra-yas/body "snippets" :exit t))
      "Movement"
      (("j" hydra-jumps/body "jumps" :exit t)
       ("E" hydra-flycheck/body "errors" :exit t))
@@ -400,6 +409,12 @@
 
 (use-package magit
   :general ("C-x g" 'magit-status))
+
+;; Needed by magit-gh-pulls
+(use-package magit-popup)
+
+(use-package magit-gh-pulls
+  :hook (magit-mode . turn-on-magit-gh-pulls))
 
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
@@ -546,6 +561,16 @@
 (winner-mode 1)
 (define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
 (define-key winner-mode-map (kbd "<M-right>") #'winner-redo)
+
+(use-package olivetti
+  :ensure
+  :defer
+  :diminish
+  :config
+  (setq olivetti-body-width 0.65)
+  (setq olivetti-minimum-body-width 72)
+  (setq olivetti-recall-visual-line-mode-entry-state t)
+  :bind ("C-c o" . olivetti-mode))
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
