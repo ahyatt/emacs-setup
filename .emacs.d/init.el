@@ -290,9 +290,9 @@
       ("O" org-roam-open-at-point "open at point" :exit t)
       ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
       ("s" deft "search" :exit t)
-      ("t" org-roam-today "today" :exit t)
-      ("y" org-roam-yesterday "yesterday" :exit t)
-      ("d" org-roam-date "date" :exit t))
+      ("t" org-roam-dailies-find-today "today" :exit t)
+      ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
+      ("d" org-roam-dailies-find-date "date" :exit t))
     "Sidebar"
     (("r" org-roam "toggle"))
     "Content"
@@ -546,7 +546,7 @@
 (with-eval-after-load 'message
   (setq message-cite-style message-cite-style-gmail)
   (setq message-citation-line-function 'message-insert-formatted-citation-line)
-  (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:"))
+  (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
 
 (use-package doom-modeline
   :ensure t
