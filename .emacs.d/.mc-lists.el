@@ -12,6 +12,8 @@
         delete-indentation
         down-list
         forward-sexp
+        hydra-all/hydra-structural/body-and-exit
+        hydra-structural/sp-change-inner
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert

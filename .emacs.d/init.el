@@ -11,6 +11,8 @@
 (package-initialize)
 
 (defvar bootstrap-version)
+;; This doesn't work for me even on the latest native comp branch.
+(setq straight-disable-native-compilation t)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
@@ -112,28 +114,73 @@
   (:keymaps 'org-agenda-mode-map
             "P" 'org-pomodoro))
 
-(use-package helm
+(use-package selectrum
+  :config
+  (selectrum-mode 1))
+
+(use-package selectrum-prescient
+  :config
+  ;; to make sorting and filtering more intelligent
+  (selectrum-prescient-mode +1)
+
+  ;; to save your command history on disk, so the sorting gets more
+  ;; intelligent over time
+  (prescient-persist-mode +1))
+
+(use-package marginalia
   :ensure t
-  :bind (("M-x" . helm-M-x)
-	 ("C-x C-f" . helm-find-files)
-	 ("C-x f" . helm-recentf)
-	 ("M-y" . helm-show-kill-ring)
-	 ("M-i" . helm-mini)
-	 ("C-x b" . helm-buffers-list))
-  :config (progn
-	    (require 'helm-config)
-	    (setq helm-buffers-fuzzy-matching t)
-	    (helm-mode 1)))
-(use-package helm-proc)
-(use-package helm-flycheck)
-(use-package helm-notmuch)
-(use-package helm-swoop
+  :config
+  (marginalia-mode)
+  (setq marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil)))
+
+(use-package embark
   :ensure t
-  :bind (("M-m" . helm-swoop)
-	 ("M-M" . helm-swoop-back-to-last-point))
-  :init
-  (bind-key "M-m" 'helm-swoop-from-isearch isearch-mode-map))
-(use-package helm-org-rifle)
+  :bind
+  (("s-a" . embark-act)
+   ("s-A" . embark-act-noexit))
+  :config
+  (defun current-candidate+category ()
+    (when selectrum-active-p
+      (cons (selectrum--get-meta 'category)
+            (selectrum-get-current-candidate))))
+
+  (add-hook 'embark-target-finders #'current-candidate+category)
+
+  (defun current-candidates+category ()
+    (when selectrum-active-p
+      (cons (selectrum--get-meta 'category)
+            (selectrum-get-current-candidates
+             ;; Pass relative file names for dired.
+             minibuffer-completing-file-name))))
+
+  (add-hook 'embark-candidate-collectors #'current-candidates+category)
+
+  ;; No unnecessary computation delay after injection.
+  (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate)
+
+  (setq embark-action-indicator
+      (lambda (map)
+        (which-key--show-keymap "Embark" map nil nil 'no-paging)
+        #'which-key--hide-popup-ignore-command)
+      embark-become-indicator embark-action-indicator)
+
+  (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
+  (embark-define-keymap embark-tab-actions
+    "Keymap for actions for tab-bar tabs (when mentioned by name)."
+    ("s" tab-bar-select-tab-by-name)
+    ("r" tab-bar-rename-tab-by-name)
+    ("k" tab-bar-close-tab-by-name))
+  (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions)))
+
+(use-package consult)
+
+(use-package consult-selectrum
+  :after selectrum
+  :demand t)
+
+(use-package consult-flycheck
+  :bind (:map flycheck-command-map
+              ("!" . consult-flycheck)))
 
 (use-package winum
   :config (winum-mode 1)
@@ -169,9 +216,6 @@
 
 (use-package expand-region)
 
-(use-package swiper
-  :bind (("M-s" . swiper)))
-
 ;; Before hydra because we use pretty-hydra-define in the hydra confg.
 (use-package major-mode-hydra
   :bind
@@ -181,10 +225,6 @@
   (major-mode-hydra-define org-mode nil ("Movement"
                                          (("u" org-up-element "up" :exit nil)
                                           ("n" org-next-visible-heading "next visible heading" :exit nil)
-                                          ("j" (lambda () (interactive)
-                                                 (let ((org-goto-interface 'outline-path-completionp)
-                                                       (org-outline-path-complete-in-steps nil))
-                                                   (org-goto))) "jump")
                                           ("l" org-next-link "next link" :exit nil)
                                           ("L" org-previous-link "previous link" :exit nil)
                                           ("b" org-next-block "next block" :exit nil)
@@ -218,8 +258,7 @@
       ("i" info-lookup-symbol "info lookup"))))
   (major-mode-hydra-define eshell-mode nil
     ("Movement"
-     (("h" helm-eshell-history :exit t)
-      ("p" helm-eshell-prompts :exit t)))))
+     (("h" consult-history "history" :exit t)))))
 
 (use-package hydra
   :config
@@ -231,10 +270,10 @@
       ("c" avy-goto-char "to char")
       ("r" avy-resume "resume"))
      "Jump via minibuffer"
-     (("i" helm-imenu "via imenu"))
+     (("i" consult-imenu "imenu")
+      ("o" consult-outline "outline"))
      "Jump & go"
-     (("u" ash/avy-open-url "open url")
-      ("b" helm-bookmarks "open bookmark"))
+     (("u" ash/avy-open-url "open url"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
@@ -302,13 +341,11 @@
      (("c" straight-check-package "check" :exit t)
       ("n" straight-normalize-package "normalize" :exit t)
       ("r" straight-rebuild-package "rebuild" :exit t)
-      ("f" straight-fetch-package "fetch" :exit t)
       ("p" straight-pull-package "pull" :exit t))
      "All packages"
      (("C" straight-check-all "check" :exit t)
       ("N" straight-normalize-all "normalize" :exit t)
       ("R" straight-rebuild-all "rebuild" :exit t)
-      ("F" straight-fetch-all "fetch" :exit t)
       ("P" straight-pull-all "pull" :exit t))
      "State"
      (("v" straight-freeze-versions "freeze" :exit t)
@@ -329,7 +366,8 @@
       ("d" flymake-goto-diagnostic "diagnostic")
       ("<" flycheck-previous-error "previous flycheck error")
       (">" flycheck-next-error "next flycheck error")
-      ("l" flycheck-list-errors "list"))
+      ("l" flycheck-list-errors "list")
+      ("." consult-flymake))
      "Display"
      (("." flymake-show-diagnostic "show diagnostic")
       ("B" flymake-show-diagnostics-buffer "diagnostics buffers"))
@@ -344,7 +382,7 @@
   (pretty-hydra-define hydra-mail ()
     ("Search"
      (("s" notmuch-search "search" :exit t)
-      ("h" helm-notmuch "helm search" :exit t))
+      ("h" ash/consult-notmuch "incremental search" :exit t))
      "Application"
      (("n" notmuch-hello "notmuch" :exit t)
       ("i" ash/inbox "inbox" :exit t)
@@ -353,30 +391,23 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-org-main ()
     ("Misc"
-     (("a" org-agenda "agenda")    
-      ("r" helm-org-rifle "rifle")
+     (("a" org-agenda "agenda")
       ("c" org-capture "capture"))
      "Links"
      (("s" org-store-link "store")
       ("p" ash/org-paste-link "paste"))))
-  (pretty-hydra-define hydra-helm ()
-    ("Applications"
-     (("c" helm-calcul-expression "calc" :exit t)
-      ("w" helm-man-woman "[wo]man" :exit t)
-      ("l" helm-locate "locate" :exit t)
-      ("a" helm-apropos "apropos" :exit t))
-     "In-Buffer"
-     (("i" helm-semantic-or-imenu "imenu" :exit t)
-      ("o" helm-occur "occur" :exit t)
-      ("M" helm-all-mark-rings "mark rings" :exit t)
-      ("s" helm-swoop "swoop" :exit t))
-     "Switching Buffers"
-     (("m" helm-mini "mini" :exit t)
-      ("p" helm-browse-project "project" :exit t))
+  (pretty-hydra-define hydra-find ()
+    ("In-Buffer"
+     (("i" consult-imenu "imenu" :exit t)
+      ("m" consult-mark "mark rings" :exit t)
+      ("o" consult-multi-occur "occur" :exit t)
+      ("e" consult-flycheck "errors" :exit t)
+      ("l" consult-goto-line "line" :exit t))
      "Other"
-     (("g" helm-do-grep-ag "grep" :exit t)
-      ("r" helm-resume "resume" :exit t)
-      ("R" helm-register "register" :exit t))))
+     (("r" consult-ripgrep "grep" :exit t)
+      ("b" consult-bookmark "bookmark" :exit t)
+      ("R" consult-register "register" :exit t)
+      ("C" consult-complex-command "complex command" :exit t))))
   (pretty-hydra-define hydra-all
     (:quit-key "q" :title "All")
     ("Applications"
@@ -394,7 +425,7 @@
      (("j" hydra-jumps/body "jumps" :exit t)
       ("E" hydra-flycheck/body "errors" :exit t))
      "Misc"
-     (("h" hydra-helm/body "helm" :exit t))))
+     (("f" hydra-find/body "find" :exit t))))
 
   (global-set-key (kbd "M-[") 'hydra-all/body)
   (global-set-key (kbd "C-c c") 'hydra-all/body)
