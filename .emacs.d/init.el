@@ -89,6 +89,8 @@
 (when (file-exists-p custom-file)
   (load custom-file))
 
+(set-input-method "TeX")
+
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
@@ -329,9 +331,9 @@
       ("O" org-roam-open-at-point "open at point" :exit t)
       ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
       ("s" deft "search" :exit t)
-      ("t" org-roam-dailies-find-today "today" :exit t)
-      ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" org-roam-dailies-find-date "date" :exit t))
+      ("t" org-roam-dailies-today "today" :exit t)
+      ("y" org-roam-dailies-yesterday "yesterday" :exit t)
+      ("d" org-roam-dailies-date "date" :exit t))
     "Sidebar"
     (("r" org-roam "toggle"))
     "Content"

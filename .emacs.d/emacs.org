@@ -131,6 +131,11 @@ customization to live in a different file.
 (when (file-exists-p custom-file)
   (load custom-file))
 #+END_SRC
+** Input method
+The TeX input method is really cool and super flexible.
+#+begin_src emacs-lisp
+(set-input-method "TeX")
+#+end_src
 
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
@@ -422,9 +427,9 @@ Hydra is useful for doing lots of things in succession.
       ("O" org-roam-open-at-point "open at point" :exit t)
       ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
       ("s" deft "search" :exit t)
-      ("t" org-roam-dailies-find-today "today" :exit t)
-      ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" org-roam-dailies-find-date "date" :exit t))
+      ("t" org-roam-dailies-today "today" :exit t)
+      ("y" org-roam-dailies-yesterday "yesterday" :exit t)
+      ("d" org-roam-dailies-date "date" :exit t))
     "Sidebar"
     (("r" org-roam "toggle"))
     "Content"
