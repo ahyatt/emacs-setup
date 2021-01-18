@@ -140,6 +140,12 @@
   :bind
   (("s-a" . embark-act)
    ("s-A" . embark-act-noexit))
+  :general
+  (:keymaps 'embark-symbol-map
+            "h" 'helpful-command
+            "t" 'trace-function
+            "T" 'untrace-function
+            "x" 'xref-find-references)
   :config
   (defun current-candidate+category ()
     (when selectrum-active-p
@@ -176,10 +182,15 @@
 
 (use-package consult)
 
-(use-package consult-selectrum
-  :after selectrum
-  :demand t)
-
+(use-package embark-consult
+  :ensure t
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . embark-consult-preview-minor-mode))
+    
 (use-package consult-flycheck
   :bind (:map flycheck-command-map
               ("!" . consult-flycheck)))
