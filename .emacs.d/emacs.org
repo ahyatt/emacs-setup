@@ -900,6 +900,16 @@ And if you're using org-roam you probably want to use org-deft to search it.
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org"))
 #+end_src
+*** org-appear
+Very nice for editing within org elements - and conversely, without something
+like this I find editing org elements frustrating.
+#+begin_src emacs-lisp
+(use-package org-appear
+  :straight (org-appear :type git :host github :repo "awth13/org-appear")
+  :hook (org-mode . org-appear-mode)
+  :config (setq org-appear-autolinks t
+                org-appear-autosubmarkers t))
+#+end_src
 * Tangling-related
 
 We need to add some functions to make dealing with this file easier.

@@ -729,6 +729,10 @@
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org"))
 
+(use-package org-appear
+  :straight (org-appear :type git :host github :repo "awth13/org-appear")
+  :hook (org-mode . org-appear-mode))
+
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
   (interactive)
