@@ -342,13 +342,16 @@
       ("O" org-roam-open-at-point "open at point" :exit t)
       ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
       ("s" deft "search" :exit t)
-      ("t" org-roam-dailies-today "today" :exit t)
-      ("y" org-roam-dailies-yesterday "yesterday" :exit t)
-      ("d" org-roam-dailies-date "date" :exit t))
+      ("t" org-roam-dailies-find-today "today" :exit t)
+      ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
+      ("d" org-roam-dailies-find-date "date" :exit t)
+      ("g" org-roam-db-build-cache "refresh cache"))
     "Sidebar"
     (("r" org-roam "toggle"))
     "Content"
-    (("i" org-roam-insert "insert" :exit t))))
+    (("i" org-roam-insert "insert" :exit t)
+     ("#" org-roam-tag-add "add tag" :exit t)
+     ("a" org-roam-alias-add "add alias" :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -615,6 +618,9 @@
   (setq olivetti-minimum-body-width 72)
   (setq olivetti-recall-visual-line-mode-entry-state t)
   :bind ("C-c o" . olivetti-mode))
+
+(use-package vterm
+    :ensure t)
 
 (defun ash-goto-agenda (&optional _)
   (interactive)

@@ -11,6 +11,7 @@
         delete-horizontal-space
         delete-indentation
         down-list
+        end-of-visual-line
         forward-sexp
         hydra-all/hydra-structural/body-and-exit
         hydra-structural/sp-change-inner
