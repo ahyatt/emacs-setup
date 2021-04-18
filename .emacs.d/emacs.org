@@ -919,6 +919,15 @@ like this I find editing org elements frustrating.
   :config (setq org-appear-autolinks t
                 org-appear-autosubmarkers t))
 #+end_src
+
+We also need to make exporting better to work more naturally with the actual
+Roam research site.
+#+begin_src emacs-lisp
+(setq org-export-with-toc nil
+      org-export-preserve-breaks t
+      org-export-with-properties t
+      org-export-with-tags nil)
+#+end_src
 * Tangling-related
 
 We need to add some functions to make dealing with this file easier.

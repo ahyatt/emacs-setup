@@ -763,3 +763,4 @@ This has to be done as a string to handle 64-bit or larger ints."
     (load-file per-machine-filename)))
 
 (setq epa-pinentry-mode 'loopback)
+(put 'narrow-to-region 'disabled nil)
