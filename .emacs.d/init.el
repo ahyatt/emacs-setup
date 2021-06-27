@@ -109,7 +109,8 @@
              :includes (org))
   :load-path "straight/repos/org/contrib/lisp"
   :config
-  (require 'org-checklist)
+  ;; org-contrib is no longer part of org-mode.
+  ;; (require 'org-checklist)
   :hook (org-mode . visual-line-mode)
   :general
   ("C-c a" 'ash-goto-agenda)
@@ -276,6 +277,7 @@
 (use-package hydra
   :config
   ;; define everything here
+  (require 'pretty-hydra)
   (pretty-hydra-define hydra-jumps ()
     ("Jump visually"
      (("j" avy-goto-word-1 "to word")
@@ -338,20 +340,17 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-roam ()
     ("Navigation"
-     (("o" org-roam-find-file "open" :exit t)
-      ("O" org-roam-open-at-point "open at point" :exit t)
-      ("b" org-roam-switch-to-buffer "switch buffer" :exit t)
+     (("o" org-roam-node-find "open" :exit t)
+      ("c" org-roam-capture "capture" :exit t)
       ("s" deft "search" :exit t)
       ("t" org-roam-dailies-find-today "today" :exit t)
+      ("T" org-roam-dailies-capture-today "capture today" :exit t)
       ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" org-roam-dailies-find-date "date" :exit t)
-      ("g" org-roam-db-build-cache "refresh cache"))
+      ("d" org-roam-dailies-find-date "date" :exit t))
     "Sidebar"
-    (("r" org-roam "toggle"))
+    (("r" org-roam-buffer-toggle "toggle" :exit t))
     "Content"
-    (("i" org-roam-insert "insert" :exit t)
-     ("#" org-roam-tag-add "add tag" :exit t)
-     ("a" org-roam-alias-add "add alias" :exit t))))
+    (("i" org-roam-node-insert "insert" :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -631,7 +630,6 @@
       (org-agenda))))
 
 (require 'org-tempo)
-(require 'org-checklist)
 
 (add-hook 'org-babel-after-execute-hook
           (lambda ()
@@ -639,7 +637,6 @@
               (org-redisplay-inline-images))))
 (add-hook 'org-mode-hook
       (lambda ()
-        (auto-fill-mode)
         (variable-pitch-mode 1)))
 (setq org-clock-string-limit 80
       org-log-done t
@@ -713,18 +710,16 @@
   :after (org-plus-contrib))
 
 (use-package org-roam
-  :straight (:host github :repo "jethrokuan/org-roam")
+  :straight (:host github :repo "jethrokuan/org-roam" :branch "v2")
   :config
-  (run-with-idle-timer 60 t 'org-roam-build-cache)
-  (require 'org-roam)
-  (org-roam-mode)
+  (org-roam-setup)  
   :bind (:map org-roam-mode-map
-              (("C-c n l" . org-roam)
-               ("C-c n f" . org-roam-find-file)
-               ("C-c n b" . org-roam-switch-to-buffer)
+              (("C-c n l" . org-roam-buffer-toggle)
+               ("C-c n f" . org-roam-node-find)
+               ("C-c n c" . org-roam-node-capture)
                ("C-c n g" . org-roam-show-graph))
               :map org-mode-map
-              (("C-c n i" . org-roam-insert))))
+              (("C-c n i" . org-roam-node-insert))))
 
 (use-package deft
   :after org
@@ -737,7 +732,14 @@
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
-  :hook (org-mode . org-appear-mode))
+  :hook (org-mode . org-appear-mode)
+  :config (setq org-appear-autolinks t
+                org-appear-autosubmarkers t))
+
+(setq org-export-with-toc nil
+      org-export-preserve-breaks t
+      org-export-with-properties t
+      org-export-with-tags nil)
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
@@ -753,6 +755,8 @@
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 
+(setq epa-pinentry-mode 'loopback)
+
 (defun ash/strdec-to-hex (n)
   "Given a decimal as a string, convert to hex.
 This has to be done as a string to handle 64-bit or larger ints."
@@ -761,6 +765,3 @@ This has to be done as a string to handle 64-bit or larger ints."
 (let ((per-machine-filename "~/.emacs.d/permachine.el"))
   (when (file-exists-p per-machine-filename)
     (load-file per-machine-filename)))
-
-(setq epa-pinentry-mode 'loopback)
-(put 'narrow-to-region 'disabled nil)
