@@ -15,6 +15,7 @@
         forward-sexp
         hydra-all/hydra-structural/body-and-exit
         hydra-structural/sp-change-inner
+        indent-for-tab-command
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert

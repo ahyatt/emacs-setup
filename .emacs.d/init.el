@@ -64,6 +64,7 @@
  split-width-threshold nil                        ; Disable horizontal window splitting
  tab-width 4                                      ; Set width for tabs
  tooltip-use-echo-area t                          ; Good for non-mouse-users
+ use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
@@ -73,6 +74,7 @@
 (fringe-mode 0)                                   ; Disable fringes
 (fset 'yes-or-no-p 'y-or-n-p)                     ; Replace yes/no prompts with y/n
 (global-subword-mode 1)                           ; Iterate through CamelCase words
+(global-so-long-mode 1)                           ; Better performance for files with long lines
 (menu-bar-mode 0)                                 ; Disable the menu bar
 (mouse-avoidance-mode 'banish)                    ; Avoid collision of mouse with point
 (put 'downcase-region 'disabled nil)              ; Enable downcase-region
@@ -148,31 +150,6 @@
             "T" 'untrace-function
             "x" 'xref-find-references)
   :config
-  (defun current-candidate+category ()
-    (when selectrum-active-p
-      (cons (selectrum--get-meta 'category)
-            (selectrum-get-current-candidate))))
-
-  (add-hook 'embark-target-finders #'current-candidate+category)
-
-  (defun current-candidates+category ()
-    (when selectrum-active-p
-      (cons (selectrum--get-meta 'category)
-            (selectrum-get-current-candidates
-             ;; Pass relative file names for dired.
-             minibuffer-completing-file-name))))
-
-  (add-hook 'embark-candidate-collectors #'current-candidates+category)
-
-  ;; No unnecessary computation delay after injection.
-  (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate)
-
-  (setq embark-action-indicator
-      (lambda (map)
-        (which-key--show-keymap "Embark" map nil nil 'no-paging)
-        #'which-key--hide-popup-ignore-command)
-      embark-become-indicator embark-action-indicator)
-
   (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
   (embark-define-keymap embark-tab-actions
     "Keymap for actions for tab-bar tabs (when mentioned by name)."
@@ -280,20 +257,20 @@
   (require 'pretty-hydra)
   (pretty-hydra-define hydra-jumps ()
     ("Jump visually"
-     (("j" avy-goto-word-1 "to word")
-      ("l" avy-goto-line "to line")
-      ("c" avy-goto-char "to char")
-      ("r" avy-resume "resume"))
+     (("j" avy-goto-word-1 "to word" :exit t)
+      ("l" avy-goto-line "to line" :exit t)
+      ("c" avy-goto-char "to char" :exit t)
+      ("r" avy-resume "resume" :exit t))
      "Jump via minibuffer"
-     (("i" consult-imenu "imenu")
-      ("o" consult-outline "outline"))
+     (("i" consult-imenu "imenu" :exit t)
+      ("o" consult-outline "outline" :exit t))
      "Jump & go"
-     (("u" ash/avy-open-url "open url"))
+     (("u" ash/avy-open-url "open url" :exit t))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
     ("Change"
-     (("i" sp-change-inner "change inner")
+     (("i" sp-change-inner "change inner" :exit t)
       ("k" sp-kill-sexp "kill sexp")
       ("]" sp-slurp-hybrid-sexp "slurp")
       ("/" sp-swap-enclusing-sexp "swap enclusing"))
@@ -343,14 +320,18 @@
      (("o" org-roam-node-find "open" :exit t)
       ("c" org-roam-capture "capture" :exit t)
       ("s" deft "search" :exit t)
-      ("t" org-roam-dailies-find-today "today" :exit t)
+      ("R" ash/org-roam-node-random-no-dates "random note" :exit t)
+      ("t" ash/org-roam-dailies-find-today "today" :exit t)
       ("T" org-roam-dailies-capture-today "capture today" :exit t)
-      ("y" org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" org-roam-dailies-find-date "date" :exit t))
+      ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
+      ("d" ash/org-roam-dailies-find-date "date" :exit t))
     "Sidebar"
     (("r" org-roam-buffer-toggle "toggle" :exit t))
     "Content"
-    (("i" org-roam-node-insert "insert" :exit t))))
+    (("i" org-roam-node-insert "insert" :exit t)
+     ("I" ash/org-roam-node-insert-immediate "insert immediate" :exit t)
+     ("#" org-roam-tag-add "add tag" :exit t)
+     ("a" org-roam-alias-add "add alias" :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -541,12 +522,8 @@
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
-;; (use-package poet-theme)
-(use-package solarized-theme)
 
-(straight-use-package
- `(ayu-themes :host github :repo "vutran1710/Ayu-Theme-Emacs" :type git))
-(add-to-list 'custom-theme-load-path "~/.emacs.d/straight/repos/Ayu-Theme-Emacs/")
+(straight-use-package `(nano-theme :host github :repo "rougier/nano-theme" :type git))
 
 (use-package modus-operandi-theme
   :ensure t
@@ -595,8 +572,12 @@
   (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
 
 (use-package doom-modeline
+  :disabled t
   :ensure t
   :init (doom-modeline-mode 1))
+
+(straight-use-package `(nano-theme :host github :repo "rougier/nano-modeline" :type git))
+(nano-modeline-mode)
 
 (use-package highlight-indent-guides
   :hook (prog-mode . highlight-indent-guides-mode)
@@ -643,6 +624,7 @@
       org-agenda-span 'day
       org-agenda-include-diary t
       org-deadline-warning-days 1
+      org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
       org-catch-invisible-edits 'error
       org-agenda-sticky t
@@ -711,15 +693,54 @@
 
 (use-package org-roam
   :straight (:host github :repo "jethrokuan/org-roam" :branch "v2")
-  :config
-  (org-roam-setup)  
   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam-buffer-toggle)
                ("C-c n f" . org-roam-node-find)
                ("C-c n c" . org-roam-node-capture)
                ("C-c n g" . org-roam-show-graph))
               :map org-mode-map
-              (("C-c n i" . org-roam-node-insert))))
+              (("C-c n i" . org-roam-node-insert)))
+  :config
+  (setq org-roam-v2-ack t)
+  (org-roam-db-autosync-mode)
+  (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
+  (require 'org-roam-dailies)
+  ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
+  (defun ash/org-roam-node-insert-immediate (arg &rest args)
+    (interactive "P")
+    (let ((args (cons arg args))
+          (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                    '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
+  (defun ash/org-roam-dailies-find-today ()
+    (interactive)
+    (let ((org-roam-dailies-capture-templates
+           (list (append (car org-roam-dailies-capture-templates)
+                         '(:immediate-finish t)))))
+      (org-roam-dailies-capture-today t)))
+  (defun ash/org-roam-dailies-find-yesterday ()
+    (interactive)
+    (let ((org-roam-dailies-capture-templates
+           (list (append (car org-roam-dailies-capture-templates)
+                         '(:immediate-finish t)))))
+      (org-roam-dailies-capture-yesterday 1 t)))
+  (defun ash/org-roam-dailies-find-date ()
+    (interactive)
+    (let ((org-roam-dailies-capture-templates
+           (list (append (car org-roam-dailies-capture-templates)
+                         '(:immediate-finish t)))))
+      (org-roam-dailies-capture-date t t)))
+  (defun ash/org-roam-node-random-no-dates (&optional other-window)
+    (interactive)
+    (let ((random-row (seq-random-elt
+                       (seq-filter (lambda (id-file)
+                                     (not (string-match-p org-roam-dailies-directory
+                                                          (cl-second id-file))))
+                                   (org-roam-db-query [:select [id file pos] :from nodes])))))
+    (org-roam-node-visit (org-roam-node-create :id (nth 0 random-row)
+                                               :file (nth 1 random-row)
+                                               :point (nth 2 random-row))
+                         other-window))))
 
 (use-package deft
   :after org
@@ -730,10 +751,24 @@
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org"))
 
+(use-package org-roam-ui
+  :straight
+    (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+    :after org-roam
+    ;; normally we'd recommend hooking org-roam-ui after org-roam, but since
+    ;; org-roam does not have a hookable mode anymore, you're advised to
+    ;; pick something yourself if you don't care about startup time, use
+    :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
   :hook (org-mode . org-appear-mode)
-  :config (setq org-appear-autolinks t
+  :config (setq org-appear-autolinks nil
                 org-appear-autosubmarkers t))
 
 (setq org-export-with-toc nil
