@@ -633,6 +633,17 @@ still be fixed width.  For that you need posframes.
 (use-package company-posframe
   :config (company-posframe-mode 1))
 #+end_src
+*** Tree Sitter
+This gives emacs the power to interact with the AST.
+#+begin_src emacs-lisp
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode))
+(use-package tree-sitter-langs
+  :config
+  (tree-sitter-langs-)
+  )
+#+end_src
 ** Help
 
 Which-key pops up keys in a buffer when you are in the middle of a keystroke.
@@ -656,8 +667,6 @@ Helpful is a nice replacement that is more comprehensive than normal help.
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
-
-(straight-use-package `(nano-theme :host github :repo "rougier/nano-theme" :type git))
 
 (use-package modus-operandi-theme
   :ensure t
@@ -722,17 +731,11 @@ Also fix the message quoting in gmail
 Improve the looks of the modeline with Powerline.
 #+BEGIN_SRC emacs-lisp
 (use-package doom-modeline
-  :disabled t
   :ensure t
-  :init (doom-modeline-mode 1))
+  :init (doom-modeline-mode 1)
+  :config (setq doom-modeline-buffer-encoding nil
+                doom-modeline-minor-modes nil))
 #+END_SRC
-
-Actually, let's try nano-line.
-#+begin_src emacs-lisp
-(straight-use-package `(nano-theme :host github :repo "rougier/nano-modeline" :type git))
-(nano-modeline-mode)
-#+end_src
-
 
 Add indentation lines
 #+begin_src emacs-lisp

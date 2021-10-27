@@ -508,6 +508,14 @@
 (use-package company-posframe
   :config (company-posframe-mode 1))
 
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode))
+(use-package tree-sitter-langs
+  :config
+  (tree-sitter-langs-)
+  )
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
@@ -522,8 +530,6 @@
 (dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
-
-(straight-use-package `(nano-theme :host github :repo "rougier/nano-theme" :type git))
 
 (use-package modus-operandi-theme
   :ensure t
@@ -572,12 +578,10 @@
   (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
 
 (use-package doom-modeline
-  :disabled t
   :ensure t
-  :init (doom-modeline-mode 1))
-
-(straight-use-package `(nano-theme :host github :repo "rougier/nano-modeline" :type git))
-(nano-modeline-mode)
+  :init (doom-modeline-mode 1)
+  :config (setq doom-modeline-buffer-encoding nil
+                doom-modeline-minor-modes nil))
 
 (use-package highlight-indent-guides
   :hook (prog-mode . highlight-indent-guides-mode)
