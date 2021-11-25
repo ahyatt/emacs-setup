@@ -104,12 +104,7 @@
   ;; Let's make the top-level key categories here
   (general-create-definer ash/key-def :prefix "C-c"))
 
-(use-package org-plus-contrib
-  :straight (org-plus-contrib
-             :repo "https://code.orgmode.org/bzg/org-mode.git"
-             :local-repo "org"
-             :includes (org))
-  :load-path "straight/repos/org/contrib/lisp"
+(use-package org
   :config
   ;; org-contrib is no longer part of org-mode.
   ;; (require 'org-checklist)
@@ -531,27 +526,26 @@
   (when (boundp hook)
     (add-hook hook (lambda () (variable-pitch-mode 1)))))
 
-(use-package modus-operandi-theme
+(use-package modus-themes
   :ensure t
   :init
-  (setq modus-operandi-theme-slanted-constructs t
-        modus-operandi-theme-bold-constructs t
-        modus-operandi-theme-visible-fringes t
-        modus-operandi-theme-3d-modeline t
-        modus-operandi-theme-subtle-diffs t
-        modus-operandi-theme-intense-standard-completions t
-        modus-operandi-theme-org-blocks 'greyscale
-        modus-operandi-theme-proportional-fonts t
-        modus-operandi-theme-rainbow-headings t
-        modus-operandi-theme-section-headings t
-        modus-operandi-theme-scale-headings t
-        modus-operandi-theme-scale-1 1.05
-        modus-operandi-theme-scale-2 1.1
-        modus-operandi-theme-scale-3 1.15
-        modus-operandi-theme-scale-4 1.2
-        modus-operandi-theme-scale-5 1.3)
-  :config
-  (load-theme 'modus-operandi t))
+  (setq modus-themes-slanted-constructs t
+        modus-themes-bold-constructs t
+        modus-themes-visible-fringes t
+        modus-themes-mixed-fonts t
+        modus-themes-intense-standard-completions t
+        modus-themes-proportional-fonts t
+        modus-themes-rainbow-headings t
+        modus-themes-section-headings t
+        modus-themes-scale-headings t
+        modus-themes-region '(bg-only no-extend)
+        modus-themes-scale-1 1.05
+        modus-themes-scale-2 1.1
+        modus-themes-scale-3 1.15
+        modus-themes-scale-4 1.2
+        modus-themes-scale-5 1.3)
+  (modus-themes-load-themes)
+  (modus-themes-load-operandi))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -696,8 +690,7 @@
   :after (org-plus-contrib))
 
 (use-package org-roam
-  :straight (:host github :repo "jethrokuan/org-roam" :branch "v2")
-  :bind (:map org-roam-mode-map
+   :bind (:map org-roam-mode-map
               (("C-c n l" . org-roam-buffer-toggle)
                ("C-c n f" . org-roam-node-find)
                ("C-c n c" . org-roam-node-capture)
@@ -779,6 +772,8 @@
       org-export-preserve-breaks t
       org-export-with-properties t
       org-export-with-tags nil)
+
+(use-package ob-mermaid)
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
