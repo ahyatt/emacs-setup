@@ -673,6 +673,8 @@
       org-clock-into-drawer nil
       org-clock-report-include-clocking-task t
       org-clock-history-length 20
+      org-extend-today-until 6
+      org-read-date-prefer-future nil
       org-use-property-inheritance t
       org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))     
       org-refile-targets '((nil :maxlevel . 5))
@@ -726,7 +728,7 @@
     (let ((org-roam-dailies-capture-templates
            (list (append (car org-roam-dailies-capture-templates)
                          '(:immediate-finish t)))))
-      (org-roam-dailies-capture-date t t)))
+      (org-roam-dailies-capture-date t nil)))
   (defun ash/org-roam-node-random-no-dates (&optional other-window)
     (interactive)
     (let ((random-row (seq-random-elt
