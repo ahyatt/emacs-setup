@@ -233,7 +233,7 @@
       ("D" edebug-defun "edebug defun")
       ("e" eval-last-sexp "eval last sexp")
       ("E" edebug-eval-last-sexp "edebug last sexp")
-      ("i" ielm "ielm"))
+      ("l" ielm "ielm"))
      "Test"
      (("t" ert "prompt")
       ("T" (ert t) "all")
@@ -373,7 +373,7 @@
   (pretty-hydra-define hydra-mail ()
     ("Search"
      (("s" notmuch-search "search" :exit t)
-      ("h" ash/consult-notmuch "incremental search" :exit t))
+      ("h" consult-notmuch "incremental search" :exit t))
      "Application"
      (("n" notmuch-hello "notmuch" :exit t)
       ("i" ash/inbox "inbox" :exit t)
@@ -498,7 +498,7 @@
   (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
   :init
   (add-hook 'after-init-hook 'global-company-mode)
-  (setq company-minimum-prefix-length 0))
+  (setq company-minimum-prefix-length 3))
 
 (use-package company-posframe
   :config (company-posframe-mode 1))
@@ -621,7 +621,7 @@
       org-log-done t
       org-agenda-span 'day
       org-agenda-include-diary t
-      org-deadline-warning-days 1
+      org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
       org-catch-invisible-edits 'error
@@ -703,6 +703,20 @@
   (setq org-roam-v2-ack t)
   (org-roam-db-autosync-mode)
   (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
+  (defun deft-parse-title (file contents)
+  "Parse the given FILE and CONTENTS and determine the title.
+If `deft-use-filename-as-title' is nil, the title is taken to
+be the first non-empty line of the FILE.  Else the base name of the FILE is
+used as title."
+  (if deft-use-filename-as-title
+      (deft-base-filename file)
+    (let ((begin (string-match "^[^:].+$" contents)))
+      (if begin
+          (funcall deft-parse-title-function
+                   (substring contents begin (match-end 0)))))))
+  (setq deft-strip-title-regexp "#+\\(TITLE|title\\):\s+")
+  (setq deft-strip-summary-regexp
+        (rx (seq string-start ":" (one-or-more anything) string-end)))
   (require 'org-roam-dailies)
   ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
   (defun ash/org-roam-node-insert-immediate (arg &rest args)
