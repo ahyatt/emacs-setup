@@ -320,7 +320,12 @@ Hydra is useful for doing lots of things in succession.
                                          "Opening" (("o" org-open-at-point "open at point"))
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
-                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
+                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))
+                                         "Roam" ((" " org-roam-buffer-toggle "Backlinks" :toggle t)
+                                                 ("a" org-roam-node-insert "add link")
+                                                 ("A" ash/org-roam-node-insert-immediate "add link immediately")
+                                                 ("#" org-roam-tag-add "add tag")
+                                                 ("a" org-roam-alias-add "add alias"))))
   (major-mode-hydra-define emacs-lisp-mode nil
     ("Eval"
      (("b" eval-buffer "eval buffer")
@@ -415,14 +420,7 @@ Hydra is useful for doing lots of things in succession.
       ("t" ash/org-roam-dailies-find-today "today" :exit t)
       ("T" org-roam-dailies-capture-today "capture today" :exit t)
       ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" ash/org-roam-dailies-find-date "date" :exit t))
-    "Sidebar"
-    (("r" org-roam-buffer-toggle "toggle" :exit t))
-    "Content"
-    (("i" org-roam-node-insert "insert" :exit t)
-     ("I" ash/org-roam-node-insert-immediate "insert immediate" :exit t)
-     ("#" org-roam-tag-add "add tag" :exit t)
-     ("a" org-roam-alias-add "add alias" :exit t))))
+      ("d" ash/org-roam-dailies-find-date "date" :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -764,6 +762,11 @@ Use vterm, which is good for when you need full terminal emulation.
 (use-package vterm
     :ensure t)
 #+end_src
+** Tab Bar
+I use the tab bar to sort specific activies, such as mail, elfeed, and projects each into their own tab.
+#+begin_src emacs-lisp
+(setq tab-bar-select-tab-modifiers '(super))
+#+end_src
 * Org config
 #+BEGIN_SRC emacs-lisp
 (defun ash-goto-agenda (&optional _)
@@ -957,6 +960,33 @@ And =org-roam-ui= is a good interface:
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 #+end_src
+
+
+**** UI
+Also, my org-roam buffers tend to be pretty short, so let's make the font fairly large, and use Olivetti mode.
+#+begin_src emacs-lisp
+(defun ash/big-font ()
+  "Creates a font that is big enough for about 20 lines of text."
+  (interactive)
+  (text-scale-set (/ (frame-height) 20)))
+
+(defun ash/maybe-org-roam-ui ()
+  "If we're in an org roam buffer, create a special UI."
+  (when (org-roam-buffer-p)
+    (ash/big-font)
+    (when (featurep 'olivetti)
+      (olivetti-mode))))
+
+(add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
+#+end_src
+**** Exporting
+We also need to make exporting better to work more naturally with the actual Roam research site.
+#+begin_src emacs-lisp
+(setq org-export-with-toc nil
+      org-export-preserve-breaks t
+      org-export-with-properties t
+      org-export-with-tags nil)
+#+end_src
 *** org-appear
 Very nice for editing within org elements - and conversely, without something
 like this I find editing org elements frustrating.
@@ -966,15 +996,6 @@ like this I find editing org elements frustrating.
   :hook (org-mode . org-appear-mode)
   :config (setq org-appear-autolinks nil
                 org-appear-autosubmarkers t))
-#+end_src
-
-We also need to make exporting better to work more naturally with the actual
-Roam research site.
-#+begin_src emacs-lisp
-(setq org-export-with-toc nil
-      org-export-preserve-breaks t
-      org-export-with-properties t
-      org-export-with-tags nil)
 #+end_src
 *** org babel packages
 **** mermaid

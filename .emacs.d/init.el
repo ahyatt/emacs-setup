@@ -224,7 +224,12 @@
                                          "Opening" (("o" org-open-at-point "open at point"))
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
-                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))))
+                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))
+                                         "Roam" ((" " org-roam-buffer-toggle "Backlinks" :toggle t)
+                                                 ("a" org-roam-node-insert "add link")
+                                                 ("A" ash/org-roam-node-insert-immediate "add link immediately")
+                                                 ("#" org-roam-tag-add "add tag")
+                                                 ("a" org-roam-alias-add "add alias"))))
   (major-mode-hydra-define emacs-lisp-mode nil
     ("Eval"
      (("b" eval-buffer "eval buffer")
@@ -319,14 +324,7 @@
       ("t" ash/org-roam-dailies-find-today "today" :exit t)
       ("T" org-roam-dailies-capture-today "capture today" :exit t)
       ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" ash/org-roam-dailies-find-date "date" :exit t))
-    "Sidebar"
-    (("r" org-roam-buffer-toggle "toggle" :exit t))
-    "Content"
-    (("i" org-roam-node-insert "insert" :exit t)
-     ("I" ash/org-roam-node-insert-immediate "insert immediate" :exit t)
-     ("#" org-roam-tag-add "add tag" :exit t)
-     ("a" org-roam-alias-add "add alias" :exit t))))
+      ("d" ash/org-roam-dailies-find-date "date" :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -600,6 +598,8 @@
 (use-package vterm
     :ensure t)
 
+(setq tab-bar-select-tab-modifiers '(super))
+
 (defun ash-goto-agenda (&optional _)
   (interactive)
   (let ((buf (get-buffer "*Org Agenda(l)*")))
@@ -778,16 +778,30 @@ used as title."
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 
-(use-package org-appear
-  :straight (org-appear :type git :host github :repo "awth13/org-appear")
-  :hook (org-mode . org-appear-mode)
-  :config (setq org-appear-autolinks nil
-                org-appear-autosubmarkers t))
+(defun ash/big-font ()
+  "Creates a font that is big enough for about 20 lines of text."
+  (interactive)
+  (text-scale-set (/ (frame-height) 20)))
+
+(defun ash/maybe-org-roam-ui ()
+  "If we're in an org roam buffer, create a special UI."
+  (when (org-roam-buffer-p)
+    (ash/big-font)
+    (when (featurep 'olivetti)
+      (olivetti-mode))))
+
+(add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
 
 (setq org-export-with-toc nil
       org-export-preserve-breaks t
       org-export-with-properties t
       org-export-with-tags nil)
+
+(use-package org-appear
+  :straight (org-appear :type git :host github :repo "awth13/org-appear")
+  :hook (org-mode . org-appear-mode)
+  :config (setq org-appear-autolinks nil
+                org-appear-autosubmarkers t))
 
 (use-package ob-mermaid)
 
