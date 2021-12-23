@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: link
+# key: link
+# binding: C-c l
+# --
+[[`yas-selected-text`][$0]]
