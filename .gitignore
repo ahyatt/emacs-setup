@@ -3,7 +3,7 @@ elpa/
 auto-save-list/
 ac-comphist.dat
 history
-custom.el
+.custom.el
 bookmarks
 places
 projectile.cache
@@ -13,3 +13,13 @@ var/pcache/font-utils
 .#.*
 projectile-bookmarks.eld
 permachine.el
+diary
+*~
+org-roam.db
+straight/
+transient/
+url/
+var/
+persist/
+eshell/
+eln-cache/
