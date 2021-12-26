@@ -166,7 +166,10 @@
     
 (use-package consult-flycheck
   :bind (:map flycheck-command-map
-              ("!" . consult-flycheck)))
+              ("!" . consult-flycheck))
+  ;; If flycheck idle change delay is too short, then it overwrites the helpful
+  ;; messages about how to call elisp functions, etc.
+  :config (setq flycheck-idle-change-delay 15))
 
 (use-package winum
   :config (winum-mode 1)
@@ -495,8 +498,8 @@
   (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
   (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
   :init
-  (add-hook 'after-init-hook 'global-company-mode)
-  (setq company-minimum-prefix-length 3))
+  (setq company-minimum-prefix-length 4))
+  (add-hook 'after-init-hook 'global-company-mode))
 
 (use-package company-posframe
   :config (company-posframe-mode 1))
@@ -599,6 +602,9 @@
     :ensure t)
 
 (setq tab-bar-select-tab-modifiers '(super))
+
+(use-package notmuch
+  :config (require 'notmuch))
 
 (defun ash-goto-agenda (&optional _)
   (interactive)

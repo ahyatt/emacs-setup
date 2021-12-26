@@ -239,7 +239,10 @@ Consult provides more mini-buffer search functionality
     
 (use-package consult-flycheck
   :bind (:map flycheck-command-map
-              ("!" . consult-flycheck)))
+              ("!" . consult-flycheck))
+  ;; If flycheck idle change delay is too short, then it overwrites the helpful
+  ;; messages about how to call elisp functions, etc.
+  :config (setq flycheck-idle-change-delay 15))
 
 #+end_src
 ** Movement
@@ -616,8 +619,8 @@ Company mode is a standard for symbol completion.
   (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
   (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
   :init
-  (add-hook 'after-init-hook 'global-company-mode)
-  (setq company-minimum-prefix-length 3))
+  (setq company-minimum-prefix-length 3)
+  (add-hook 'after-init-hook 'global-company-mode))
 #+END_SRC
 
 Plus when company is used in a variable-pitch buffer, it's important that it
@@ -767,6 +770,17 @@ I use the tab bar to sort specific activies, such as mail, elfeed, and projects 
 #+begin_src emacs-lisp
 (setq tab-bar-select-tab-modifiers '(super))
 #+end_src
+** Mail
+I've used many mail packages, but =notmuch= is a good combination of simple, suited to mail, very fast, and with a good search.
+#+begin_src emacs-lisp
+(use-package notmuch
+  :config (require 'notmuch))
+#+end_src
+
+Also use the dynamic completion.
+#+begin_example emacs-lisp
+(use-package consult-notmuch)
+#+end_example
 * Org config
 #+BEGIN_SRC emacs-lisp
 (defun ash-goto-agenda (&optional _)
