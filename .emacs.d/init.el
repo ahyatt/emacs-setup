@@ -497,9 +497,9 @@
   :config
   (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
   (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
+  (add-hook 'after-init-hook 'global-company-mode)
   :init
   (setq company-minimum-prefix-length 4))
-  (add-hook 'after-init-hook 'global-company-mode))
 
 (use-package company-posframe
   :config (company-posframe-mode 1))
