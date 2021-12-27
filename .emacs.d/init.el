@@ -228,9 +228,9 @@
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
                                          "Headings" (("i" org-insert-heading-respect-content "insert heading"))
-                                         "Roam" ((" " org-roam-buffer-toggle "Backlinks" :toggle t)
-                                                 ("a" org-roam-node-insert "add link")
-                                                 ("A" ash/org-roam-node-insert-immediate "add link immediately")
+                                         "Roam" (("-" org-roam-buffer-toggle "Backlinks" :toggle t)
+                                                 (";" org-roam-node-insert "add link")
+                                                 (":" ash/org-roam-node-insert-immediate "add link immediately")
                                                  ("#" org-roam-tag-add "add tag")
                                                  ("a" org-roam-alias-add "add alias"))))
   (major-mode-hydra-define emacs-lisp-mode nil
@@ -383,11 +383,11 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-org-main ()
     ("Misc"
-     (("a" org-agenda "agenda")
-      ("c" org-capture "capture"))
+     (("a" org-agenda "agenda" :exit t)
+      ("c" org-capture "capture" :exit t))
      "Links"
-     (("s" org-store-link "store")
-      ("p" ash/org-paste-link "paste"))))
+     (("s" org-store-link "store" :exit t)
+      ("p" ash/org-paste-link "paste" :exit t))))
   (pretty-hydra-define hydra-find ()
     ("In-Buffer"
      (("i" consult-imenu "imenu" :exit t)
@@ -695,7 +695,12 @@
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
 
 (use-package org-pomodoro
-  :after (org-plus-contrib))
+  :config
+  (defun ash/org-pomodoro-til-meeting ()
+    "Run a pomodoro until the next 30 minute boundary."
+    (interactive)
+    (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
+      (org-pomodoro))))
 
 (use-package org-roam
    :bind (:map org-roam-mode-map
@@ -759,7 +764,19 @@ used as title."
     (org-roam-node-visit (org-roam-node-create :id (nth 0 random-row)
                                                :file (nth 1 random-row)
                                                :point (nth 2 random-row))
-                         other-window))))
+                         other-window)))
+  
+  (defun ash/roam-tag-filter (tag)
+    "Return function that filters based on TAG."
+    (lambda (n) (member tag (org-roam-node-tags n))))
+
+  ;; To be used in `org-roam-dailies-capture-template'.
+  (defun ash/problem-org-output ()
+    "Return org structure for each org-roam problem."
+    (mapconcat 
+     (lambda (node) (format "- [[id:%s][%s]]: " (org-roam-node-id node) (org-roam-node-title node)))
+     (-filter (ash/roam-tag-filter "problem") (org-roam-node-list))
+     "\n")))
 
 (use-package deft
   :after org
@@ -784,6 +801,11 @@ used as title."
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 
+(setq org-export-with-toc nil
+      org-export-preserve-breaks t
+      org-export-with-properties t
+      org-export-with-tags nil)
+
 (defun ash/big-font ()
   "Creates a font that is big enough for about 20 lines of text."
   (interactive)
@@ -791,17 +813,13 @@ used as title."
 
 (defun ash/maybe-org-roam-ui ()
   "If we're in an org roam buffer, create a special UI."
-  (when (org-roam-buffer-p)
+  (when (or (org-roam-buffer-p))
     (ash/big-font)
     (when (featurep 'olivetti)
       (olivetti-mode))))
 
 (add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
-
-(setq org-export-with-toc nil
-      org-export-preserve-breaks t
-      org-export-with-properties t
-      org-export-with-tags nil)
+(add-hook 'org-capture-mode-hook #'ash/big-font)
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
@@ -835,3 +853,19 @@ This has to be done as a string to handle 64-bit or larger ints."
 (let ((per-machine-filename "~/.emacs.d/permachine.el"))
   (when (file-exists-p per-machine-filename)
     (load-file per-machine-filename)))
+
+(when (= 1 (length (tab-bar-tabs)))
+  (tab-bar-new-tab)
+  (tab-bar-new-tab)
+  (tab-bar-rename-tab "org" 1)
+  (tab-bar-rename-tab "roam" 2)
+  (tab-bar-rename-tab "mail" 3)
+  (tab-bar-select-tab 1)
+  (org-agenda nil "l")
+  (delete-other-windows)
+  (tab-bar-select-tab 2)
+  (org-roam-node-random)
+  (delete-other-windows)
+  (tab-bar-select-tab 3)
+  (notmuch)
+  (delete-other-windows))
