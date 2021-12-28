@@ -226,7 +226,8 @@
                                                      ("." org-tree-to-indirect-buffer "indirect buffer")
                                                      ("'" org-id-get-create "create id"))
                                          "Inserting" (("c" citar-insert-citation "insert citation")
-                                                      ("i" org-insert-heading-respect-content "insert heading"))
+                                                      ("i" org-insert-heading-respect-content "insert heading")
+                                                      ("y" ash/org-paste-link "yank link" :exit t))
                                          "Opening" (("o" org-open-at-point "open at point"))
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
@@ -388,8 +389,7 @@
      (("a" org-agenda "agenda" :exit t)
       ("c" org-capture "capture" :exit t))
      "Links"
-     (("s" org-store-link "store" :exit t)
-      ("p" ash/org-paste-link "paste" :exit t))))
+     (("s" org-store-link "store" :exit t))))
   (pretty-hydra-define hydra-find ()
     ("In-Buffer"
      (("i" consult-imenu "imenu" :exit t)
@@ -767,7 +767,24 @@
      (mapconcat 
       (lambda (node) (format "- [[id:%s][%s]]: " (org-roam-node-id node) (org-roam-node-title node)))
       (-filter (ash/roam-tag-filter "problem") (org-roam-node-list))
-      "\n")))
+      "\n"))
+
+   ;; Set up a new link type for org
+   (require 'ol)
+   (org-link-set-parameters "roam"
+                            :follow #'ash/org-roam-open-link
+                            :store #'ash/org-roam-store-link)
+   (defun ash/org-roam-open-link (id _)
+     "Visit the org-roam page TITLE."
+     (org-roam-node-visit (org-roam-node-from-id id)))
+
+   (defun ash/org-roam-store-link ()
+     (when (org-roam-buffer-p)
+       (let ((node (org-roam-node-at-point)))
+         (org-link-store-props
+          :type "roam"
+          :link (concat (format "roam:%s" (org-roam-node-id node)))
+          :description (org-roam-node-title node))))))
 
 (use-package deft
   :after org
