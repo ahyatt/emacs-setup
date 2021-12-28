@@ -783,8 +783,72 @@
        (let ((node (org-roam-node-at-point)))
          (org-link-store-props
           :type "roam"
-          :link (concat (format "roam:%s" (org-roam-node-id node)))
-          :description (org-roam-node-title node))))))
+          :link (format "roam:%s" (org-roam-node-id node))
+          :description (org-roam-node-title node)))))
+
+   ;; Adapted from https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
+
+   (defun ash/org-roam-add-to-today (heading text)
+     "Add TEXT to today's org-roam file under HEADING."
+     (save-selected-window
+       ;; Even if we are just adding to an existing node, we don't want to do
+       ;; anything particular when the new node is created.
+       ;;
+       ;; TODO: Maybe just remove my particular logging on node creation?
+       (let* ((org-roam-dailies-capture-templates nil)
+              (org-roam-capture-templates nil)
+              (org-roam-capture-new-node-hook nil)
+              (org-roam-directory (expand-file-name org-roam-dailies-directory org-roam-directory)))
+         (org-roam-capture- :goto nil
+                            :keys "d"
+                            ;; :node (org-roam-node-create)
+                            :node (org-roam-node-from-title-or-alias (format-time-string "%Y-%m-%d"))
+                            :templates `(("d" "default" item ,(format "- [%%T] %s\n" text)
+                                          :target (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" (,heading))
+                                          :immediate-finish t
+                                          :kill-buffer t
+                                          :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" (,heading)))) ))))
+
+   (defun ash/log-to-roam (text)
+     "Log TEXT to the current daily roam node."
+     (ash/org-roam-add-to-today "Log" text))
+   
+   (defun ash/org-roam-copy-todo-to-today ()
+     (interactive)
+     (let ((org-refile-keep t)
+           (org-roam-dailies-capture-templates
+            ;; won't be seen.
+            `(("a" "addition" entry "%?"
+               :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" "Completed Tasks"))))
+           (org-after-refile-insert-hook #'save-buffer)
+           today-file
+           pos)
+       (save-window-excursion
+         (org-roam-dailies--capture (current-time) t)
+         (setq today-file (buffer-file-name))
+         (setq pos (point)))
+
+       ;; Only refile if the target file is different than the current file
+       (unless (equal (file-truename today-file)
+                      (file-truename (buffer-file-name)))
+         (org-refile nil nil (list heading today-file nil pos)))))
+
+   (defun ash/on-todo-state-change ()
+     (when (equal org-state "DONE")
+       (ash/org-roam-copy-todo-to-today)))
+
+   (defun ash/log-org-roam-node-creation ()
+     (save-excursion
+       (let ((node (org-roam-node-at-point)))
+         (when (not (org-roam--dailies–daily-note-p (org-roam-node-file node)))
+           (ash/log-to-roam (format "Created %s" (org-link-make-string
+                                                  (format "roam:%s" (org-roam-node-id node))
+                                                  (org-roam-node-title node))))))))
+
+   (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
+
+   ;; When new org-roam nodes are created, note it.
+   (add-hook 'org-roam-capture-new-node-hook #'ash/log-org-roam-node-creation))
 
 (use-package deft
   :after org
