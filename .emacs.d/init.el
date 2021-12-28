@@ -223,11 +223,13 @@
                                                      ("<" org-promote-subtree "promote" :exit nil)
                                                      ("N" org-narrow-to-subtree "narrow")
                                                      ("r" org-refile "refile")
-                                                     ("." org-tree-to-indirect-buffer "indirect buffer"))
+                                                     ("." org-tree-to-indirect-buffer "indirect buffer")
+                                                     ("'" org-id-get-create "create id"))
+                                         "Inserting" (("c" citar-insert-citation "insert citation")
+                                                      ("i" org-insert-heading-respect-content "insert heading"))
                                          "Opening" (("o" org-open-at-point "open at point"))
                                          "Clock" (("p" org-pomodoro "Start pomodoro")
                                                   ("P" ash/org-pomodoro-til-meeting "Start pomodoro til half hour"))
-                                         "Headings" (("i" org-insert-heading-respect-content "insert heading"))
                                          "Roam" (("-" org-roam-buffer-toggle "Backlinks" :toggle t)
                                                  (";" org-roam-node-insert "add link")
                                                  (":" ash/org-roam-node-insert-immediate "add link immediately")
@@ -497,9 +499,9 @@
   :config
   (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
   (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
-  (add-hook 'after-init-hook 'global-company-mode)
   :init
-  (setq company-minimum-prefix-length 4))
+  (setq company-minimum-prefix-length 3)
+  (add-hook 'after-init-hook 'global-company-mode))
 
 (use-package company-posframe
   :config (company-posframe-mode 1))
@@ -710,73 +712,75 @@
                ("C-c n g" . org-roam-show-graph))
               :map org-mode-map
               (("C-c n i" . org-roam-node-insert)))
-  :config
-  (setq org-roam-v2-ack t)
-  (org-roam-db-autosync-mode)
-  (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
-  (defun deft-parse-title (file contents)
-  "Parse the given FILE and CONTENTS and determine the title.
+   :init
+   (setq org-roam-v2-ack t)
+   (add-to-list org-cite-global-bibliography "~/org/notes/orgcite.bib")
+   :config
+   (org-roam-db-autosync-mode)
+   (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
+   (defun deft-parse-title (file contents)
+     "Parse the given FILE and CONTENTS and determine the title.
 If `deft-use-filename-as-title' is nil, the title is taken to
 be the first non-empty line of the FILE.  Else the base name of the FILE is
 used as title."
-  (if deft-use-filename-as-title
-      (deft-base-filename file)
-    (let ((begin (string-match "^[^:].+$" contents)))
-      (if begin
-          (funcall deft-parse-title-function
-                   (substring contents begin (match-end 0)))))))
-  (setq deft-strip-title-regexp "#+\\(TITLE|title\\):\s+")
-  (setq deft-strip-summary-regexp
-        (rx (seq string-start ":" (one-or-more anything) string-end)))
-  (require 'org-roam-dailies)
-  ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
-  (defun ash/org-roam-node-insert-immediate (arg &rest args)
-    (interactive "P")
-    (let ((args (cons arg args))
-          (org-roam-capture-templates (list (append (car org-roam-capture-templates)
-                                                    '(:immediate-finish t)))))
-      (apply #'org-roam-node-insert args)))
-  (defun ash/org-roam-dailies-find-today ()
-    (interactive)
-    (let ((org-roam-dailies-capture-templates
-           (list (append (car org-roam-dailies-capture-templates)
-                         '(:immediate-finish t)))))
-      (org-roam-dailies-capture-today t)))
-  (defun ash/org-roam-dailies-find-yesterday ()
-    (interactive)
-    (let ((org-roam-dailies-capture-templates
-           (list (append (car org-roam-dailies-capture-templates)
-                         '(:immediate-finish t)))))
-      (org-roam-dailies-capture-yesterday 1 t)))
-  (defun ash/org-roam-dailies-find-date ()
-    (interactive)
-    (let ((org-roam-dailies-capture-templates
-           (list (append (car org-roam-dailies-capture-templates)
-                         '(:immediate-finish t)))))
-      (org-roam-dailies-capture-date t nil)))
-  (defun ash/org-roam-node-random-no-dates (&optional other-window)
-    (interactive)
-    (let ((random-row (seq-random-elt
-                       (seq-filter (lambda (id-file)
-                                     (not (string-match-p org-roam-dailies-directory
-                                                          (cl-second id-file))))
-                                   (org-roam-db-query [:select [id file pos] :from nodes])))))
-    (org-roam-node-visit (org-roam-node-create :id (nth 0 random-row)
-                                               :file (nth 1 random-row)
-                                               :point (nth 2 random-row))
-                         other-window)))
-  
-  (defun ash/roam-tag-filter (tag)
-    "Return function that filters based on TAG."
-    (lambda (n) (member tag (org-roam-node-tags n))))
+     (if deft-use-filename-as-title
+         (deft-base-filename file)
+       (let ((begin (string-match "^[^:].+$" contents)))
+         (if begin
+             (funcall deft-parse-title-function
+                      (substring contents begin (match-end 0)))))))
+   (setq deft-strip-title-regexp "#+\\(TITLE|title\\):\s+")
+   (setq deft-strip-summary-regexp
+         (rx (seq string-start ":" (one-or-more anything) string-end)))
+   (require 'org-roam-dailies)
+   ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
+   (defun ash/org-roam-node-insert-immediate (arg &rest args)
+     (interactive "P")
+     (let ((args (cons arg args))
+           (org-roam-capture-templates (list (append (car org-roam-capture-templates)
+                                                     '(:immediate-finish t)))))
+       (apply #'org-roam-node-insert args)))
+   (defun ash/org-roam-dailies-find-today ()
+     (interactive)
+     (let ((org-roam-dailies-capture-templates
+            (list (append (car org-roam-dailies-capture-templates)
+                          '(:immediate-finish t)))))
+       (org-roam-dailies-capture-today t)))
+   (defun ash/org-roam-dailies-find-yesterday ()
+     (interactive)
+     (let ((org-roam-dailies-capture-templates
+            (list (append (car org-roam-dailies-capture-templates)
+                          '(:immediate-finish t)))))
+       (org-roam-dailies-capture-yesterday 1 t)))
+   (defun ash/org-roam-dailies-find-date ()
+     (interactive)
+     (let ((org-roam-dailies-capture-templates
+            (list (append (car org-roam-dailies-capture-templates)
+                          '(:immediate-finish t)))))
+       (org-roam-dailies-capture-date t nil)))
+   (defun ash/org-roam-node-random-no-dates (&optional other-window)
+     (interactive)
+     (let ((random-row (seq-random-elt
+                        (seq-filter (lambda (id-file)
+                                      (not (string-match-p org-roam-dailies-directory
+                                                           (cl-second id-file))))
+                                    (org-roam-db-query [:select [id file pos] :from nodes])))))
+       (org-roam-node-visit (org-roam-node-create :id (nth 0 random-row)
+                                                  :file (nth 1 random-row)
+                                                  :point (nth 2 random-row))
+                            other-window)))
+   
+   (defun ash/roam-tag-filter (tag)
+     "Return function that filters based on TAG."
+     (lambda (n) (member tag (org-roam-node-tags n))))
 
-  ;; To be used in `org-roam-dailies-capture-template'.
-  (defun ash/problem-org-output ()
-    "Return org structure for each org-roam problem."
-    (mapconcat 
-     (lambda (node) (format "- [[id:%s][%s]]: " (org-roam-node-id node) (org-roam-node-title node)))
-     (-filter (ash/roam-tag-filter "problem") (org-roam-node-list))
-     "\n")))
+   ;; To be used in `org-roam-dailies-capture-template'.
+   (defun ash/problem-org-output ()
+     "Return org structure for each org-roam problem."
+     (mapconcat 
+      (lambda (node) (format "- [[id:%s][%s]]: " (org-roam-node-id node) (org-roam-node-title node)))
+      (-filter (ash/roam-tag-filter "problem") (org-roam-node-list))
+      "\n")))
 
 (use-package deft
   :after org
@@ -800,6 +804,13 @@ used as title."
           org-roam-ui-follow t
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
+
+(use-package citar
+  :custom
+  (setq citar-bibliography '("~/org/notes/orgcite.bib"))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar))
 
 (setq org-export-with-toc nil
       org-export-preserve-breaks t
@@ -857,9 +868,11 @@ This has to be done as a string to handle 64-bit or larger ints."
 (when (= 1 (length (tab-bar-tabs)))
   (tab-bar-new-tab)
   (tab-bar-new-tab)
+  (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
   (tab-bar-rename-tab "roam" 2)
   (tab-bar-rename-tab "mail" 3)
+  (tab-bar-rename-tab "emacs" 4)
   (tab-bar-select-tab 1)
   (org-agenda nil "l")
   (delete-other-windows)
@@ -868,4 +881,6 @@ This has to be done as a string to handle 64-bit or larger ints."
   (delete-other-windows)
   (tab-bar-select-tab 3)
   (notmuch)
-  (delete-other-windows))
+  (delete-other-windows)
+  (tab-bar-select-tab 4)
+  (find-file "~/.emacs.d/emacs.org"))
