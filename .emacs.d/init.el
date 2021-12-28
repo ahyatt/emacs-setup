@@ -509,10 +509,7 @@
 (use-package tree-sitter
   :config
   (global-tree-sitter-mode))
-(use-package tree-sitter-langs
-  :config
-  (tree-sitter-langs-)
-  )
+(use-package tree-sitter-langs)
 
 (use-package which-key
   :diminish
@@ -696,6 +693,10 @@
       org-habit-show-habits t)
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
 
+(use-package org-contrib
+  :config
+  (require 'org-checklist))
+
 (use-package org-pomodoro
   :config
   (defun ash/org-pomodoro-til-meeting ()
@@ -714,24 +715,10 @@
               (("C-c n i" . org-roam-node-insert)))
    :init
    (setq org-roam-v2-ack t)
-   (add-to-list org-cite-global-bibliography "~/org/notes/orgcite.bib")
+   (setq-default org-cite-global-bibliography '("~/org/notes/orgcite.bib"))
    :config
    (org-roam-db-autosync-mode)
    (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
-   (defun deft-parse-title (file contents)
-     "Parse the given FILE and CONTENTS and determine the title.
-If `deft-use-filename-as-title' is nil, the title is taken to
-be the first non-empty line of the FILE.  Else the base name of the FILE is
-used as title."
-     (if deft-use-filename-as-title
-         (deft-base-filename file)
-       (let ((begin (string-match "^[^:].+$" contents)))
-         (if begin
-             (funcall deft-parse-title-function
-                      (substring contents begin (match-end 0)))))))
-   (setq deft-strip-title-regexp "#+\\(TITLE|title\\):\s+")
-   (setq deft-strip-summary-regexp
-         (rx (seq string-start ":" (one-or-more anything) string-end)))
    (require 'org-roam-dailies)
    ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
    (defun ash/org-roam-node-insert-immediate (arg &rest args)
@@ -789,7 +776,9 @@ used as title."
   :custom
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
-  (deft-default-extension "org"))
+  (deft-default-extension "org")
+  (setq deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
+        deft-use-filename-as-title t))
 
 (use-package org-roam-ui
   :straight
@@ -817,20 +806,44 @@ used as title."
       org-export-with-properties t
       org-export-with-tags nil)
 
+(defun ash/focused-text ()
+  "Set up buffer to be pleasant for text reading / writing."
+  (ash/big-font)
+  (when (featurep 'olivetti)
+    (olivetti-mode 1)))
+
+(defun ash/embiggen-increment ()
+  "Find out how much to embiggen the font so it is \"big\"."
+  (/ (frame-height) 20))
+
 (defun ash/big-font ()
   "Creates a font that is big enough for about 20 lines of text."
   (interactive)
-  (text-scale-set (/ (frame-height) 20)))
+  ;; If we don't set this back to default size it gets larger then makes sense.
+  (let ((text-scale-mode-amount (ash/embiggen-increment)))
+    (text-scale-mode 1)))
+
+(defun ash/default-font ()
+  "Restore the default font, if it has been embiggened."
+  ;; There doesn't seem to be a great way of using text-scale to remove all
+  ;; modifications and restore the font to a default size. Setting the scale to
+  ;; 0 does not actually do that.
+  (text-scale-set (- (ash/embiggen-increment)))
+  (text-scale-mode 0))
 
 (defun ash/maybe-org-roam-ui ()
   "If we're in an org roam buffer, create a special UI."
-  (when (or (org-roam-buffer-p))
-    (ash/big-font)
-    (when (featurep 'olivetti)
-      (olivetti-mode))))
+  (when (and (featurep 'org-roam) (org-roam-buffer-p))
+    (ash/focused-text)))
 
 (add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
-(add-hook 'org-capture-mode-hook #'ash/big-font)
+(add-hook 'notmuch-message-mode-hook #'ash/focused-text)
+(add-hook 'notmuch-show-hook #'ash/focused-text)
+;; I can't figure out how to do this yet - because capture is an indirect
+;; buffer, it scales the orig buffer up, without the original buffer being aware
+;; of it.  This seems like an emacs bug.
+;; (add-hook 'org-capture-mode-hook #'ash/big-font) (add-hook
+;; 'org-capture-after-finalize-hook #'ash/default-font)
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
