@@ -840,11 +840,13 @@
    (defun ash/log-org-roam-node-creation ()
      (save-excursion
        (let ((node (org-roam-node-at-point)))
-         (when (not (org-roam--dailies–daily-note-p (org-roam-node-file node)))
+         (when (and
+                (not (string-match org-roam-dailies-directory org-roam-directory))
+                (not (org-roam-dailies--daily-note-p (org-roam-node-file node))))
            (ash/log-to-roam (format "Created %s" (org-link-make-string
                                                   (format "roam:%s" (org-roam-node-id node))
                                                   (org-roam-node-title node))))))))
-
+   
    (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
 
    ;; When new org-roam nodes are created, note it.
@@ -886,6 +888,64 @@
       org-export-preserve-breaks t
       org-export-with-properties t
       org-export-with-tags nil)
+
+(use-package svg-tag-mode
+  :config
+  ;; Adapted from https://github.com/rougier/svg-tag-mode/blob/main/examples/example-2.el
+  (let ((date-re "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
+        (time-re "[0-9]\\{2\\}:[0-9]\\{2\\}")
+        (day-re "[A-Za-z]\\{3\\}"))
+    (setq-default svg-tag-tags
+          `(
+            ;; Org tags
+            (":\\([A-Za-z0-9]+\\)" . ((lambda (tag) (svg-tag-make tag))))
+            (":\\([A-Za-z0-9]+[ \-]\\)" . ((lambda (tag) tag)))
+            
+            ;; Task priority
+            ("\\[#[A-Z]\\]" . ( (lambda (tag)
+                                  (svg-tag-make tag :face 'org-priority 
+                                                :beg 2 :end -1 :margin 0))))
+
+            ;; TODO states
+            ("TODO|EXTREVIEW|SUBMIT|WAITING" . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0))))
+            ("DONE" . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
+
+
+            ;; Citation of the form [cite:@Knuth:1984] 
+            ("\\(\\[cite:@[A-Za-z]+:\\)" . ((lambda (tag)
+                                              (svg-tag-make tag
+                                                            :inverse t
+                                                            :beg 7 :end -1
+                                                            :crop-right t))))
+            ("\\[cite:@[A-Za-z]+:\\([0-9]+\\]\\)" . ((lambda (tag)
+                                                       (svg-tag-make tag
+                                                                     :end -1
+                                                                     :crop-left t))))
+
+            ;; Active date (without day name, with or without time)
+            (,(format "\\(<%s>\\)" date-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :beg 1 :end -1 :margin 0))))
+            (,(format "\\(<%s *\\)%s>" date-re time-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0))))
+            (,(format "<%s *\\(%s>\\)" date-re time-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0))))
+
+            ;; Inactive date  (without day name, with or without time)
+            (,(format "\\(\\[%s\\]\\)" date-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :beg 1 :end -1 :margin 0 :face 'org-date))))
+            (,(format "\\(\\[%s *\\)%s\\]" date-re time-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0 :face 'org-date))))
+            (,(format "\\[%s *\\(%s\\]\\)" date-re time-re) .
+             ((lambda (tag)
+                (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0 :face 'org-date))))
+            )))
+  (svg-tag-mode 1)
+)
 
 (defun ash/focused-text ()
   "Set up buffer to be pleasant for text reading / writing."
