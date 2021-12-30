@@ -819,7 +819,7 @@
            (org-roam-dailies-capture-templates
             ;; won't be seen.
             `(("a" "addition" entry "%?"
-               :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" "Completed Tasks"))))
+               :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Completed Tasks")))))
            (org-after-refile-insert-hook #'save-buffer)
            today-file
            pos)
@@ -831,7 +831,7 @@
        ;; Only refile if the target file is different than the current file
        (unless (equal (file-truename today-file)
                       (file-truename (buffer-file-name)))
-         (org-refile nil nil (list heading today-file nil pos)))))
+         (org-refile nil nil (list "Completed Tasks" today-file nil pos)))))
 
    (defun ash/on-todo-state-change ()
      (when (equal org-state "DONE")
@@ -890,6 +890,7 @@
       org-export-with-tags nil)
 
 (use-package svg-tag-mode
+  :disabled
   :config
   ;; Adapted from https://github.com/rougier/svg-tag-mode/blob/main/examples/example-2.el
   (let ((date-re "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
@@ -898,8 +899,7 @@
     (setq-default svg-tag-tags
           `(
             ;; Org tags
-            (":\\([A-Za-z0-9]+\\)" . ((lambda (tag) (svg-tag-make tag))))
-            (":\\([A-Za-z0-9]+[ \-]\\)" . ((lambda (tag) tag)))
+            (":\\([A-Za-z0-9]+\\):" . ((lambda (tag) (svg-tag-make tag))))
             
             ;; Task priority
             ("\\[#[A-Z]\\]" . ( (lambda (tag)
@@ -907,8 +907,8 @@
                                                 :beg 2 :end -1 :margin 0))))
 
             ;; TODO states
-            ("TODO|EXTREVIEW|SUBMIT|WAITING" . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0))))
-            ("DONE" . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
+            (,(rx (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND")) . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0))))
+            (,(rx (or "DONE" "OBSOLETE")) . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
 
 
             ;; Citation of the form [cite:@Knuth:1984] 
