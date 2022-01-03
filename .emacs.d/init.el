@@ -802,7 +802,8 @@
          (org-roam-capture- :goto nil
                             :keys "d"
                             ;; :node (org-roam-node-create)
-                            :node (org-roam-node-from-title-or-alias (format-time-string "%Y-%m-%d"))
+                            :node (or (org-roam-node-from-title-or-alias (format-time-string "%Y-%m-%d"))
+                                      (org-roam-node-create))
                             :templates `(("d" "default" item ,(format "- [%%T] %s\n" text)
                                           :target (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" (,heading))
                                           :immediate-finish t
@@ -846,11 +847,14 @@
            (ash/log-to-roam (format "Created %s" (org-link-make-string
                                                   (format "roam:%s" (org-roam-node-id node))
                                                   (org-roam-node-title node))))))))
-   
    (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
 
    ;; When new org-roam nodes are created, note it.
-   (add-hook 'org-roam-capture-new-node-hook #'ash/log-org-roam-node-creation))
+
+   ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
+   
+   ;; (add-hook 'org-roam-capture-new-node-hook
+   ;; #'ash/log-org-roam-node-creation))
 
 (use-package deft
   :after org
@@ -879,10 +883,12 @@
 
 (use-package citar
   :custom
-  (setq citar-bibliography '("~/org/notes/orgcite.bib"))
+  (setq-default citar-bibliography '("~/org/notes/orgcite.bib"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar))
+  (org-cite-activate-processor 'citar)
+  ;; if I don't load this, my bibliography gets cached and never refreshed.
+  (require 'citar-filenotify))
 
 (setq org-export-with-toc nil
       org-export-preserve-breaks t
@@ -890,7 +896,6 @@
       org-export-with-tags nil)
 
 (use-package svg-tag-mode
-  :disabled
   :config
   ;; Adapted from https://github.com/rougier/svg-tag-mode/blob/main/examples/example-2.el
   (let ((date-re "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
@@ -907,8 +912,8 @@
                                                 :beg 2 :end -1 :margin 0))))
 
             ;; TODO states
-            (,(rx (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND")) . ((lambda (tag) (svg-tag-make "TODO" :face 'org-todo :inverse t :margin 0))))
-            (,(rx (or "DONE" "OBSOLETE")) . ((lambda (tag) (svg-tag-make "DONE" :face 'org-done :margin 0))))
+            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND"))) . ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
+            (,(rx (group (or "DONE" "OBSOLETE"))) . ((lambda (tag) (svg-tag-make tag :face 'org-done :margin 0))))
 
 
             ;; Citation of the form [cite:@Knuth:1984] 
@@ -943,9 +948,7 @@
             (,(format "\\[%s *\\(%s\\]\\)" date-re time-re) .
              ((lambda (tag)
                 (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0 :face 'org-date))))
-            )))
-  (svg-tag-mode 1)
-)
+            ))))
 
 (defun ash/focused-text ()
   "Set up buffer to be pleasant for text reading / writing."
@@ -1009,6 +1012,9 @@
   (find-file "~/.emacs.d/emacs.org"))
 
 (setq epa-pinentry-mode 'loopback)
+
+(straight-use-package '(emacs-sdcv :type git :host github :repo "gucong/emacs-sdcv")
+                      :config (require 'sdcv-mode))
 
 (defun ash/strdec-to-hex (n)
   "Given a decimal as a string, convert to hex.
