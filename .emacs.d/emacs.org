@@ -1089,7 +1089,8 @@ Citations are built into org mode, but it's nice to have a way to complete them.
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
   ;; if I don't load this, my bibliography gets cached and never refreshed.
-  (require 'citar-filenotify))
+  (require 'citar-filenotify)
+  (citar-filenotify-setup '(LaTeX-mode-hook org-mode-hook)))
 #+end_src
 **** Exporting
 We also need to make exporting better to work more naturally with the actual Roam research site.

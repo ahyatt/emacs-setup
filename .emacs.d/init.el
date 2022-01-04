@@ -888,7 +888,8 @@
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
   ;; if I don't load this, my bibliography gets cached and never refreshed.
-  (require 'citar-filenotify))
+  (require 'citar-filenotify)
+  (citar-filenotify-setup '(LaTeX-mode-hook org-mode-hook)))
 
 (setq org-export-with-toc nil
       org-export-preserve-breaks t
