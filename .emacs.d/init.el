@@ -854,7 +854,8 @@
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
    
    ;; (add-hook 'org-roam-capture-new-node-hook
-   ;; #'ash/log-org-roam-node-creation))
+   ;; #'ash/log-org-roam-node-creation)
+   )
 
 (use-package deft
   :after org

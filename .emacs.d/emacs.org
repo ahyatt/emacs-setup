@@ -1041,7 +1041,8 @@ The main package:
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
    
    ;; (add-hook 'org-roam-capture-new-node-hook
-   ;; #'ash/log-org-roam-node-creation))
+   ;; #'ash/log-org-roam-node-creation)
+   )
 #+end_src
 
 My quest to actually get new nodes logged seems to be stuck, I think I need to
