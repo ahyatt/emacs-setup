@@ -1,3 +1,7 @@
+* Headers
+#+begin_src emacs-lisp
+;; -*- lexical-binding: t -*-
+#+end_src
 * Bootstrapping
 Let's start by making sure we have MELPA stable, which is a
 requirement for a lot that follows.
