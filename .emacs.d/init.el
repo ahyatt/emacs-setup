@@ -666,6 +666,8 @@
 (use-package notmuch
   :config (require 'notmuch))
 
+(use-package consult-notmuch)
+
 (defun ash-goto-agenda (&optional _)
   (interactive)
   (let ((buf (get-buffer "*Org Agenda(l)*")))
@@ -975,7 +977,8 @@
                                                 :beg 2 :end -1 :margin 0))))
 
             ;; TODO states
-            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND"))) . ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
+            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND" "REVIEW"))) .
+             ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
             (,(rx (group (or "DONE" "OBSOLETE"))) . ((lambda (tag) (svg-tag-make tag :face 'org-done :margin 0))))
 
 

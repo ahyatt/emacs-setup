@@ -838,9 +838,9 @@ I've used many mail packages, but =notmuch= is a good combination of simple, sui
 #+end_src
 
 Also use the dynamic completion.
-#+begin_example emacs-lisp
+#+begin_src emacs-lisp
 (use-package consult-notmuch)
-#+end_example
+#+end_src
 * Org config
 #+BEGIN_SRC emacs-lisp
 (defun ash-goto-agenda (&optional _)
@@ -1182,7 +1182,8 @@ Use svg tags, they are pretty!  But it doesn't render super well, it may be more
                                                 :beg 2 :end -1 :margin 0))))
 
             ;; TODO states
-            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND"))) . ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
+            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND" "REVIEW"))) .
+             ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
             (,(rx (group (or "DONE" "OBSOLETE"))) . ((lambda (tag) (svg-tag-make tag :face 'org-done :margin 0))))
 
 
