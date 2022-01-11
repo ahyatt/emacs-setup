@@ -925,6 +925,8 @@ Also use the dynamic completion.
       org-use-property-inheritance t
       org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))     
       org-refile-targets '((nil :maxlevel . 5))
+      org-refile-use-outline-path 'file
+      org-outline-path-complete-in-steps nil
       org-use-speed-commands t
       org-refile-targets '((nil . (:maxlevel . 3)))
       org-link-frame-setup '((gnus . gnus)
@@ -1123,8 +1125,8 @@ And if you're using org-roam you probably want to use org-deft to search it.
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
   (deft-default-extension "org")
-  (setq deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
-        deft-use-filename-as-title t))
+  (setq-default deft-strip-summary-regexp ":PROPERTIES:\n\\(.+\n\\)+:END:\n"
+                deft-use-filename-as-title t))
 #+end_src
 
 And =org-roam-ui= is a good interface:
@@ -1228,6 +1230,34 @@ Use svg tags, they are pretty!  But it doesn't render super well, it may be more
 
 Also, my org-roam buffers tend to be pretty short, so let's make the font fairly large, and use Olivetti mode.
 #+begin_src emacs-lisp
+(defun ash/focused-text-resize ()
+  "Iterate through all buffers, resizing if needed."
+  (when (frame-window-state-change)
+    (message "Frame window state change detected")
+    (save-excursion (dolist (buf (buffer-list))
+                      (set-buffer buf)
+                      (when (member 'ash/focused-text-mode local-minor-modes)
+                        ;; recalculate font size
+                        (ash/big-font))))))
+
+(define-minor-mode ash/focused-text-mode
+  "Create a pleasing experience for reading & writing.
+This will turn on `olivetti-mode' and change the font-size to be
+larger and more readable."
+    :init-value nil
+    :global nil
+    (if ash/focused-text-mode
+        (progn
+          (setq-local text-scale-remap-header-line t)
+          (olivetti-mode 1)
+          (set-window-fringes (selected-window) 0 0)
+          (window-divider-mode 1)
+          (ash/big-font)
+          (add-to-list 'window-size-change-functions #'ash/focused-text-resize))
+      (olivetti-mode -1)
+      (set-window-fringes (selected-window) nil) ; Use default width
+      (window-divider-mode -1)))
+
 (defun ash/focused-text ()
   "Set up buffer to be pleasant for text reading / writing."
   (ash/big-font)
@@ -1256,11 +1286,12 @@ Also, my org-roam buffers tend to be pretty short, so let's make the font fairly
 (defun ash/maybe-org-roam-ui ()
   "If we're in an org roam buffer, create a special UI."
   (when (and (featurep 'org-roam) (org-roam-buffer-p))
-    (ash/focused-text)))
+    (ash/focused-text-mode 1)))
 
 (add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
-(add-hook 'notmuch-message-mode-hook #'ash/focused-text)
-(add-hook 'notmuch-show-hook #'ash/focused-text)
+(add-hook 'notmuch-message-mode-hook #'ash/focused-text-mode)
+(add-hook 'notmuch-show-hook #'ash/focused-text-mode)
+(add-hook 'org-capture-mode-hook #'ash/focused-text-mode)
 ;; I can't figure out how to do this yet - because capture is an indirect
 ;; buffer, it scales the orig buffer up, without the original buffer being aware
 ;; of it.  This seems like an emacs bug.
