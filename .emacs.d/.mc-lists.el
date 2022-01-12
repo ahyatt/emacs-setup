@@ -21,6 +21,7 @@
         org-force-self-insert
         org-self-insert-command
         sp-backward-delete-char
+        sp-backward-kill-word
         sp-delete-char
         sp-kill-hybrid-sexp
         sp-kill-region

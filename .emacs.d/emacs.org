@@ -195,6 +195,7 @@ often.
   (require 'vertico-indexed)
   (require 'vertico-grid)
   (require 'vertico-flat)
+  (require 'vertico-buffer)
   (require 'vertico-quick)
   (require 'vertico-reverse)
   ;; Enable vertico-multiform
@@ -971,9 +972,36 @@ The main package:
    (setq org-roam-v2-ack t)
    (setq-default org-cite-global-bibliography '("~/org/notes/orgcite.bib"))
    :config
+   ;; From the manual.
+   (add-to-list 'display-buffer-alist
+                '("\\*org-roam\\*"
+                  (display-buffer-in-direction)
+                  (direction . right)
+                  (window-width . 0.33)
+                  (window-height . fit-window-to-buffer)))
+   (defun ash/org-roam-node-is-daily (n)
+     "Return epoch time represented by node if N is a daily node."
+     (when (string-match (rx (seq (group (= 4 digit)) "-" (group (= 2 digit)) "-" (group (= 2 digit))))
+                         (org-roam-node-title n))
+       (date-to-time (org-roam-node-title n))))
+   
+   ;; Sort dailies last (but from most recent)
+   (defun org-roam-backlinks-sort (a b)
+     (pcase (list (ash/org-roam-node-is-daily (org-roam-backlink-source-node a))
+                  (ash/org-roam-node-is-daily (org-roam-backlink-source-node b)))
+       ((seq (pred (not null)) 'nil) nil)
+       ((seq 'nil (pred (not null))) t)
+       ((seq (and (pred (not null)) atime) (and (pred null) btime))
+        (< (float-time atime) (float-time btime)))
+       ((seq 'nil 'nil)
+        (< (float-time (org-roam-node-file-mtime (org-roam-backlink-source-node a)))
+           (float-time (org-roam-node-file-mtime (org-roam-backlink-source-node b)))))))
    (org-roam-db-autosync-mode)
    (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
    (require 'org-roam-dailies)
+
+   
+   
    ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
    (defun ash/org-roam-node-insert-immediate (arg &rest args)
      (interactive "P")
@@ -1230,7 +1258,7 @@ Use svg tags, they are pretty!  But it doesn't render super well, it may be more
 
 Also, my org-roam buffers tend to be pretty short, so let's make the font fairly large, and use Olivetti mode.
 #+begin_src emacs-lisp
-(defun ash/focused-text-resize ()
+(defun ash/focused-text-resize (&rest args)
   "Iterate through all buffers, resizing if needed."
   (when (frame-window-state-change)
     (message "Frame window state change detected")
@@ -1291,7 +1319,6 @@ larger and more readable."
 (add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
 (add-hook 'notmuch-message-mode-hook #'ash/focused-text-mode)
 (add-hook 'notmuch-show-hook #'ash/focused-text-mode)
-(add-hook 'org-capture-mode-hook #'ash/focused-text-mode)
 ;; I can't figure out how to do this yet - because capture is an indirect
 ;; buffer, it scales the orig buffer up, without the original buffer being aware
 ;; of it.  This seems like an emacs bug.
