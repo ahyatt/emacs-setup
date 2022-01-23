@@ -586,10 +586,6 @@
          ("C-h h" . helpful-at-point)
          ("C-h c" . helpful-command)))
 
-(dolist (hook '(text-mode-hook org-mode-hook message-mode-hook notmuch-show-mode-hook))
-  (when (boundp hook)
-    (add-hook hook (lambda () (variable-pitch-mode 1)))))
-
 (use-package modus-themes
   :ensure t
   :init
@@ -598,7 +594,10 @@
         modus-themes-visible-fringes t
         modus-themes-mixed-fonts t
         modus-themes-intense-standard-completions t
-        modus-themes-proportional-fonts t
+        modus-themes-org-agenda '((header-block . (variable-pitch scale-title))
+                                  (scheduled . uniform))
+        modus-themes-variable-pitch-headings t
+        modus-themes-completions 'opinionated
         modus-themes-rainbow-headings t
         modus-themes-section-headings t
         modus-themes-scale-headings t
@@ -685,9 +684,6 @@
           (lambda ()
             (when org-inline-image-overlays
               (org-redisplay-inline-images))))
-(add-hook 'org-mode-hook
-      (lambda ()
-        (variable-pitch-mode 1)))
 (setq org-clock-string-limit 80
       org-log-done t
       org-agenda-span 'day
@@ -980,9 +976,10 @@
 (use-package citar
   :custom
   (setq-default citar-bibliography '("~/org/notes/orgcite.bib"))
-  (org-cite-insert-processor 'citar)
-  (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar)
+  (require 'oc)
+  (setq org-cite-insert-processor 'citar
+        org-cite-follow-processor 'citar
+        org-cite-activate-processor 'citar)
   ;; if I don't load this, my bibliography gets cached and never refreshed.
   (require 'citar-filenotify)
   (citar-filenotify-setup '(LaTeX-mode-hook org-mode-hook)))
@@ -1109,11 +1106,7 @@ larger and more readable."
 (add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
 (add-hook 'notmuch-message-mode-hook #'ash/focused-text-mode)
 (add-hook 'notmuch-show-hook #'ash/focused-text-mode)
-;; I can't figure out how to do this yet - because capture is an indirect
-;; buffer, it scales the orig buffer up, without the original buffer being aware
-;; of it.  This seems like an emacs bug.
-;; (add-hook 'org-capture-mode-hook #'ash/big-font) (add-hook
-;; 'org-capture-after-finalize-hook #'ash/default-font)
+(add-hook 'org-capture-mode-hook #'ash/big-font)
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
