@@ -116,9 +116,6 @@
   (general-create-definer ash/key-def :prefix "C-c"))
 
 (use-package org
-  :config
-  ;; org-contrib is no longer part of org-mode.
-  ;; (require 'org-checklist)
   :hook (org-mode . visual-line-mode)
   :general
   ("C-c a" 'ash-goto-agenda)
@@ -270,7 +267,8 @@
                                           ("l" org-next-link "next link" :exit nil)
                                           ("L" org-previous-link "previous link" :exit nil)
                                           ("b" org-next-block "next block" :exit nil)
-                                          ("B" org-prev-block "previous block" :exit nil))
+                                          ("B" org-prev-block "previous block" :exit nil)
+                                          ("g" org-mark-ring-goto "pop mark" :exit nil))
                                          "Subtrees" (("k" org-cut-subtree "kill")
                                                      (">" org-demote-subtree "demote" :exit nil)
                                                      ("<" org-promote-subtree "promote" :exit nil)
@@ -279,6 +277,7 @@
                                                      ("." org-tree-to-indirect-buffer "indirect buffer")
                                                      ("'" org-id-get-create "create id"))
                                          "Inserting" (("c" citar-insert-citation "insert citation")
+                                                      ("e" org-expiry-insert-expiry "insert expiry property")
                                                       ("i" org-insert-heading-respect-content "insert heading")
                                                       ("y" ash/org-paste-link "yank link" :exit t))
                                          "Opening" (("o" org-open-at-point "open at point"))
@@ -581,6 +580,7 @@
                                   (scheduled . uniform))
         modus-themes-variable-pitch-headings t
         modus-themes-completions 'opinionated
+        modus-themes-variable-pitch-ui t
         modus-themes-rainbow-headings t
         modus-themes-section-headings t
         modus-themes-scale-headings t
@@ -742,7 +742,9 @@
 
 (use-package org-contrib
   :config
-  (require 'org-checklist))
+  (require 'org-checklist)
+  (require 'org-expiry)
+  (org-expiry-insinuate 1))
 
 (use-package org-pomodoro
   :config
@@ -771,6 +773,7 @@
                   (direction . right)
                   (window-width . 0.33)
                   (window-height . fit-window-to-buffer)))
+   (add-hook 'org-roam-mode-hook #'visual-line-mode)
    (defun ash/org-roam-node-is-daily (n)
      "Return epoch time represented by node if N is a daily node."
      (when (string-match (rx (seq (group (= 4 digit)) "-" (group (= 2 digit)) "-" (group (= 2 digit))))
