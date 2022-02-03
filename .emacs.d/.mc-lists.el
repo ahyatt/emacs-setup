@@ -16,6 +16,7 @@
         hydra-all/hydra-structural/body-and-exit
         hydra-structural/sp-change-inner
         indent-for-tab-command
+        insert-char
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert

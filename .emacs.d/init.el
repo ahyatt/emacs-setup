@@ -95,6 +95,15 @@
 
 (set-input-method "TeX")
 
+(setq backup-directory-alist
+      '(("." . "~/backups"))
+      backup-by-copying t
+      version-control t
+      delete-old-versions t
+      kept-new-versions 3
+      kept-old-versions 2
+      create-lockfiles nil)
+
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
@@ -116,47 +125,26 @@
   (:keymaps 'org-agenda-mode-map
             "P" 'org-pomodoro))
 
-(use-package vertico
-  :init
-  (vertico-mode)
-  (add-to-list 'load-path "~/.emacs.d/straight/repos/vertico/extensions/")
-  (require 'vertico-multiform)
-  (require 'vertico-unobtrusive)
-  (require 'vertico-repeat)
-  (require 'vertico-indexed)
-  (require 'vertico-grid)
-  (require 'vertico-flat)
-  (require 'vertico-buffer)
-  (require 'vertico-quick)
-  (require 'vertico-reverse)
-  ;; Enable vertico-multiform
-  (vertico-multiform-mode)
-  (keymap-set vertico-map "C-\\" #'vertico-multiform-grid)
-  (keymap-set vertico-map "C-1" #'vertico-multiform-flat)
-  (keymap-set vertico-map "C-]" #'vertico-multiform-reverse)
-  (keymap-set vertico-map "C-;" #'vertico-quick-insert)
-  (keymap-set vertico-map "C-'" #'vertico-quick-exit)
+(use-package mct
+  :config
+  (setq mct-remove-shadowed-file-names t
+        mct-hide-completion-mode-line t
+        mct-apply-completion-stripes t
+        mct-minimum-input 3
+        mct-live-update-delay 0.5
+        mct-completion-passlist '(imenu
+	                              Info-goto-node
+	                              Info-index
+	                              Info-menu))
+  (mct-minibuffer-mode 1))
 
-  ;; Configure the display per command.
-  ;; Use a buffer with indices for imenu
-  ;; and a flat (Ido-like) menu for M-x.
-  (setq vertico-multiform-commands
-	'((consult-imenu buffer indexed)
-	  (execute-extended-command unobtrusive)))
-
-  ;; Configure the display per completion category.
-  ;; Use the grid display for files and a buffer
-  ;; for the consult-grep commands.
-  (setq vertico-multiform-categories
-	    '((file grid (vertico-sort-function . ash/sort-directories-first))
-	      (consult-grep buffer)
-	      (buffer unobtrusive)))
-  ;; Sort directories before files
-  (defun ash/sort-directories-first (files)
-    (setq files (vertico-sort-history-length-alpha files))
-    (nconc (seq-filter (lambda (x) (string-suffix-p "/" x)) files)
-           (seq-remove (lambda (x) (string-suffix-p "/" x)) files))))
-
+;; More completions
+(use-package cape
+  :config
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  (add-to-list 'completion-at-point-functions #'cape-symbol))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -190,12 +178,13 @@
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  ;; Vertico commands are hidden in normal buffers.
-  (setq read-extended-command-predicate
-	#'command-completion-default-include-p)
+  (setq read-extended-command-predicate #'command-completion-default-include-p)
 
-  ;; Enable recursive minibuffers
-  (setq enable-recursive-minibuffers t))
+  (setq enable-recursive-minibuffers t
+        completions-detailed t
+        read-buffer-completion-ignore-case t
+        read-file-name-completion-ignore-case t
+        resize-mini-windows t))
 
 (use-package embark
   :ensure t
@@ -498,12 +487,6 @@
 
 (use-package magit
   :general ("C-x g" 'magit-status))
-
-;; Needed by magit-gh-pulls
-(use-package magit-popup)
-
-(use-package magit-gh-pulls
-  :hook (magit-mode . turn-on-magit-gh-pulls))
 
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
