@@ -8,25 +8,23 @@ requirement for a lot that follows.
 
 Code comes from http://melpa.org/#/getting-started.
 #+BEGIN_SRC emacs-lisp
-  (require 'package)
-  (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-                      (not (gnutls-available-p))))
-         (proto (if no-ssl "http" "https")))
-    ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-    (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-    (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
-    (when (< emacs-major-version 24)
-      ;; For important compatibility libraries like cl-lib
-      (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
-  (package-initialize)
+(require 'package)
+(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
+  (when (< emacs-major-version 24)
+    ;; For important compatibility libraries like cl-lib
+    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+(package-initialize)
 #+END_SRC
 
 We use use-package so before first running, install this with `package-install`.
 
 #+begin_src emacs-lisp
 (defvar bootstrap-version)
-;; This doesn't work for me even on the latest native comp branch.
-(setq straight-disable-native-compilation t)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
@@ -182,6 +180,10 @@ This just loads the package, which we want to do before anything else ends up lo
 #+BEGIN_SRC emacs-lisp
 (use-package org
   :hook (org-mode . visual-line-mode)
+  :config
+  ;; TEMPORARY, seems like this isn't getting autoloaded correctly.
+  (require 'org-duration)
+  (require 'org-element)
   :general
   ("C-c a" 'ash-goto-agenda)
   (:keymaps 'org-agenda-mode-map

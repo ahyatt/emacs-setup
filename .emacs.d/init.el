@@ -13,8 +13,6 @@
 (package-initialize)
 
 (defvar bootstrap-version)
-;; This doesn't work for me even on the latest native comp branch.
-(setq straight-disable-native-compilation t)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
@@ -117,6 +115,10 @@
 
 (use-package org
   :hook (org-mode . visual-line-mode)
+  :config
+  ;; TEMPORARY, seems like this isn't getting autoloaded correctly.
+  (require 'org-duration)
+  (require 'org-element)
   :general
   ("C-c a" 'ash-goto-agenda)
   (:keymaps 'org-agenda-mode-map
