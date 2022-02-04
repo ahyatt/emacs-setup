@@ -219,9 +219,16 @@ often.
 ;; From Vertico example installation instructions.
 (use-package orderless
   :init
-  (setq completion-styles '(orderless)
-	completion-category-defaults nil
-	completion-category-overrides '((file (styles partial-completion)))))
+  (setq completion-styles '(basic substring initials flex partial-completion orderless)
+	    completion-category-defaults nil
+	    completion-category-overrides '((file (styles partial-completion))))
+  :config
+  ;; We make the SPC key insert a literal space and the same for the
+  ;; question mark.  Spaces are used to delimit orderless groups, while
+  ;; the question mark is a valid regexp character.
+  (let ((map minibuffer-local-completion-map))
+    (define-key map (kbd "SPC") nil)
+    (define-key map (kbd "?") nil)))
 
 (use-package savehist
   :init
@@ -236,12 +243,6 @@ often.
 ;; A few more useful configurations...
 (use-package emacs
   :init
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; Alternatively try `consult-completing-read-multiple'.
-  (defun crm-indicator (args)
-    (cons (concat "[CRM] " (car args)) (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
 	'(read-only t cursor-intangible t face minibuffer-prompt))
@@ -282,7 +283,9 @@ Embark is a framework for actions, including those done on completions.
 
 Consult provides more mini-buffer search functionality
 #+begin_src emacs-lisp
-(use-package consult)
+(use-package consult
+  :config
+  (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode))
 
 (use-package embark-consult
   :ensure t
@@ -334,25 +337,6 @@ Avy for quick jumping & buffer navigation is great.
     (save-excursion
       (ash/avy-goto-url)
       (browse-url-at-point))))
-#+END_SRC
-*** Editing
-Multiple cursors is fun and provides quick feedback, allowing for visual
-inspection of the result as you change it.  phi-search is useful for this.  But
-it doesn't work on long files, so let's bind it to special-commands.
-#+BEGIN_SRC emacs-lisp
-(use-package multiple-cursors
-  :pin melpa
-  :general)
-
-(use-package phi-search
-  :bind (("M-C-s" . phi-search)
-         ("M-C-r" . phi-search-backward)))
-#+END_SRC
-
-Expand-region is useful in lots of situations to quickly select expanding or
-contracting regions.
-#+BEGIN_SRC emacs-lisp
-(use-package expand-region)
 #+END_SRC
 *** Key-based actions (hydra)
 Hydra is useful for doing lots of things in succession.
@@ -591,7 +575,31 @@ yassnippet is a great way to create templates and use them.
   (yas-reload-all)
   (yas-global-mode 1))
 #+END_SRC
+** Editing
+*** Multiple Cursors
+Multiple cursors is fun and provides quick feedback, allowing for visual
+inspection of the result as you change it.  phi-search is useful for this.  But
+it doesn't work on long files, so let's bind it to special-commands.
+#+BEGIN_SRC emacs-lisp
+(use-package multiple-cursors
+  :pin melpa
+  :general)
 
+(use-package phi-search
+  :bind (("M-C-s" . phi-search)
+         ("M-C-r" . phi-search-backward)))
+#+END_SRC
+
+Expand-region is useful in lots of situations to quickly select expanding or
+contracting regions.
+#+BEGIN_SRC emacs-lisp
+(use-package expand-region)
+#+END_SRC
+*** Tweaks
+Confession time: vi's killing up to a char is better than emacs, so let's change things.
+#+begin_src emacs-lisp
+(global-set-key (kbd "M-z") #'zap-up-to-char)
+#+end_src
 ** Programming
 *** Magit
 #+begin_src emacs-lisp
@@ -664,25 +672,6 @@ Flycheck will help check for all errors.  Taken from https://jamiecollinson.com/
         :fringe-bitmap 'flycheck-fringe-bitmap-ball
         :fringe-face 'flycheck-fringe-info))
 #+END_SRC
-
-Company mode is a standard for symbol completion.
-#+BEGIN_SRC emacs-lisp
-(use-package company
-  :general ("C-c ." 'company-complete)
-  :config
-  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
-  (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
-  :init
-  (setq company-minimum-prefix-length 3)
-  (add-hook 'after-init-hook 'global-company-mode))
-#+END_SRC
-
-Plus when company is used in a variable-pitch buffer, it's important that it
-still be fixed width.  For that you need posframes.
-#+begin_src emacs-lisp
-(use-package company-posframe
-  :config (company-posframe-mode 1))
-#+end_src
 *** Tree Sitter
 This gives emacs the power to interact with the AST.
 #+begin_src emacs-lisp

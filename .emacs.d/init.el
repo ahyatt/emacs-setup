@@ -148,9 +148,16 @@
 ;; From Vertico example installation instructions.
 (use-package orderless
   :init
-  (setq completion-styles '(orderless)
-	completion-category-defaults nil
-	completion-category-overrides '((file (styles partial-completion)))))
+  (setq completion-styles '(basic substring initials flex partial-completion orderless)
+	    completion-category-defaults nil
+	    completion-category-overrides '((file (styles partial-completion))))
+  :config
+  ;; We make the SPC key insert a literal space and the same for the
+  ;; question mark.  Spaces are used to delimit orderless groups, while
+  ;; the question mark is a valid regexp character.
+  (let ((map minibuffer-local-completion-map))
+    (define-key map (kbd "SPC") nil)
+    (define-key map (kbd "?") nil)))
 
 (use-package savehist
   :init
@@ -165,12 +172,6 @@
 ;; A few more useful configurations...
 (use-package emacs
   :init
-  ;; Add prompt indicator to `completing-read-multiple'.
-  ;; Alternatively try `consult-completing-read-multiple'.
-  (defun crm-indicator (args)
-    (cons (concat "[CRM] " (car args)) (cdr args)))
-  (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
 	'(read-only t cursor-intangible t face minibuffer-prompt))
@@ -205,7 +206,9 @@
     ("k" tab-bar-close-tab-by-name))
   (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions)))
 
-(use-package consult)
+(use-package consult
+  :config
+  (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode))
 
 (use-package embark-consult
   :ensure t
@@ -246,16 +249,6 @@
     (save-excursion
       (ash/avy-goto-url)
       (browse-url-at-point))))
-
-(use-package multiple-cursors
-  :pin melpa
-  :general)
-
-(use-package phi-search
-  :bind (("M-C-s" . phi-search)
-         ("M-C-r" . phi-search-backward)))
-
-(use-package expand-region)
 
 ;; Before hydra because we use pretty-hydra-define in the hydra confg.
 (use-package major-mode-hydra
@@ -486,6 +479,18 @@
   (yas-reload-all)
   (yas-global-mode 1))
 
+(use-package multiple-cursors
+  :pin melpa
+  :general)
+
+(use-package phi-search
+  :bind (("M-C-s" . phi-search)
+         ("M-C-r" . phi-search-backward)))
+
+(use-package expand-region)
+
+(global-set-key (kbd "M-z") #'zap-up-to-char)
+
 (use-package magit
   :general ("C-x g" 'magit-status))
 
@@ -541,18 +546,6 @@
       :overlay-category 'flycheck-info-overlay
       :fringe-bitmap 'flycheck-fringe-bitmap-ball
       :fringe-face 'flycheck-fringe-info))
-
-(use-package company
-  :general ("C-c ." 'company-complete)
-  :config
-  (setq company-global-modes '(emacs-lisp-mode c-mode c++-mode go-mode java-mode org-mode))
-  (setq company-backends (seq-remove (lambda (b) (eq b 'company-dabbrev)) company-backends))
-  :init
-  (setq company-minimum-prefix-length 3)
-  (add-hook 'after-init-hook 'global-company-mode))
-
-(use-package company-posframe
-  :config (company-posframe-mode 1))
 
 (use-package tree-sitter
   :config
