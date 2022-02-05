@@ -126,6 +126,8 @@
 
 (use-package mct
   :config
+  (mct-minibuffer-mode 1)
+  (mct-region-mode 1)
   (setq mct-remove-shadowed-file-names t
         mct-hide-completion-mode-line t
         mct-apply-completion-stripes t
@@ -135,7 +137,8 @@
 	                              Info-goto-node
 	                              Info-index
 	                              Info-menu))
-  (mct-minibuffer-mode 1))
+  ;; for tab completion in `mct-region-mode'
+  (setq-default tab-always-indent 'complete))
 
 ;; More completions
 (use-package cape
@@ -739,6 +742,7 @@
   :config
   (require 'org-checklist)
   (require 'org-expiry)
+  (require 'ol-notmuch)
   (org-expiry-insinuate 1))
 
 (use-package org-pomodoro
