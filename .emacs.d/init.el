@@ -747,9 +747,7 @@
 (use-package org-contrib
   :config
   (require 'org-checklist)
-  (require 'org-expiry)
-  (require 'ol-notmuch)
-  (org-expiry-insinuate 1))
+  (require 'ol-notmuch))
 
 (use-package org-modern
   :hook (org-mode . org-modern-mode))

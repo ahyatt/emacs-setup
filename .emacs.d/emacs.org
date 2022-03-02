@@ -928,16 +928,12 @@ Also use the dynamic completion.
 ** Other org related packages
 *** Org contrib
 =org-checklist= provides useful hooks for handling checklists within tasks. I use
-it to clear checklists when marking a task done. Also, =org-expiry= provides a way
-to provide an expire deadline - if a task isn't done in a certain timeframe,
-consider just getting rid of it, or moving it to a someday list.
+it to clear checklists when marking a task done.
 #+begin_src emacs-lisp
 (use-package org-contrib
   :config
   (require 'org-checklist)
-  (require 'org-expiry)
-  (require 'ol-notmuch)
-  (org-expiry-insinuate 1))
+  (require 'ol-notmuch))
 #+end_src
 *** org-modern 
 #+begin_src emacs-lisp
