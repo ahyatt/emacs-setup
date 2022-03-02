@@ -975,7 +975,6 @@ TEMPLATE is the processed template used to format the entry."
 
 (use-package citar
   :config
-  (setq-default citar-bibliography '("~/org/notes/orgcite.bib"))
   (require 'oc)
   (setq org-cite-insert-processor 'citar
         org-cite-follow-processor 'citar
@@ -1147,19 +1146,15 @@ This has to be done as a string to handle 64-bit or larger ints."
 (when (= 1 (length (tab-bar-tabs)))
   (tab-bar-new-tab)
   (tab-bar-new-tab)
-  (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
   (tab-bar-rename-tab "roam" 2)
-  (tab-bar-rename-tab "mail" 3)
-  (tab-bar-rename-tab "emacs" 4)
+  (tab-bar-rename-tab "emacs" 3)
   (tab-bar-select-tab 1)
   (org-agenda nil "l")
   (delete-other-windows)
   (tab-bar-select-tab 2)
   (org-roam-node-random)
   (delete-other-windows)
-  (tab-bar-select-tab 3)
-  (notmuch)
   (delete-other-windows)
-  (tab-bar-select-tab 4)
+  (tab-bar-select-tab 3)
   (find-file "~/.emacs.d/emacs.org"))
