@@ -136,9 +136,11 @@ customization to live in a different file.
   (load custom-file))
 #+END_SRC
 ** Input method
-The TeX input method is really cool and super flexible.
+The TeX input method is really cool and super flexible, but I've been playing with the =rfc1345= which is a bit quicker and still very powerful.
+
+See https://www.quae.nl/rfc1345.html for details.
 #+begin_src emacs-lisp
-(set-input-method "TeX")
+(set-input-method "rfc1345")
 #+end_src
 ** Backup defaults
 #+begin_src emacs-lisp
@@ -204,10 +206,12 @@ often.
         mct-apply-completion-stripes t
         mct-minimum-input 3
         mct-live-update-delay 0.5
-        mct-completion-passlist '(imenu
+        mct-completion-passlist '(consult-imenu
+                                  imenu
 	                              Info-goto-node
 	                              Info-index
-	                              Info-menu))
+	                              Info-menu
+                                  consult-outline))
   ;; for tab completion in `mct-region-mode'
   (setq-default tab-always-indent 'complete))
 
@@ -783,6 +787,14 @@ Add indentation lines
   (setq highlight-indent-guides-responsive 'top
         highlight-indent-guides-method 'character))
 #+end_src
+
+And use variable pitch when it makes sense.
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook #'variable-pitch-mode)
+(add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
+(add-hook 'notmuch-show-hook #'variable-pitch-mode)
+#+end_src
+
 *** Window management
 winner-mode allows you to navigate through window configurations.
 #+begin_src emacs-lisp
@@ -927,6 +939,11 @@ consider just getting rid of it, or moving it to a someday list.
   (require 'ol-notmuch)
   (org-expiry-insinuate 1))
 #+end_src
+*** org-modern 
+#+begin_src emacs-lisp
+(use-package org-modern
+  :hook (org-mode . org-modern-mode))
+#+end_src
 *** org-pomodoro
 To me, org-pomodoro is very effective to maintain focus.
 #+BEGIN_SRC emacs-lisp
@@ -982,8 +999,6 @@ The main package:
    (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
    (require 'org-roam-dailies)
 
-   
-   
    ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
    (defun ash/org-roam-node-insert-immediate (arg &rest args)
      (interactive "P")
@@ -1113,6 +1128,16 @@ The main package:
                                                   (org-roam-node-title node))))))))
    (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
 
+   ;; The width isn't 1 - frame, it's 1 - the prompt ("Node: ") - frame
+   (defun org-roam-node-read--to-candidate (node template)
+     "Return a minibuffer completion candidate given NODE.
+TEMPLATE is the processed template used to format the entry."
+     (let ((candidate-main (org-roam-node--format-entry
+                            template
+                            node
+                            (- (frame-width) 7))))
+       (cons (propertize candidate-main 'node node) node)))
+
    ;; When new org-roam nodes are created, note it.
 
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
@@ -1161,7 +1186,7 @@ And =org-roam-ui= is a good interface:
 Citations are built into org mode, but it's nice to have a way to complete them.
 #+begin_src emacs-lisp
 (use-package citar
-  :custom
+  :config
   (setq-default citar-bibliography '("~/org/notes/orgcite.bib"))
   (require 'oc)
   (setq org-cite-insert-processor 'citar
@@ -1335,7 +1360,7 @@ https://jamiecollinson.com/blog/my-emacs-config/#make-it-easy-to-edit-this-file.
   (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
 (general-define-key :keymaps 'org-mode-map
-            :predicate '(string-equal "emacs.org" (buffer-name))
+                    :predicate '(s-contains? "emacs.org" (buffer-name))
             "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()

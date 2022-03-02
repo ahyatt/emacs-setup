@@ -91,7 +91,7 @@
 (when (file-exists-p custom-file)
   (load custom-file))
 
-(set-input-method "TeX")
+(set-input-method "rfc1345")
 
 (setq backup-directory-alist
       '(("." . "~/backups"))
@@ -133,10 +133,12 @@
         mct-apply-completion-stripes t
         mct-minimum-input 3
         mct-live-update-delay 0.5
-        mct-completion-passlist '(imenu
+        mct-completion-passlist '(consult-imenu
+                                  imenu
 	                              Info-goto-node
 	                              Info-index
-	                              Info-menu))
+	                              Info-menu
+                                  consult-outline))
   ;; for tab completion in `mct-region-mode'
   (setq-default tab-always-indent 'complete))
 
@@ -627,6 +629,10 @@
   (setq highlight-indent-guides-responsive 'top
         highlight-indent-guides-method 'character))
 
+(add-hook 'org-mode-hook #'variable-pitch-mode)
+(add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
+(add-hook 'notmuch-show-hook #'variable-pitch-mode)
+
 (winner-mode 1)
 (define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
 (define-key winner-mode-map (kbd "<M-right>") #'winner-redo)
@@ -745,6 +751,9 @@
   (require 'ol-notmuch)
   (org-expiry-insinuate 1))
 
+(use-package org-modern
+  :hook (org-mode . org-modern-mode))
+
 (use-package org-pomodoro
   :config
   (defun ash/org-pomodoro-til-meeting ()
@@ -794,8 +803,6 @@
    (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
    (require 'org-roam-dailies)
 
-   
-   
    ;; From https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
    (defun ash/org-roam-node-insert-immediate (arg &rest args)
      (interactive "P")
@@ -925,6 +932,16 @@
                                                   (org-roam-node-title node))))))))
    (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
 
+   ;; The width isn't 1 - frame, it's 1 - the prompt ("Node: ") - frame
+   (defun org-roam-node-read--to-candidate (node template)
+     "Return a minibuffer completion candidate given NODE.
+TEMPLATE is the processed template used to format the entry."
+     (let ((candidate-main (org-roam-node--format-entry
+                            template
+                            node
+                            (- (frame-width) 7))))
+       (cons (propertize candidate-main 'node node) node)))
+
    ;; When new org-roam nodes are created, note it.
 
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
@@ -959,7 +976,7 @@
           org-roam-ui-open-on-start t))
 
 (use-package citar
-  :custom
+  :config
   (setq-default citar-bibliography '("~/org/notes/orgcite.bib"))
   (require 'oc)
   (setq org-cite-insert-processor 'citar
@@ -1107,7 +1124,7 @@ larger and more readable."
   (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
 (general-define-key :keymaps 'org-mode-map
-            :predicate '(string-equal "emacs.org" (buffer-name))
+                    :predicate '(s-contains? "emacs.org" (buffer-name))
             "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
