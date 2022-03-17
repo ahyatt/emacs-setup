@@ -121,6 +121,7 @@
   (require 'org-element)
   :general
   ("C-c a" 'ash-goto-agenda)
+  ("<f12>" 'org-capture)
   (:keymaps 'org-agenda-mode-map
             "P" 'org-pomodoro))
 
@@ -138,7 +139,8 @@
 	                              Info-goto-node
 	                              Info-index
 	                              Info-menu
-                                  consult-outline))
+                                  consult-outline
+                                  cape-rfc1345))
   ;; for tab completion in `mct-region-mode'
   (setq-default tab-always-indent 'complete))
 
@@ -148,12 +150,15 @@
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  (add-to-list 'completion-at-point-functions #'cape-symbol))
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-tex)
+  (add-to-list 'completion-at-point-functions #'cape-rfc1345))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
   :init
   (setq completion-styles '(basic substring initials flex partial-completion orderless)
+        completion-ignore-case t
 	    completion-category-defaults nil
 	    completion-category-overrides '((file (styles partial-completion))))
   :config
@@ -749,9 +754,6 @@
   (require 'org-checklist)
   (require 'ol-notmuch))
 
-(use-package org-modern
-  :hook (org-mode . org-modern-mode))
-
 (use-package org-pomodoro
   :config
   (defun ash/org-pomodoro-til-meeting ()
@@ -913,7 +915,11 @@
        ;; Only refile if the target file is different than the current file
        (unless (equal (file-truename today-file)
                       (file-truename (buffer-file-name)))
-         (org-refile nil nil (list "Completed Tasks" today-file nil pos)))))
+         (save-window-excursion 
+           (save-excursion
+             (org-refile nil nil (list "Completed Tasks" today-file nil pos))
+             (org-refile-goto-last-stored)
+             (org-delete-property "ID"))))))
 
    (defun ash/on-todo-state-change ()
      (when (equal org-state "DONE")
