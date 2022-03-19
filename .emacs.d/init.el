@@ -773,6 +773,8 @@
    :init
    (setq org-roam-v2-ack t)
    (setq-default org-cite-global-bibliography '("~/org/notes/orgcite.bib"))
+   :custom
+   (org-roam-node-display-template "${title}" "Fix for issue with bad completion display")
    :config
    ;; From the manual.
    (add-to-list 'display-buffer-alist
