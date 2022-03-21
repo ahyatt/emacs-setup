@@ -645,44 +645,46 @@ Git gutter highlights changes to files.
 
 Flycheck will help check for all errors.  Taken from https://jamiecollinson.com/blog/my-emacs-config/#syntax-checking.
 #+BEGIN_SRC emacs-lisp
-  (use-package flycheck
-    :config
-      (add-hook 'after-init-hook 'global-flycheck-mode)
-      (setq-default flycheck-highlighting-mode 'lines)
-      ;; Define fringe indicator / warning levels
-      (define-fringe-bitmap 'flycheck-fringe-bitmap-ball
-        (vector #b00000000
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00011100
-                #b00111110
-                #b00111110
-                #b00111110
-                #b00011100
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00000000
-                #b00000000))
-      (flycheck-define-error-level 'error
-        :severity 2
-        :overlay-category 'flycheck-error-overlay
-        :fringe-bitmap 'flycheck-fringe-bitmap-ball
-        :fringe-face 'flycheck-fringe-error)
-      (flycheck-define-error-level 'warning
-        :severity 1
-        :overlay-category 'flycheck-warning-overlay
-        :fringe-bitmap 'flycheck-fringe-bitmap-ball
-        :fringe-face 'flycheck-fringe-warning)
-      (flycheck-define-error-level 'info
-        :severity 0
-        :overlay-category 'flycheck-info-overlay
-        :fringe-bitmap 'flycheck-fringe-bitmap-ball
-        :fringe-face 'flycheck-fringe-info))
+(use-package flycheck
+  :custom
+  (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
+  :config
+  (add-hook 'after-init-hook 'global-flycheck-mode)
+  (setq-default flycheck-highlighting-mode 'lines)
+  ;; Define fringe indicator / warning levels
+  (define-fringe-bitmap 'flycheck-fringe-bitmap-ball
+    (vector #b00000000
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00011100
+            #b00111110
+            #b00111110
+            #b00111110
+            #b00011100
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00000000
+            #b00000000))
+  (flycheck-define-error-level 'error
+    :severity 2
+    :overlay-category 'flycheck-error-overlay
+    :fringe-bitmap 'flycheck-fringe-bitmap-ball
+    :fringe-face 'flycheck-fringe-error)
+  (flycheck-define-error-level 'warning
+    :severity 1
+    :overlay-category 'flycheck-warning-overlay
+    :fringe-bitmap 'flycheck-fringe-bitmap-ball
+    :fringe-face 'flycheck-fringe-warning)
+  (flycheck-define-error-level 'info
+    :severity 0
+    :overlay-category 'flycheck-info-overlay
+    :fringe-bitmap 'flycheck-fringe-bitmap-ball
+    :fringe-face 'flycheck-fringe-info))
 #+END_SRC
 *** Tree Sitter
 This gives emacs the power to interact with the AST.
@@ -834,6 +836,7 @@ I use the tab bar to sort specific activies, such as mail, elfeed, and projects 
 I've used many mail packages, but =notmuch= is a good combination of simple, suited to mail, very fast, and with a good search.
 #+begin_src emacs-lisp
 (use-package notmuch
+  :custom (notmuch-search-oldest-first nil)
   :config (require 'notmuch))
 #+end_src
 
