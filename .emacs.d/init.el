@@ -36,6 +36,7 @@
 (setq-default
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
  auto-window-vscroll nil                          ; Lighten vertical scroll
+ bookmark-save-flag 1                             ; Always save bookmarks
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
@@ -156,8 +157,11 @@
 
 ;; From Vertico example installation instructions.
 (use-package orderless
+  :custom
+  (orderless-matching-styles '(orderless-regexp orderless-literal orderless-initialism orderless-prefixes))
+  (orderless-component-separator " +\\|[-/]")
   :init
-  (setq completion-styles '(basic substring initials flex partial-completion orderless)
+  (setq completion-styles '(orderless)
         completion-ignore-case t
 	    completion-category-defaults nil
 	    completion-category-overrides '((file (styles partial-completion))))
@@ -252,13 +256,7 @@
     (interactive)
     ;; avy-action is a global that sometimes is stuck in a weird state, so we
     ;; have to specifically set it here via :action.
-    (avy-jump "https?://" :action 'avy-action-goto))
-  (defun ash/avy-open-url ()
-    "Use avy to select an URL in the buffer and open it."
-    (interactive)
-    (save-excursion
-      (ash/avy-goto-url)
-      (browse-url-at-point))))
+    (avy-jump "https?://" :action 'avy-action-goto)))
 
 ;; Before hydra because we use pretty-hydra-define in the hydra confg.
 (use-package major-mode-hydra
@@ -328,7 +326,7 @@
      (("i" consult-imenu "imenu" :exit t)
       ("o" consult-outline "outline" :exit t))
      "Jump & go"
-     (("u" ash/avy-open-url "open url" :exit t))
+     (("u" ash/avy-goto-url "open url" :exit t))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
@@ -688,7 +686,7 @@
       org-clock-idle-time 30
       org-catch-invisible-edits 'error
       org-agenda-sticky t
-      org-agenda-start-with-log-mode nil
+      org-agenda-start-with-log-mode t
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
                                     "WAITING(w@/!)" "|" "DONE(d)"
                                     "OBSOLETE(o)")
@@ -700,7 +698,6 @@
         ("n" tags-todo "+someday"
          ((org-show-hierarchy-above nil) (org-agenda-todo-ignore-with-date t)
           (org-agenda-tags-todo-honor-ignore-options t)))
-        ("0" "Critical tasks" ((agenda "") (tags-todo "+p0")))
         ("l" "Agenda and live tasks" ((agenda)
                                       (todo "PERMANENT")
                                       (todo "WAITING|EXTREVIEW")
@@ -709,7 +706,7 @@
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil))))
       org-enforce-todo-dependencies t
-      org-agenda-todo-ignore-scheduled t
+      org-agenda-todo-ignore-scheduled nil
       org-agenda-dim-blocked-tasks 'invisible
       org-agenda-tags-todo-honor-ignore-options t
       org-agenda-skip-deadline-if-done 't
@@ -779,6 +776,7 @@
    :custom
    (org-roam-node-display-template "${title}" "Fix for issue with bad completion display")
    :config
+   (setq org-roam-node-display-template "${title}")
    ;; From the manual.
    (add-to-list 'display-buffer-alist
                 '("\\*org-roam\\*"
@@ -941,16 +939,11 @@
                                                   (org-roam-node-title node))))))))
    (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
 
-   ;; The width isn't 1 - frame, it's 1 - the prompt ("Node: ") - frame
-   (defun org-roam-node-read--to-candidate (node template)
-     "Return a minibuffer completion candidate given NODE.
-TEMPLATE is the processed template used to format the entry."
-     (let ((candidate-main (org-roam-node--format-entry
-                            template
-                            node
-                            (- (frame-width) 7))))
-       (cons (propertize candidate-main 'node node) node)))
-
+   (defun ash/org-roam-tag-search ()
+     (interactive)
+     (let ((org-roam-node-display-template "${tags:10} ${title}"))
+       (org-roam-node-open
+        (org-roam-node-read nil nil nil t "Tag: "))))
    ;; When new org-roam nodes are created, note it.
 
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
