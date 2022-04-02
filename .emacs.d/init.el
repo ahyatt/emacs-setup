@@ -218,7 +218,21 @@
     ("s" tab-bar-select-tab-by-name)
     ("r" tab-bar-rename-tab-by-name)
     ("k" tab-bar-close-tab-by-name))
-  (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions)))
+  (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
+
+  ;; By default, embark doesn't know how to handle org-links.  Let's provide a way.
+  (defun ash/org-link ()
+    "Get the link from an org-link."
+    (require 's)
+    (let ((context (org-element-context)))
+      (cond ((and (eq (car context) 'link)
+                  (equal (plist-get (cadr context) :type) "file"))
+             (cons 'file (plist-get (cadr context) :path)))
+            ((and (eq (car context) 'link)
+                  (member (plist-get (cadr context) :type) '("http" "https")))
+             (cons 'url (concat (plist-get (cadr context) :type) ":" (s-trim-right (plist-get (cadr context) :path)))))
+            (t nil))))
+  (add-to-list 'embark-target-finders 'ash/org-link))
 
 (use-package consult
   :config
@@ -706,7 +720,7 @@
          ((org-agenda-overriding-header "Last week's completed TODO: ")
           (org-agenda-skip-archived-trees nil))))
       org-enforce-todo-dependencies t
-      org-agenda-todo-ignore-scheduled nil
+      org-agenda-todo-ignore-scheduled 'future
       org-agenda-dim-blocked-tasks 'invisible
       org-agenda-tags-todo-honor-ignore-options t
       org-agenda-skip-deadline-if-done 't
