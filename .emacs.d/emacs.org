@@ -190,6 +190,8 @@ This just loads the package, which we want to do before anything else ends up lo
   ;; TEMPORARY, seems like this isn't getting autoloaded correctly.
   (require 'org-duration)
   (require 'org-element)
+  ;; A pomodoro group is for a day, so after 8 hours of no activity, that's a group.
+  (setq org-pomodoro-expiry-time (* 60 8))
   :general
   ("C-c a" 'ash-goto-agenda)
   ("<f12>" 'org-capture)
@@ -959,6 +961,16 @@ To me, org-pomodoro is very effective to maintain focus.
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 #+END_SRC
+*** Vulpea
+Vulpea is a API that wraps for =org= and =org-roam= in useful ways.  We use it for various =org-roam= advanced functionality.
+#+begin_src emacs-lisp
+(use-package vulpea
+  :ensure t
+  ;; hook into org-roam-db-autosync-mode you wish to enable
+  ;; persistence of meta values (see respective section in README to
+  ;; find out what meta means)
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
+#+end_src
 *** Org roam
 The main package:
 #+begin_src emacs-lisp
@@ -1184,9 +1196,58 @@ And =org-roam-ui= is a good interface:
     (setq org-roam-ui-sync-theme t
           org-roam-ui-follow t
           org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
+          org-roam-ui-open-on-start nil))
 #+end_src
+**** Deeper integration =org-roam= and =org=
+We want to make it possible to have =TODO= in =org-roam= nodes. There's a great set
+of articles on this at
+https://d12frosted.io/posts/2020-06-23-task-management-with-roam-vol1.html,
+which this code is taken from.
 
+#+begin_src emacs-lisp
+(require 'vulpea)
+(setq org-agenda-prefix-format
+      '((agenda . " %i %(vulpea-agenda-category 12)%?-12t% s")
+        (todo . " %i %(vulpea-agenda-category 12) ")
+        (tags . " %i %(vulpea-agenda-category 12) ")
+        (search . " %i %(vulpea-agenda-category 12) ")))
+
+(defun vulpea-agenda-category (&optional len)
+  "Get category of item at point for agenda.
+
+Category is defined by one of the following items:
+
+- CATEGORY property
+- TITLE keyword
+- TITLE property
+- filename without directory and extension
+
+When LEN is a number, resulting string is padded right with
+spaces and then truncated with ... on the right if result is
+longer than LEN.
+
+Usage example:
+
+  (setq org-agenda-prefix-format
+        '((agenda . \" %(vulpea-agenda-category) %?-12t %12s\")))
+
+Refer to `org-agenda-prefix-format' for more information."
+  (let* ((file-name (when buffer-file-name
+                      (file-name-sans-extension
+                       (file-name-nondirectory buffer-file-name))))
+         (title (vulpea-buffer-prop-get "title"))
+         (category (org-get-category))
+         (result
+          (or (if (and
+                   title
+                   (string-equal category file-name))
+                  title
+                category)
+              "")))
+    (if (numberp len)
+        (s-truncate len (s-pad-right len " " result))
+      result)))
+#+end_src
 
 **** Citations
 Citations are built into org mode, but it's nice to have a way to complete them.

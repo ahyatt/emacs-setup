@@ -123,6 +123,8 @@
   ;; TEMPORARY, seems like this isn't getting autoloaded correctly.
   (require 'org-duration)
   (require 'org-element)
+  ;; A pomodoro group is for a day, so after 8 hours of no activity, that's a group.
+  (setq org-pomodoro-expiry-time (* 60 8))
   :general
   ("C-c a" 'ash-goto-agenda)
   ("<f12>" 'org-capture)
@@ -645,12 +647,6 @@
   :config (setq doom-modeline-buffer-encoding nil
                 doom-modeline-minor-modes nil))
 
-(use-package highlight-indent-guides
-  :hook (prog-mode . highlight-indent-guides-mode)
-  :config
-  (setq highlight-indent-guides-responsive 'top
-        highlight-indent-guides-method 'character))
-
 (add-hook 'org-mode-hook #'variable-pitch-mode)
 (add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
 (add-hook 'notmuch-show-hook #'variable-pitch-mode)
@@ -778,6 +774,13 @@
     (interactive)
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
+
+(use-package vulpea
+  :ensure t
+  ;; hook into org-roam-db-autosync-mode you wish to enable
+  ;; persistence of meta values (see respective section in README to
+  ;; find out what meta means)
+  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
 
 (use-package org-roam
    :bind (:map org-roam-mode-map
@@ -992,7 +995,50 @@
     (setq org-roam-ui-sync-theme t
           org-roam-ui-follow t
           org-roam-ui-update-on-save t
-          org-roam-ui-open-on-start t))
+          org-roam-ui-open-on-start nil))
+
+(require 'vulpea)
+(setq org-agenda-prefix-format
+      '((agenda . " %i %(vulpea-agenda-category 12)%?-12t% s")
+        (todo . " %i %(vulpea-agenda-category 12) ")
+        (tags . " %i %(vulpea-agenda-category 12) ")
+        (search . " %i %(vulpea-agenda-category 12) ")))
+
+(defun vulpea-agenda-category (&optional len)
+  "Get category of item at point for agenda.
+
+Category is defined by one of the following items:
+
+- CATEGORY property
+- TITLE keyword
+- TITLE property
+- filename without directory and extension
+
+When LEN is a number, resulting string is padded right with
+spaces and then truncated with ... on the right if result is
+longer than LEN.
+
+Usage example:
+
+  (setq org-agenda-prefix-format
+        '((agenda . \" %(vulpea-agenda-category) %?-12t %12s\")))
+
+Refer to `org-agenda-prefix-format' for more information."
+  (let* ((file-name (when buffer-file-name
+                      (file-name-sans-extension
+                       (file-name-nondirectory buffer-file-name))))
+         (title (vulpea-buffer-prop-get "title"))
+         (category (org-get-category))
+         (result
+          (or (if (and
+                   title
+                   (string-equal category file-name))
+                  title
+                category)
+              "")))
+    (if (numberp len)
+        (s-truncate len (s-pad-right len " " result))
+      result)))
 
 (use-package citar
   :config
