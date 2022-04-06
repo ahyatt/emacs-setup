@@ -52,6 +52,7 @@
  initial-scratch-message ""                       ; Empty the initial *scratch* buffer
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
  mouse-yank-at-point t                            ; Yank at point rather than pointer
+ next-error-message-highlight t                   ; Highlight the current error in next-error buffer.
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
  reb-re-syntax 'string                            ; No double blacklashes in re-builder
  recenter-positions '(5 top bottom)               ; Set re-centering positions
@@ -63,9 +64,12 @@
  show-trailing-whitespace nil                     ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
+ tab-first-completion 'word                       ; Complete unless we're in the middle of the word.
+ tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
  tooltip-use-echo-area t                          ; Good for non-mouse-users
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
+ use-short-answers t                              ; Use y/n instead yes / no.
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
@@ -73,7 +77,6 @@
 (delete-selection-mode 1)                         ; Replace region when inserting text
 (display-time-mode 1)                             ; Enable time in the mode-line
 (fringe-mode 0)                                   ; Disable fringes
-(fset 'yes-or-no-p 'y-or-n-p)                     ; Replace yes/no prompts with y/n
 (global-subword-mode 1)                           ; Iterate through CamelCase words
 (global-so-long-mode 1)                           ; Better performance for files with long lines
 (menu-bar-mode 0)                                 ; Disable the menu bar
