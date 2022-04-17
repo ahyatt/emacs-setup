@@ -40,6 +40,7 @@
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
+ completions-detailed t                           ; Add extra detail to completions
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
@@ -200,7 +201,6 @@
   (setq read-extended-command-predicate #'command-completion-default-include-p)
 
   (setq enable-recursive-minibuffers t
-        completions-detailed t
         read-buffer-completion-ignore-case t
         read-file-name-completion-ignore-case t
         resize-mini-windows t))
@@ -491,7 +491,8 @@
       ("y" hydra-yas/body "snippets" :exit t))
      "Movement"
      (("j" hydra-jumps/body "jumps" :exit t)
-      ("E" hydra-flycheck/body "errors" :exit t))
+      ("E" hydra-flycheck/body "errors" :exit t)
+      ("G" deadgrep "grep" :exit t))
      "Misc"
      (("f" hydra-find/body "find" :exit t))))
 
@@ -675,6 +676,8 @@
   :config (require 'notmuch))
 
 (use-package consult-notmuch)
+
+(use-package deadgrep)
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
