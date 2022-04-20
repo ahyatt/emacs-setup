@@ -205,26 +205,36 @@ This just loads the package, which we want to do before anything else ends up lo
 I've played around with a lot of different completion frameworks.  They all are
 pretty good, but I like experimenting with new ideas, so this changes every so
 often.
-#+begin_src emacs-lisp
-(use-package mct
-  :config
-  (mct-minibuffer-mode 1)
-  (mct-region-mode 1)
-  (setq mct-remove-shadowed-file-names t
-        mct-hide-completion-mode-line t
-        mct-apply-completion-stripes t
-        mct-minimum-input 3
-        mct-live-update-delay 0.5
-        mct-completion-passlist '(consult-imenu
-                                  imenu
-	                              Info-goto-node
-	                              Info-index
-	                              Info-menu
-                                  consult-outline
-                                  cape-rfc1345))
-  ;; for tab completion in `mct-region-mode'
-  (setq-default tab-always-indent 'complete))
 
+In general, the default completion isn't bad, but it often messes up due to
+insisting on multi columns. Let's use =vertico=, although there's many good
+choices. But =vertico= plays fairly nicely with the emacs completion system, which
+is good for compatibility.
+#+begin_src emacs-lisp
+(use-package vertico
+  :init
+  (vertico-mode)
+  (setq vertico-resize t
+        vertico-cycle t))
+#+end_src
+
+Since the standard completion isn't that great (or maybe I haven't configured it
+so well), let's also use =corfu= for in-buffer completions. In general, emacs
+popups tend to misbehave, so let's see how this goes.
+#+begin_src emacs-lisp
+(use-package corfu
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-separator ?\s)          ;; Orderless field separator
+
+  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  :init
+  (global-corfu-mode))
+#+end_src
+
+#+begin_src emacs-lisp
 ;; More completions
 (use-package cape
   :config
@@ -577,7 +587,8 @@ Hydra is useful for doing lots of things in succession.
       ("o" hydra-org-main/body "org" :exit t)
       ("r" hydra-roam/body "roam" :exit t)
       ("S" hydra-straight/body "straight" :exit t)
-      ("g" magit-status "magit" :exit t))
+      ("g" magit-status "magit" :exit t)
+      ("!" ash/el-secretario-daily-review "secretary" :exit t))
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
@@ -804,6 +815,11 @@ Improve the looks of the modeline with Powerline.
   :config (setq doom-modeline-buffer-encoding nil
                 doom-modeline-minor-modes nil))
 #+END_SRC
+
+Powerline needs =all-the-icons=.  After install, run =M-x all-the-icons-install-fonts=.
+#+begin_src emacs-lisp
+(use-package all-the-icons)
+#+end_src
 
 And use variable pitch when it makes sense.
 #+begin_src emacs-lisp
@@ -1478,9 +1494,11 @@ Finally, set up tabs the way I like them, so everything has its place.
 (when (= 1 (length (tab-bar-tabs)))
   (tab-bar-new-tab)
   (tab-bar-new-tab)
+  (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
   (tab-bar-rename-tab "roam" 2)
-  (tab-bar-rename-tab "emacs" 3)
+  (tab-bar-rename-tab "mail" 3)
+  (tab-bar-rename-tab "emacs" 4)
   (tab-bar-select-tab 1)
   (org-agenda nil "l")
   (delete-other-windows)
@@ -1489,5 +1507,7 @@ Finally, set up tabs the way I like them, so everything has its place.
   (delete-other-windows)
   (delete-other-windows)
   (tab-bar-select-tab 3)
+  (notmuch-hello)
+  (tab-bar-select-tab 4)
   (find-file "~/.emacs.d/emacs.org"))
 #+end_src

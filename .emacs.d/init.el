@@ -132,24 +132,22 @@
   (:keymaps 'org-agenda-mode-map
             "P" 'org-pomodoro))
 
-(use-package mct
-  :config
-  (mct-minibuffer-mode 1)
-  (mct-region-mode 1)
-  (setq mct-remove-shadowed-file-names t
-        mct-hide-completion-mode-line t
-        mct-apply-completion-stripes t
-        mct-minimum-input 3
-        mct-live-update-delay 0.5
-        mct-completion-passlist '(consult-imenu
-                                  imenu
-	                              Info-goto-node
-	                              Info-index
-	                              Info-menu
-                                  consult-outline
-                                  cape-rfc1345))
-  ;; for tab completion in `mct-region-mode'
-  (setq-default tab-always-indent 'complete))
+(use-package vertico
+  :init
+  (vertico-mode)
+  (setq vertico-resize t
+        vertico-cycle t))
+
+(use-package corfu
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-separator ?\s)          ;; Orderless field separator
+
+  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+  :init
+  (global-corfu-mode))
 
 ;; More completions
 (use-package cape
@@ -483,7 +481,8 @@
       ("o" hydra-org-main/body "org" :exit t)
       ("r" hydra-roam/body "roam" :exit t)
       ("S" hydra-straight/body "straight" :exit t)
-      ("g" magit-status "magit" :exit t))
+      ("g" magit-status "magit" :exit t)
+      ("!" ash/el-secretario-daily-review "secretary" :exit t))
      "Editing"
      (("s" hydra-structural/body  "structural" :exit t)
       ("c" hydra-multiple-cursors/body "multiple cursors" :exit t)
@@ -647,6 +646,8 @@
   :init (doom-modeline-mode 1)
   :config (setq doom-modeline-buffer-encoding nil
                 doom-modeline-minor-modes nil))
+
+(use-package all-the-icons)
 
 (add-hook 'org-mode-hook #'variable-pitch-mode)
 (add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
@@ -1216,9 +1217,11 @@ This has to be done as a string to handle 64-bit or larger ints."
 (when (= 1 (length (tab-bar-tabs)))
   (tab-bar-new-tab)
   (tab-bar-new-tab)
+  (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
   (tab-bar-rename-tab "roam" 2)
-  (tab-bar-rename-tab "emacs" 3)
+  (tab-bar-rename-tab "mail" 3)
+  (tab-bar-rename-tab "emacs" 4)
   (tab-bar-select-tab 1)
   (org-agenda nil "l")
   (delete-other-windows)
@@ -1227,4 +1230,6 @@ This has to be done as a string to handle 64-bit or larger ints."
   (delete-other-windows)
   (delete-other-windows)
   (tab-bar-select-tab 3)
+  (notmuch-hello)
+  (tab-bar-select-tab 4)
   (find-file "~/.emacs.d/emacs.org"))
