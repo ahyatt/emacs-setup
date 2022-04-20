@@ -318,7 +318,8 @@
                                                  (";" org-roam-node-insert "add link")
                                                  (":" ash/org-roam-node-insert-immediate "add link immediately")
                                                  ("#" org-roam-tag-add "add tag")
-                                                 ("a" org-roam-alias-add "add alias"))))
+                                                 ("a" org-roam-alias-add "add alias")
+                                                 ("R" org-roam-ref-add "add ref"))))
   (major-mode-hydra-define emacs-lisp-mode nil
     ("Eval"
      (("b" eval-buffer "eval buffer")
@@ -406,14 +407,21 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-roam ()
     ("Navigation"
-     (("o" org-roam-node-find "open" :exit t)
-      ("c" org-roam-capture "capture" :exit t)
+     (("o" vulpea-find "open" :exit t)
       ("s" deft "search" :exit t)
-      ("R" ash/org-roam-node-random-no-dates "random note" :exit t)
+      ("r" ash/org-roam-node-random-no-dates "random note, no dates" :exit t)
+      ("R" org-node-node-random "any random note" :exit t)
       ("t" ash/org-roam-dailies-find-today "today" :exit t)
       ("T" org-roam-dailies-capture-today "capture today" :exit t)
       ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("d" ash/org-roam-dailies-find-date "date" :exit t))))
+      ("n" org-roam-dailies-find-tomorrow "tomorrow" :exit t)
+      ("d" ash/org-roam-dailies-find-date "date" :exit t))
+     "Find in category"
+     (("i" ash/org-roam-node-find-idea :exit t)
+      ("c" ash/org-roam-node-find-concept :exit t)
+      ("p" ash/org-roam-node-find-person :exit t)
+      ("r" ash/org-roam-node-find-resource :exit t)
+      ("j" ash/org-roam-node-find-project :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -791,6 +799,9 @@
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 
+(use-package emacsql-sqlite-builtin
+  :ensure t)
+
 (use-package vulpea
   :ensure t
   ;; hook into org-roam-db-autosync-mode you wish to enable
@@ -980,6 +991,31 @@
      (let ((org-roam-node-display-template "${tags:10} ${title}"))
        (org-roam-node-open
         (org-roam-node-read nil nil nil t "Tag: "))))
+
+   (defun ash/org-roam-complete-tag (tag)
+     (org-roam-node-open (org-roam-node-read nil (lambda (n) (member tag (org-roam-node-tags n))) nil t (concat (s-upcase tag) ": "))))
+
+   (defun ash/org-roam-node-find-idea ()
+     (interactive)
+     (ash/org-roam-complete-tag "idea"))
+
+   (defun ash/org-roam-node-find-concept ()
+     (interactive)
+     (ash/org-roam-complete-tag "concept"))
+
+   (defun ash/org-roam-node-find-person ()
+     (interactive)
+     (ash/org-roam-complete-tag "person"))
+
+   (defun ash/org-roam-node-find-resource ()
+     (interactive)
+     (ash/org-roam-complete-tag "resource"))
+
+   (defun ash/org-roam-node-find-project ()
+     (interactive)
+     (ash/org-roam-complete-tag "project"))
+
+   
    ;; When new org-roam nodes are created, note it.
 
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
