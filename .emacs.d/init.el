@@ -40,6 +40,7 @@
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
+ completion-cycle-threshold 5                     ; Tab-cycle completions if there are only 5 of them.
  completions-detailed t                           ; Add extra detail to completions
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
@@ -143,6 +144,7 @@
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
   (corfu-auto t)                 ;; Enable auto completion
   (corfu-separator ?\s)          ;; Orderless field separator
+  (corfu-auto-delay 0.8)         ;; Pause a bit before completion, else it's annoying.
 
   ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
   ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
@@ -210,7 +212,7 @@
    ("s-A" . embark-act-noexit))
   :general
   (:keymaps 'embark-symbol-map
-            "h" 'helpful-command
+            "h" 'describe-symbol
             "t" 'trace-function
             "T" 'untrace-function
             "x" 'xref-find-references)
@@ -585,7 +587,7 @@
   :diminish
   :config (which-key-mode 1))
 
-(use-package helpful
+(use-package helpful :disabled
   :bind (("C-h f" . helpful-callable)
          ("C-h v" . helpful-variable)
          ("C-h k" . helpful-key)
