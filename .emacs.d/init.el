@@ -776,6 +776,14 @@
   (require 'ol-notmuch))
 
 (use-package org-pomodoro
+  :custom
+  (org-pomodoro-manual-break t)
+  (org-pomodoro-finished-sound-p nil)
+  (org-pomodoro-killed-sound-p nil)
+  (org-pomodoro-killed-short-break-sound-p nil)
+  (org-pomodoro-killed-ticking-sound-p nil)
+  (org-pomodoro-killed-long-break-sound-p nil)
+  (org-pomodoro-killed-overtime-sound-p nil)
   :config
   (defun ash/org-pomodoro-til-meeting ()
     "Run a pomodoro until the next 30 minute boundary."
