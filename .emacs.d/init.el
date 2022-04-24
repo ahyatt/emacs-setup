@@ -200,6 +200,15 @@
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
   (setq read-extended-command-predicate #'command-completion-default-include-p)
 
+  ;; In non-programming-buffers, we don't want `pcomplete-completions-at-point'
+  ;; or 't' which seems to complete everything.
+  (defun ash/fix-completion-for-nonprog-buffers ()
+    (setq completion-at-point-functions
+          (-remove-item t (append (-remove-item #'pcomplete-completions-at-point completion-at-point-functions)
+                                  '(cape-file cape-abbrev cape-rfc1345)))))
+  (add-hook 'org-mode-hook #'ash/fix-completion-for-nonprog-buffers)
+  (add-hook 'notmuch-message-mode-hook #'ash/fix-completion-for-nonprog-buffers)
+
   (setq enable-recursive-minibuffers t
         read-buffer-completion-ignore-case t
         read-file-name-completion-ignore-case t
@@ -659,15 +668,8 @@
 (define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
 (define-key winner-mode-map (kbd "<M-right>") #'winner-redo)
 
-(use-package olivetti
-  :ensure
-  :defer
-  :diminish
-  :config
-  (setq olivetti-body-width 0.65)
-  (setq olivetti-minimum-body-width 72)
-  (setq olivetti-recall-visual-line-mode-entry-state t)
-  :bind ("C-c o" . olivetti-mode))
+(use-package darkroom
+  :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 
 (use-package vterm
     :ensure t)
@@ -1116,69 +1118,6 @@ Refer to `org-agenda-prefix-format' for more information."
              ((lambda (tag)
                 (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0 :face 'org-date))))
             ))))
-
-(defun ash/focused-text-resize (&rest args)
-  "Iterate through all buffers, resizing if needed."
-  (when (frame-window-state-change)
-    (message "Frame window state change detected")
-    (save-excursion (dolist (buf (buffer-list))
-                      (set-buffer buf)
-                      (when (member 'ash/focused-text-mode local-minor-modes)
-                        ;; recalculate font size
-                        (ash/big-font))))))
-
-(define-minor-mode ash/focused-text-mode
-  "Create a pleasing experience for reading & writing.
-This will turn on `olivetti-mode' and change the font-size to be
-larger and more readable."
-    :init-value nil
-    :global nil
-    (if ash/focused-text-mode
-        (progn
-          (setq-local text-scale-remap-header-line t)
-          (olivetti-mode 1)
-          (set-window-fringes (selected-window) 0 0)
-          (window-divider-mode 1)
-          (ash/big-font)
-          (add-to-list 'window-size-change-functions #'ash/focused-text-resize))
-      (olivetti-mode -1)
-      (set-window-fringes (selected-window) nil) ; Use default width
-      (window-divider-mode -1)))
-
-(defun ash/focused-text ()
-  "Set up buffer to be pleasant for text reading / writing."
-  (ash/big-font)
-  (when (featurep 'olivetti)
-    (olivetti-mode 1)))
-
-(defun ash/embiggen-increment ()
-  "Find out how much to embiggen the font so it is \"big\"."
-  (/ (frame-height) 20))
-
-(defun ash/big-font ()
-  "Creates a font that is big enough for about 20 lines of text."
-  (interactive)
-  ;; If we don't set this back to default size it gets larger then makes sense.
-  (let ((text-scale-mode-amount (ash/embiggen-increment)))
-    (text-scale-mode 1)))
-
-(defun ash/default-font ()
-  "Restore the default font, if it has been embiggened."
-  ;; There doesn't seem to be a great way of using text-scale to remove all
-  ;; modifications and restore the font to a default size. Setting the scale to
-  ;; 0 does not actually do that.
-  (text-scale-set (- (ash/embiggen-increment)))
-  (text-scale-mode 0))
-
-(defun ash/maybe-org-roam-ui ()
-  "If we're in an org roam buffer, create a special UI."
-  (when (and (featurep 'org-roam) (org-roam-buffer-p))
-    (ash/focused-text-mode 1)))
-
-(add-hook 'org-mode-hook #'ash/maybe-org-roam-ui)
-(add-hook 'notmuch-message-mode-hook #'ash/focused-text-mode)
-(add-hook 'notmuch-show-hook #'ash/focused-text-mode)
-(add-hook 'org-capture-mode-hook #'ash/big-font)
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
