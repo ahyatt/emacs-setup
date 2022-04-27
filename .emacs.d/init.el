@@ -167,10 +167,11 @@
   (orderless-matching-styles '(orderless-regexp orderless-literal orderless-initialism orderless-prefixes))
   (orderless-component-separator " +\\|[-/]")
   :init
+  ;; Completion category overrides for file helps with tramp, this is mentioned in the vertico docs.
   (setq completion-styles '(orderless)
         completion-ignore-case t
 	    completion-category-defaults nil
-	    completion-category-overrides '((file (styles partial-completion))))
+	    completion-category-overrides '((file (styles basic partial-completion))))
   :config
   ;; We make the SPC key insert a literal space and the same for the
   ;; question mark.  Spaces are used to delimit orderless groups, while
@@ -410,7 +411,7 @@
      (("o" vulpea-find "open" :exit t)
       ("s" deft "search" :exit t)
       ("r" ash/org-roam-node-random-no-dates "random note, no dates" :exit t)
-      ("R" org-node-node-random "any random note" :exit t)
+      ("R" org-roam-node-random "any random note" :exit t)
       ("t" ash/org-roam-dailies-find-today "today" :exit t)
       ("T" org-roam-dailies-capture-today "capture today" :exit t)
       ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
