@@ -787,12 +787,7 @@
 (use-package org-pomodoro
   :custom
   (org-pomodoro-manual-break t)
-  (org-pomodoro-finished-sound-p nil)
-  (org-pomodoro-killed-sound-p nil)
-  (org-pomodoro-killed-short-break-sound-p nil)
-  (org-pomodoro-killed-ticking-sound-p nil)
-  (org-pomodoro-killed-long-break-sound-p nil)
-  (org-pomodoro-killed-overtime-sound-p nil)
+  (org-pomodoro-play-sounds nil)
   :config
   (defun ash/org-pomodoro-til-meeting ()
     "Run a pomodoro until the next 30 minute boundary."
@@ -820,7 +815,7 @@
               (("C-c n i" . org-roam-node-insert)))
    :init
    (setq org-roam-v2-ack t)
-   (setq-default org-cite-global-bibliography '("~/org/notes/orgcite.bib"))
+   (setq-default org-cite-global-bibliography '("~/org/orgcite.bib"))
    :custom
    (org-roam-node-display-template "${title}" "Fix for issue with bad completion display")
    :config
@@ -1027,8 +1022,6 @@
 
 (use-package deft
   :after org
-  :bind
-  ("C-c n d" . deft)
   :custom
   (deft-recursive t)
   (deft-use-filter-string-for-filename t)
