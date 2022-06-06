@@ -93,6 +93,8 @@
 
 (add-hook 'focus-out-hook #'garbage-collect)
 
+(ffap-bindings)
+
 (setq-default custom-file (expand-file-name ".custom.el" user-emacs-directory))
 (when (file-exists-p custom-file)
   (load custom-file))
@@ -388,7 +390,7 @@
       ("p" mc/mark-previous-like-this "mark previous like this")
       ("P" mc/skip-to-previous-like-this "skip to previous like this")
       ("M-p" mc/unmark-previous-like-this "unmark previous like this")
-      ("n" mc/mark-next-lines "mark next lines"))
+      ("L" mc/mark-next-lines "mark next lines"))
      "Insert"
      (("0" mc/insert-numbers "insert numbers" :exit t)
       ("A" mc/insert-letters "insert letters" :exit t))
@@ -421,7 +423,7 @@
      (("i" ash/org-roam-node-find-idea :exit t)
       ("c" ash/org-roam-node-find-concept :exit t)
       ("p" ash/org-roam-node-find-person :exit t)
-      ("r" ash/org-roam-node-find-resource :exit t)
+      ("s" ash/org-roam-node-find-resource :exit t)
       ("j" ash/org-roam-node-find-project :exit t))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
@@ -734,10 +736,10 @@
         ("l" "Agenda and live tasks" ((agenda)
                                       (todo "PERMANENT")
                                       (todo "WAITING|EXTREVIEW")
-                                      (tags-todo "-someday/!-WAITING-EXTREVIEW")))
-        ("S" "Last week's snippets" tags "TODO=\"DONE\"+CLOSED>=\"<-1w>\""
-         ((org-agenda-overriding-header "Last week's completed TODO: ")
-          (org-agenda-skip-archived-trees nil))))
+                                      (tags-todo "deepwork/!-WAITING-EXTREVIEW")
+                                      (tags-todo "collab/!-WAITING-EXTREVIEW")
+                                      (tags-todo "quick/!-WAITING-EXTREVIEW")
+                                      (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW"))))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled 'future
       org-agenda-dim-blocked-tasks 'invisible
@@ -836,18 +838,21 @@
                          (org-roam-node-title n))
        (date-to-time (org-roam-node-title n))))
    
-   ;; Sort dailies last (but from most recent)
    (defun org-roam-backlinks-sort (a b)
-     (pcase (list (ash/org-roam-node-is-daily (org-roam-backlink-source-node a))
-                  (ash/org-roam-node-is-daily (org-roam-backlink-source-node b)))
-       ((seq (pred (not null)) 'nil) nil)
-       ((seq 'nil (pred (not null))) t)
-       ((seq (and (pred (not null)) atime) (and (pred null) btime))
-        (< (float-time atime) (float-time btime)))
-       ((seq 'nil 'nil)
-        (< (float-time (org-roam-node-file-mtime (org-roam-backlink-source-node a)))
-           (float-time (org-roam-node-file-mtime (org-roam-backlink-source-node b)))))))
-   (org-roam-db-autosync-mode)
+     "Sort A, B, with dailies last (but from most recent)."
+     (let* ((da (ash/org-roam-node-is-daily (org-roam-backlink-source-node a)))
+            (ta (float-time (or da
+                                (org-roam-node-file-mtime (org-roam-backlink-source-node a))
+                                '(0 0))))
+            (db (ash/org-roam-node-is-daily (org-roam-backlink-source-node b)))
+            (tb (float-time (or db (org-roam-node-file-mtime (org-roam-backlink-source-node b))
+                                '(0 0)))))
+       (cond ((and (null da) db) t)
+             ((and (null db) da) nil)
+             (t (> ta tb)))))
+
+   (ignore-errors
+       (org-roam-db-autosync-mode))
    (add-to-list 'load-path "~/.emacs.d/straight/repos/org-roam/extensions/")
    (require 'org-roam-dailies)
 
