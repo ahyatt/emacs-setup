@@ -656,6 +656,9 @@
   (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
   (add-hook 'message-mode-hook 'visual-line-mode))
 
+(use-package notmuch
+  :hook (notmuch-show-mode . visual-line-mode))
+
 (with-eval-after-load 'message
   (setq message-cite-style message-cite-style-gmail)
   (setq message-citation-line-function 'message-insert-formatted-citation-line)
@@ -795,8 +798,7 @@
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 
-(use-package emacsql-sqlite-builtin
-  :ensure t)
+(use-package emacsql-sqlite3)
 
 (use-package vulpea
   :ensure t
@@ -1101,61 +1103,17 @@ Refer to `org-agenda-prefix-format' for more information."
       org-export-with-properties t
       org-export-with-tags nil)
 
-(use-package svg-tag-mode
-  :config
-  ;; Adapted from https://github.com/rougier/svg-tag-mode/blob/main/examples/example-2.el
-  (let ((date-re "[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}")
-        (time-re "[0-9]\\{2\\}:[0-9]\\{2\\}")
-        (day-re "[A-Za-z]\\{3\\}"))
-    (setq-default svg-tag-tags
-          `(
-            ;; Org tags
-            (":\\([A-Za-z0-9]+\\):" . ((lambda (tag) (svg-tag-make tag))))
-            
-            ;; Task priority
-            ("\\[#[A-Z]\\]" . ( (lambda (tag)
-                                  (svg-tag-make tag :face 'org-priority 
-                                                :beg 2 :end -1 :margin 0))))
-
-            ;; TODO states
-            (,(rx (group (or "TODO" "STARTED" "WAITING" "EXTREVIEW" "PERMANENT" "RESPOND" "REVIEW"))) .
-             ((lambda (tag) (svg-tag-make tag :face 'org-todo :inverse t :margin 0))))
-            (,(rx (group (or "DONE" "OBSOLETE"))) . ((lambda (tag) (svg-tag-make tag :face 'org-done :margin 0))))
-
-
-            ;; Citation of the form [cite:@Knuth:1984] 
-            ("\\(\\[cite:@[A-Za-z]+:\\)" . ((lambda (tag)
-                                              (svg-tag-make tag
-                                                            :inverse t
-                                                            :beg 7 :end -1
-                                                            :crop-right t))))
-            ("\\[cite:@[A-Za-z]+:\\([0-9]+\\]\\)" . ((lambda (tag)
-                                                       (svg-tag-make tag
-                                                                     :end -1
-                                                                     :crop-left t))))
-
-            ;; Active date (without day name, with or without time)
-            (,(format "\\(<%s>\\)" date-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :beg 1 :end -1 :margin 0))))
-            (,(format "\\(<%s *\\)%s>" date-re time-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0))))
-            (,(format "<%s *\\(%s>\\)" date-re time-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0))))
-
-            ;; Inactive date  (without day name, with or without time)
-            (,(format "\\(\\[%s\\]\\)" date-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :beg 1 :end -1 :margin 0 :face 'org-date))))
-            (,(format "\\(\\[%s *\\)%s\\]" date-re time-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :beg 1 :inverse nil :crop-right t :margin 0 :face 'org-date))))
-            (,(format "\\[%s *\\(%s\\]\\)" date-re time-re) .
-             ((lambda (tag)
-                (svg-tag-make tag :end -1 :inverse t :crop-left t :margin 0 :face 'org-date))))
-            ))))
+(use-package org-modern
+  :custom
+  (org-auto-align-tags nil)
+  (org-tags-column 0)
+  (org-catch-invisible-edits 'show-and-error)
+  (org-special-ctrl-a/e t)
+  (org-insert-heading-respect-content t)
+  (org-agenda-block-separator ?─)
+  (org-agenda-current-time-string
+   "⭠ now ─────────────────────────────────────────────────")
+  :init (global-org-modern-mode))
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
