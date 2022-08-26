@@ -724,7 +724,7 @@
       org-agenda-start-with-log-mode t
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
                                     "WAITING(w@/!)" "|" "DONE(d)"
-                                    "OBSOLETE(o)")
+                                    "OBSOLETE(o)" "DELEGATED(>)")
                           (type "PERMANENT")
                           (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
                                     "|" "SUBMITTED(b)"))
@@ -770,12 +770,10 @@
       org-extend-today-until 6
       org-read-date-prefer-future nil
       org-use-property-inheritance t
-      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))     
-      org-refile-targets '((nil :maxlevel . 5))
+      org-refile-targets '((org-agenda-files :maxlevel . 5))
       org-refile-use-outline-path 'file
       org-outline-path-complete-in-steps nil
       org-use-speed-commands t
-      org-refile-targets '((nil . (:maxlevel . 3)))
       org-link-frame-setup '((gnus . gnus)
                              (file . find-file-other-window))
       org-speed-commands-user '(("w" . ash-org-start-work))
@@ -1118,7 +1116,8 @@ Refer to `org-agenda-prefix-format' for more information."
   (org-agenda-block-separator ?─)
   (org-agenda-current-time-string
    "⭠ now ─────────────────────────────────────────────────")
-  :init (global-org-modern-mode))
+  :init
+ (global-org-modern-mode))
 
 (use-package org-appear
   :straight (org-appear :type git :host github :repo "awth13/org-appear")
@@ -1141,6 +1140,10 @@ Refer to `org-agenda-prefix-format' for more information."
   "Edit config.org"
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
+
+(use-package org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
 
 (setq epa-pinentry-mode 'loopback)
 

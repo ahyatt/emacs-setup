@@ -1,3 +1,4 @@
+#+auto_tangle: t
 * Headers
 #+begin_src emacs-lisp
 ;; -*- lexical-binding: t -*-
@@ -932,7 +933,7 @@ This requires =rg= (ripgrep).
       org-agenda-start-with-log-mode t
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
                                     "WAITING(w@/!)" "|" "DONE(d)"
-                                    "OBSOLETE(o)")
+                                    "OBSOLETE(o)" "DELEGATED(>)")
                           (type "PERMANENT")
                           (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
                                     "|" "SUBMITTED(b)"))
@@ -978,12 +979,10 @@ This requires =rg= (ripgrep).
       org-extend-today-until 6
       org-read-date-prefer-future nil
       org-use-property-inheritance t
-      org-link-abbrev-alist '(("CL" . "http://cl/%s") ("BUG" . "http://b/%s"))     
-      org-refile-targets '((nil :maxlevel . 5))
+      org-refile-targets '((org-agenda-files :maxlevel . 5))
       org-refile-use-outline-path 'file
       org-outline-path-complete-in-steps nil
       org-use-speed-commands t
-      org-refile-targets '((nil . (:maxlevel . 3)))
       org-link-frame-setup '((gnus . gnus)
                              (file . find-file-other-window))
       org-speed-commands-user '(("w" . ash-org-start-work))
@@ -1370,7 +1369,8 @@ Use package =org-modern=.  We tried this before, but this time we'll make sure a
   (org-agenda-block-separator ?─)
   (org-agenda-current-time-string
    "⭠ now ─────────────────────────────────────────────────")
-  :init (global-org-modern-mode))
+  :init
+ (global-org-modern-mode))
 #+end_src
 
 *** org-appear
@@ -1412,6 +1412,13 @@ https://jamiecollinson.com/blog/my-emacs-config/#make-it-easy-to-edit-this-file.
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 #+END_SRC
+** Auto-tangling
+We can just auto-tangle on save:
+#+begin_src emacs-lisp
+(use-package org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
+#+end_src
 * Fixes
 ** PGP fix 
 Without this, I can't open a gpg file.
