@@ -172,6 +172,14 @@ Tired of marking scripts executable, or forgetting to do so?  Now you don’t ha
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
+
+It's useful to have methods of getting the URLs (for Mac only)
+#+begin_src emacs-lisp
+(defun ash/get-current-url ()
+  (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window"))
+(defun ash/get-current-title ()
+  (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window"))
+#+end_src
 * Packages
 There's only one manual step in setting this all up - install -use-package-.
 
@@ -518,23 +526,13 @@ Hydra is useful for doing lots of things in succession.
       ("." er/mark-method-call "call"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
-  (pretty-hydra-define hydra-roam ()
+  (pretty-hydra-define hydra-ekg ()
     ("Navigation"
-     (("o" vulpea-find "open" :exit t)
-      ("s" deft "search" :exit t)
-      ("r" ash/org-roam-node-random-no-dates "random note, no dates" :exit t)
-      ("R" org-roam-node-random "any random note" :exit t)
-      ("t" ash/org-roam-dailies-find-today "today" :exit t)
-      ("T" org-roam-dailies-capture-today "capture today" :exit t)
-      ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("n" org-roam-dailies-find-tomorrow "tomorrow" :exit t)
-      ("d" ash/org-roam-dailies-find-date "date" :exit t))
-     "Find in category"
-     (("i" ash/org-roam-node-find-idea :exit t)
-      ("c" ash/org-roam-node-find-concept :exit t)
-      ("p" ash/org-roam-node-find-person :exit t)
-      ("s" ash/org-roam-node-find-resource :exit t)
-      ("j" ash/org-roam-node-find-project :exit t))))
+     (("t" ekg-show-today "today" :exit t)
+      ("g" ekg-show-tag :exit t))
+     "Capture"
+     (("c" ekg-capture)
+      ("u" ash/capture-literature-note))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -611,7 +609,7 @@ Hydra is useful for doing lots of things in succession.
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
-      ("r" hydra-roam/body "roam" :exit t)
+      ("k" hydra-ekg/body "ekg" :exit t)
       ("S" hydra-straight/body "straight" :exit t)
       ("g" magit-status "magit" :exit t)
       ("!" ash/el-secretario-daily-review "secretary" :exit t))
@@ -776,7 +774,7 @@ various places.
 (use-package modus-themes
   :ensure t
   :init
-  (setq modus-themes-slanted-constructs t
+  (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
         modus-themes-visible-fringes t
         modus-themes-mixed-fonts t
@@ -932,8 +930,8 @@ This requires =rg= (ripgrep).
       org-agenda-sticky t
       org-agenda-start-with-log-mode t
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
-                                    "WAITING(w@/!)" "|" "DONE(d)"
-                                    "OBSOLETE(o)" "DELEGATED(>)")
+                                    "WAITING(w@/!)" "DELEGATED(>@)" "|" "DONE(d)"
+                                    "OBSOLETE(o)")
                           (type "PERMANENT")
                           (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
                                     "|" "SUBMITTED(b)"))
@@ -944,11 +942,11 @@ This requires =rg= (ripgrep).
           (org-agenda-tags-todo-honor-ignore-options t)))
         ("l" "Agenda and live tasks" ((agenda)
                                       (todo "PERMANENT")
-                                      (todo "WAITING|EXTREVIEW")
-                                      (tags-todo "deepwork/!-WAITING-EXTREVIEW")
-                                      (tags-todo "collab/!-WAITING-EXTREVIEW")
-                                      (tags-todo "quick/!-WAITING-EXTREVIEW")
-                                      (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW"))))
+                                      (todo "WAITING|EXTREVIEW|DELEGATED")
+                                      (tags-todo "deepwork/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "collab/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "quick/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW-DELEGATED"))))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled 'future
       org-agenda-dim-blocked-tasks 'invisible
@@ -1020,6 +1018,25 @@ My sqlite no longer works, it times out.  I've found switching to this package s
 #+begin_src emacs-lisp
 (use-package emacsql-sqlite3)
 #+end_src
+*** ekg
+#+begin_src emacs-lisp
+;; Required library
+(use-package kv)
+
+(load-library "~/Google Drive/My Drive/src/triples/triples.el")
+(load-library "~/Google Drive/My Drive/src/ekg/ekg.el")
+
+(defun ash/capture-literature-note ()
+  (interactive)
+  (ekg--connect)
+  (ekg-capture)
+  (push (concat "doc/" (downcase (ash/get-current-title)))
+        (ekg-note-tags ekg-note))
+  (setf (ekg-note-properties ekg-note)
+        `(:reference/url ,(list (ash/get-current-url))))
+  (ekg-edit-display-metadata))
+#+end_src
+
 *** Vulpea
 Vulpea is a API that wraps for =org= and =org-roam= in useful ways.  We use it for various =org-roam= advanced functionality.
 #+begin_src emacs-lisp
@@ -1457,7 +1474,7 @@ Finally, set up tabs the way I like them, so everything has its place.
   (tab-bar-new-tab)
   (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
-  (tab-bar-rename-tab "roam" 2)
+  (tab-bar-rename-tab "ekg" 2)
   (tab-bar-rename-tab "mail" 3)
   (tab-bar-rename-tab "emacs" 4)
   (tab-bar-select-tab 1)

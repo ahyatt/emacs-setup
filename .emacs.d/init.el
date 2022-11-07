@@ -113,6 +113,11 @@
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
+(defun ash/get-current-url ()
+  (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window"))
+(defun ash/get-current-title ()
+  (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window"))
+
 (setq-default use-package-always-ensure t)
 (require 'use-package)
 
@@ -408,23 +413,13 @@
       ("." er/mark-method-call "call"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
-  (pretty-hydra-define hydra-roam ()
+  (pretty-hydra-define hydra-ekg ()
     ("Navigation"
-     (("o" vulpea-find "open" :exit t)
-      ("s" deft "search" :exit t)
-      ("r" ash/org-roam-node-random-no-dates "random note, no dates" :exit t)
-      ("R" org-roam-node-random "any random note" :exit t)
-      ("t" ash/org-roam-dailies-find-today "today" :exit t)
-      ("T" org-roam-dailies-capture-today "capture today" :exit t)
-      ("y" ash/org-roam-dailies-find-yesterday "yesterday" :exit t)
-      ("n" org-roam-dailies-find-tomorrow "tomorrow" :exit t)
-      ("d" ash/org-roam-dailies-find-date "date" :exit t))
-     "Find in category"
-     (("i" ash/org-roam-node-find-idea :exit t)
-      ("c" ash/org-roam-node-find-concept :exit t)
-      ("p" ash/org-roam-node-find-person :exit t)
-      ("s" ash/org-roam-node-find-resource :exit t)
-      ("j" ash/org-roam-node-find-project :exit t))))
+     (("t" ekg-show-today "today" :exit t)
+      ("g" ekg-show-tag :exit t))
+     "Capture"
+     (("c" ekg-capture)
+      ("u" ash/capture-literature-note))))
   (pretty-hydra-define hydra-straight ()
     ("Package specific"
      (("c" straight-check-package "check" :exit t)
@@ -501,7 +496,7 @@
     ("Applications"
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
-      ("r" hydra-roam/body "roam" :exit t)
+      ("k" hydra-ekg/body "ekg" :exit t)
       ("S" hydra-straight/body "straight" :exit t)
       ("g" magit-status "magit" :exit t)
       ("!" ash/el-secretario-daily-review "secretary" :exit t))
@@ -617,7 +612,7 @@
 (use-package modus-themes
   :ensure t
   :init
-  (setq modus-themes-slanted-constructs t
+  (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
         modus-themes-visible-fringes t
         modus-themes-mixed-fonts t
@@ -723,8 +718,8 @@
       org-agenda-sticky t
       org-agenda-start-with-log-mode t
       org-todo-keywords '((sequence "TODO(t)" "STARTED(s)"
-                                    "WAITING(w@/!)" "|" "DONE(d)"
-                                    "OBSOLETE(o)" "DELEGATED(>)")
+                                    "WAITING(w@/!)" "DELEGATED(>@)" "|" "DONE(d)"
+                                    "OBSOLETE(o)")
                           (type "PERMANENT")
                           (sequence "REVIEW(r)" "SEND(e)" "EXTREVIEW(g)" "RESPOND(p)" "SUBMIT(u)" "CLEANUP(c)"
                                     "|" "SUBMITTED(b)"))
@@ -735,11 +730,11 @@
           (org-agenda-tags-todo-honor-ignore-options t)))
         ("l" "Agenda and live tasks" ((agenda)
                                       (todo "PERMANENT")
-                                      (todo "WAITING|EXTREVIEW")
-                                      (tags-todo "deepwork/!-WAITING-EXTREVIEW")
-                                      (tags-todo "collab/!-WAITING-EXTREVIEW")
-                                      (tags-todo "quick/!-WAITING-EXTREVIEW")
-                                      (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW"))))
+                                      (todo "WAITING|EXTREVIEW|DELEGATED")
+                                      (tags-todo "deepwork/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "collab/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "quick/!-WAITING-EXTREVIEW-DELEGATED")
+                                      (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW-DELEGATED"))))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled 'future
       org-agenda-dim-blocked-tasks 'invisible
@@ -799,6 +794,21 @@
       (org-pomodoro))))
 
 (use-package emacsql-sqlite3)
+
+(use-package kv)
+
+(load-library "~/Google Drive/My Drive/src/triples/triples.el")
+(load-library "~/Google Drive/My Drive/src/ekg/ekg.el")
+
+(defun ash/capture-literature-note ()
+  (interactive)
+  (ekg--connect)
+  (ekg-capture)
+  (push (concat "doc/" (downcase (ash/get-current-title)))
+        (ekg-note-tags ekg-note))
+  (setf (ekg-note-properties ekg-note)
+        `(:reference/url ,(list (ash/get-current-url))))
+  (ekg-edit-display-metadata))
 
 (use-package vulpea
   :ensure t
@@ -1164,7 +1174,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   (tab-bar-new-tab)
   (tab-bar-new-tab)
   (tab-bar-rename-tab "org" 1)
-  (tab-bar-rename-tab "roam" 2)
+  (tab-bar-rename-tab "ekg" 2)
   (tab-bar-rename-tab "mail" 3)
   (tab-bar-rename-tab "emacs" 4)
   (tab-bar-select-tab 1)
