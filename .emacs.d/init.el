@@ -795,20 +795,24 @@
 
 (use-package emacsql-sqlite3)
 
+;; Required library
 (use-package kv)
+(use-package triples)
 
-(load-library "~/Google Drive/My Drive/src/triples/triples.el")
-(load-library "~/Google Drive/My Drive/src/ekg/ekg.el")
-
-(defun ash/capture-literature-note ()
-  (interactive)
-  (ekg--connect)
-  (ekg-capture)
-  (push (concat "doc/" (downcase (ash/get-current-title)))
-        (ekg-note-tags ekg-note))
-  (setf (ekg-note-properties ekg-note)
-        `(:reference/url ,(list (ash/get-current-url))))
-  (ekg-edit-display-metadata))
+(use-package ekg
+  :straight '(ekg :type git :host github :repo "ahyatt/ekg")
+  :general
+  ("<f11>" 'ekg-capture)
+  :config
+  (defun ash/capture-literature-note ()
+    (interactive)
+    (ekg--connect)
+    (ekg-capture)
+    (push (concat "doc/" (downcase (ash/get-current-title)))
+          (ekg-note-tags ekg-note))
+    (setf (ekg-note-properties ekg-note)
+          `(:reference/url ,(list (ash/get-current-url))))
+    (ekg-edit-display-metadata)))
 
 (use-package vulpea
   :ensure t
