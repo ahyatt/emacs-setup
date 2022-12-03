@@ -368,17 +368,16 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
     ("Change"
-     (("i" sp-change-inner "change inner" :exit t)
-      ("k" sp-kill-sexp "kill sexp")
-      ("]" sp-slurp-hybrid-sexp "slurp")
-      ("/" sp-swap-enclusing-sexp "swap enclusing"))
+     (("]" puni-slurp-forward "slurp")
+      ("." puni-splice "splice")
+      ("/" puni-convolute "convolute"))
      "Movement"
-     (("b" sp-beginning-of-sexp "beginning of sexp")
-      ("e" sp-end-of-sexp "end of sexp")
-      ("d" sp-down-sexp "down sexp")
-      ("e" sp-up-sexp "up sexp"))
+     (("b" puni-beginning-of-sexp "beginning of sexp")
+      ("e" puni-end-of-sexp "end of sexp")
+      ("d" puni-syntactic-forward-punc "down sexp")
+      ("e" puni-syntactic-backward-punc "up sexp"))
      "Formatting"
-     (("r" sp-rewrap-sexp "rewrap"))
+     (("u" puni-squeeze "unwrap"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-multiple-cursors ()
@@ -540,11 +539,11 @@
 
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
-(use-package smartparens
+(use-package puni
+  :defer t
   :diminish ""
-  :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
-  :hook (org-mode . smartparens-mode)
-  :config (require 'smartparens-config))
+  :init (puni-global-mode) (electric-pair-mode)
+  (add-hook 'org-mode-hook #'puni-disable-puni-mode))
 
 (use-package git-gutter
   :ensure t
@@ -797,7 +796,8 @@
 
 ;; Required library
 (use-package kv)
-(use-package triples)
+(use-package triples
+  :straight '(:host github :repo "ahyatt/triples" :branch "develop"))
 
 (use-package ekg
   :straight '(ekg :type git :host github :repo "ahyatt/ekg")
@@ -807,11 +807,10 @@
   (defun ash/capture-literature-note ()
     (interactive)
     (ekg--connect)
-    (ekg-capture)
-    (push (concat "doc/" (downcase (ash/get-current-title)))
-          (ekg-note-tags ekg-note))
-    (setf (ekg-note-properties ekg-note)
-          `(:reference/url ,(list (ash/get-current-url))))
+    (let ((url (ash/get-current-url))
+          (title (ash/get-current-title)))
+      (ekg-capture (list (concat "doc/" (downcase (ash/get-current-title))))
+                 `(:titled/title ,title :reference/url ,(list (ash/get-current-url)))))
     (ekg-edit-display-metadata)))
 
 (use-package vulpea

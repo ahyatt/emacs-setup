@@ -481,17 +481,16 @@ Hydra is useful for doing lots of things in succession.
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-structural ()
     ("Change"
-     (("i" sp-change-inner "change inner" :exit t)
-      ("k" sp-kill-sexp "kill sexp")
-      ("]" sp-slurp-hybrid-sexp "slurp")
-      ("/" sp-swap-enclusing-sexp "swap enclusing"))
+     (("]" puni-slurp-forward "slurp")
+      ("." puni-splice "splice")
+      ("/" puni-convolute "convolute"))
      "Movement"
-     (("b" sp-beginning-of-sexp "beginning of sexp")
-      ("e" sp-end-of-sexp "end of sexp")
-      ("d" sp-down-sexp "down sexp")
-      ("e" sp-up-sexp "up sexp"))
+     (("b" puni-beginning-of-sexp "beginning of sexp")
+      ("e" puni-end-of-sexp "end of sexp")
+      ("d" puni-syntactic-forward-punc "down sexp")
+      ("e" puni-syntactic-backward-punc "up sexp"))
      "Formatting"
-     (("r" sp-rewrap-sexp "rewrap"))
+     (("u" puni-squeeze "unwrap"))
      "Misc"
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-multiple-cursors ()
@@ -678,14 +677,14 @@ Let's assume .h files are c++, because I mostly don't program in c.
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 #+END_SRC
 
-There’s a lot of really good  editing tools. Smartparens is fairly universal, so it’s nice.
+There’s a lot of really good editing tools. Puni is a more simple and modern approach to structured editing, so let's use that.  I used to use =smartparens=, but it had a lot of issues where expressions becoming unbalanced in strict mode, which is annoying, because then you have to get out of strict-mode to fix it.
 
 #+BEGIN_SRC emacs-lisp
-(use-package smartparens
+(use-package puni
+  :defer t
   :diminish ""
-  :init (add-hook 'prog-mode-hook #'smartparens-strict-mode)
-  :hook (org-mode . smartparens-mode)
-  :config (require 'smartparens-config))
+  :init (puni-global-mode) (electric-pair-mode)
+  (add-hook 'org-mode-hook #'puni-disable-puni-mode))
 #+END_SRC
 
 Git gutter highlights changes to files.
@@ -1022,7 +1021,8 @@ My sqlite no longer works, it times out.  I've found switching to this package s
 #+begin_src emacs-lisp
 ;; Required library
 (use-package kv)
-(use-package triples)
+(use-package triples
+  :straight '(:host github :repo "ahyatt/triples" :branch "develop"))
 
 (use-package ekg
   :straight '(ekg :type git :host github :repo "ahyatt/ekg")
@@ -1032,11 +1032,10 @@ My sqlite no longer works, it times out.  I've found switching to this package s
   (defun ash/capture-literature-note ()
     (interactive)
     (ekg--connect)
-    (ekg-capture)
-    (push (concat "doc/" (downcase (ash/get-current-title)))
-          (ekg-note-tags ekg-note))
-    (setf (ekg-note-properties ekg-note)
-          `(:reference/url ,(list (ash/get-current-url))))
+    (let ((url (ash/get-current-url))
+          (title (ash/get-current-title)))
+      (ekg-capture (list (concat "doc/" (downcase (ash/get-current-title))))
+                 `(:titled/title ,title :reference/url ,(list (ash/get-current-url)))))
     (ekg-edit-display-metadata)))
 #+end_src
 
