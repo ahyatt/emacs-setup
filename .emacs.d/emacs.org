@@ -98,6 +98,7 @@ the same file.
  show-trailing-whitespace nil                     ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
+ switch-to-buffer-obey-display-actions t          ; Use display action rules for manual window switching
  tab-first-completion 'word                       ; Complete unless we're in the middle of the word.
  tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
@@ -390,6 +391,17 @@ Winnum for moving between windows is very convenient
   ("M-3" 'winum-select-window-3)
   ("M-4" 'winum-select-window-4))
 #+END_SRC
+
+[[https://www.masteringemacs.org/article/demystifying-emacs-window-manager][Mickey Petersen's guide to the Emacs Window Manager]] has lots of useful
+information and tips, which leads to the following snippets:
+
+#+begin_src emacs-lisp
+(defun ash/toggle-window-dedication ()
+  "Toggles window dedication in the selected window."
+  (interactive)
+  (set-window-dedicated-p (selected-window)
+     (not (window-dedicated-p (selected-window)))))
+#+end_src
 *** Jumping
 Avy for quick jumping & buffer navigation is great.
 

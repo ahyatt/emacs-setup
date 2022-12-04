@@ -66,6 +66,7 @@
  show-trailing-whitespace nil                     ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
+ switch-to-buffer-obey-display-actions t          ; Use display action rules for manual window switching
  tab-first-completion 'word                       ; Complete unless we're in the middle of the word.
  tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
@@ -283,6 +284,12 @@
   ("M-2" 'winum-select-window-2)
   ("M-3" 'winum-select-window-3)
   ("M-4" 'winum-select-window-4))
+
+(defun ash/toggle-window-dedication ()
+  "Toggles window dedication in the selected window."
+  (interactive)
+  (set-window-dedicated-p (selected-window)
+     (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :config
@@ -1171,6 +1178,10 @@ This has to be done as a string to handle 64-bit or larger ints."
 (let ((per-machine-filename "~/.emacs.d/permachine.el"))
   (when (file-exists-p per-machine-filename)
     (load-file per-machine-filename)))
+
+(defalias 'ash/mirror-buffer
+  (kmacro "C-x 1 C-x 3 C-x o"))
+(general-define-key "s-b" 'ash/mirror-buffer)
 
 (when (= 1 (length (tab-bar-tabs)))
   (tab-bar-new-tab)
