@@ -111,6 +111,14 @@
       kept-old-versions 2
       create-lockfiles nil)
 
+(setq trash-directory "~/.Trash")
+
+;; See `trash-directory' as it requires defining `system-move-file-to-trash'.
+(defun system-move-file-to-trash (file)
+  "Use \"trash\" to move FILE to the system trash."
+  (cl-assert (executable-find "trash") nil "'trash' must be installed. Needs \"brew install trash\"")
+  (call-process "trash" nil 0 nil "-F"  file))
+
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
@@ -563,7 +571,9 @@
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   :config
   (add-hook 'after-init-hook 'global-flycheck-mode)
-  (setq-default flycheck-highlighting-mode 'lines)
+  (setq-default flycheck-highlighting-mode 'lines
+                ;; Wait before complaining so we don't step on useful help messages.
+                flycheck-idle-change-delay 3)
   ;; Define fringe indicator / warning levels
   (define-fringe-bitmap 'flycheck-fringe-bitmap-ball
     (vector #b00000000
@@ -1202,3 +1212,4 @@ This has to be done as a string to handle 64-bit or larger ints."
   (notmuch-hello)
   (tab-bar-select-tab 4)
   (find-file "~/.emacs.d/emacs.org"))
+(put 'narrow-to-region 'disabled nil)

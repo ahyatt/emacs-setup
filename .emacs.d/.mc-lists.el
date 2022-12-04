@@ -27,6 +27,7 @@
         sp-kill-hybrid-sexp
         sp-kill-region
         sp-kill-word
+        sp-remove-active-pair-overlay
         ))
 
 (setq mc/cmds-to-run-once

@@ -166,6 +166,18 @@ See https://www.quae.nl/rfc1345.html for details.
       kept-old-versions 2
       create-lockfiles nil)
 #+end_src
+** Trash
+Use system trash on Macs (which is where I run my emacs these days). From
+https://xenodium.com/rm-important-txt-oh-sht/.
+#+begin_src emacs-lisp
+(setq trash-directory "~/.Trash")
+
+;; See `trash-directory' as it requires defining `system-move-file-to-trash'.
+(defun system-move-file-to-trash (file)
+  "Use \"trash\" to move FILE to the system trash."
+  (cl-assert (executable-find "trash") nil "'trash' must be installed. Needs \"brew install trash\"")
+  (call-process "trash" nil 0 nil "-F"  file))
+#+end_src
 
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
@@ -715,7 +727,9 @@ Flycheck will help check for all errors.  Taken from https://jamiecollinson.com/
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   :config
   (add-hook 'after-init-hook 'global-flycheck-mode)
-  (setq-default flycheck-highlighting-mode 'lines)
+  (setq-default flycheck-highlighting-mode 'lines
+                ;; Wait before complaining so we don't step on useful help messages.
+                flycheck-idle-change-delay 3)
   ;; Define fringe indicator / warning levels
   (define-fringe-bitmap 'flycheck-fringe-bitmap-ball
     (vector #b00000000
