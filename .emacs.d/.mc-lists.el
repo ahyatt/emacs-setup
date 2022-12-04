@@ -31,6 +31,7 @@
 
 (setq mc/cmds-to-run-once
       '(
+        ash/mirror-buffer
         helm-M-x
         hydra-all/body
         hydra-all/hydra-multiple-cursors/body-and-exit

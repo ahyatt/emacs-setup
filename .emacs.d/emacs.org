@@ -1468,6 +1468,13 @@ those customizations.
   (when (file-exists-p per-machine-filename)
     (load-file per-machine-filename)))
 #+end_src
+* Macros
+** Mirror buffer
+#+begin_src emacs-lisp
+(defalias 'ash/mirror-buffer
+  (kmacro "C-x 1 C-x 3 C-x o"))
+(general-define-key "s-b" 'ash/mirror-buffer)
+#+end_src
 * Tab setup
 Finally, set up tabs the way I like them, so everything has its place.
 #+begin_src emacs-lisp
