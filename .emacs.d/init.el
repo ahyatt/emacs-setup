@@ -707,6 +707,8 @@
 
 (use-package consult-notmuch)
 
+(use-package ol-notmuch)
+
 (use-package deadgrep)
 
 (defun ash-goto-agenda (&optional _)
@@ -795,8 +797,7 @@
 
 (use-package org-contrib
   :config
-  (require 'org-checklist)
-  (require 'ol-notmuch))
+  (require 'org-checklist))
 
 (use-package org-pomodoro
   :custom
@@ -823,19 +824,7 @@
   :config
   (defun ash/capture-literature-note ()
     (interactive)
-    (ekg--connect)
-    (let ((url (ash/get-current-url))
-          (title (ash/get-current-title)))
-      (ekg-capture (list (concat "doc/" (downcase (ash/get-current-title))))
-                 `(:titled/title ,title :reference/url ,(list (ash/get-current-url)))))
-    (ekg-edit-display-metadata)))
-
-(use-package vulpea
-  :ensure t
-  ;; hook into org-roam-db-autosync-mode you wish to enable
-  ;; persistence of meta values (see respective section in README to
-  ;; find out what meta means)
-  :hook ((org-roam-db-autosync-mode . vulpea-db-autosync-enable)))
+    (ekg-capture-url (ash/get-current-url) (ash/get-current-title))))
 
 (use-package org-roam
    :bind (:map org-roam-mode-map
@@ -1078,49 +1067,6 @@
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start nil))
 
-(require 'vulpea)
-(setq org-agenda-prefix-format
-      '((agenda . " %i %(vulpea-agenda-category 12)%?-12t% s")
-        (todo . " %i %(vulpea-agenda-category 12) ")
-        (tags . " %i %(vulpea-agenda-category 12) ")
-        (search . " %i %(vulpea-agenda-category 12) ")))
-
-(defun vulpea-agenda-category (&optional len)
-  "Get category of item at point for agenda.
-
-Category is defined by one of the following items:
-
-- CATEGORY property
-- TITLE keyword
-- TITLE property
-- filename without directory and extension
-
-When LEN is a number, resulting string is padded right with
-spaces and then truncated with ... on the right if result is
-longer than LEN.
-
-Usage example:
-
-  (setq org-agenda-prefix-format
-        '((agenda . \" %(vulpea-agenda-category) %?-12t %12s\")))
-
-Refer to `org-agenda-prefix-format' for more information."
-  (let* ((file-name (when buffer-file-name
-                      (file-name-sans-extension
-                       (file-name-nondirectory buffer-file-name))))
-         (title (vulpea-buffer-prop-get "title"))
-         (category (org-get-category))
-         (result
-          (or (if (and
-                   title
-                   (string-equal category file-name))
-                  title
-                category)
-              "")))
-    (if (numberp len)
-        (s-truncate len (s-pad-right len " " result))
-      result)))
-
 (use-package citar
   :config
   (require 'oc)
@@ -1212,4 +1158,3 @@ This has to be done as a string to handle 64-bit or larger ints."
   (notmuch-hello)
   (tab-bar-select-tab 4)
   (find-file "~/.emacs.d/emacs.org"))
-(put 'narrow-to-region 'disabled nil)
