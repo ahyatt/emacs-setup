@@ -841,13 +841,13 @@
    (org-roam-node-display-template "${title}" "Fix for issue with bad completion display")
    :config
    (setq org-roam-node-display-template "${title}")
-   ;; From the manual.
-   (add-to-list 'display-buffer-alist
-                '("\\*org-roam\\*"
-                  (display-buffer-in-direction)
-                  (direction . right)
-                  (window-width . 0.33)
-                  (window-height . fit-window-to-buffer)))
+   ;; From the manual.  But it causes problems with `eglot-stderr-buffer'
+   ;; (add-to-list 'display-buffer-alist
+   ;;              '("\\*org-roam\\*"
+   ;;                (display-buffer-in-direction)
+   ;;                (direction . right)
+   ;;                (window-width . 0.33)
+   ;;                (window-height . fit-window-to-buffer)))
    (add-hook 'org-roam-mode-hook #'visual-line-mode)
    (defun ash/org-roam-node-is-daily (n)
      "Return epoch time represented by node if N is a daily node."
