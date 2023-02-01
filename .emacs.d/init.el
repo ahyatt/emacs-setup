@@ -244,11 +244,11 @@
             "x" 'xref-find-references)
   :config
   (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
-  (embark-define-keymap embark-tab-actions
-    "Keymap for actions for tab-bar tabs (when mentioned by name)."
-    ("s" tab-bar-select-tab-by-name)
-    ("r" tab-bar-rename-tab-by-name)
-    ("k" tab-bar-close-tab-by-name))
+  (defvar-keymap embark-tab-actions
+    :doc "Keymap for actions for tab-bar tabs (when mentioned by name)."
+    "s" #'tab-bar-select-tab-by-name
+    "r" #'tab-bar-rename-tab-by-name
+    "k" #'tab-bar-close-tab-by-name)
   (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
 
   ;; By default, embark doesn't know how to handle org-links.  Let's provide a way.
@@ -429,8 +429,8 @@
      (("=" hydra-all/body "back" :exit t))))
   (pretty-hydra-define hydra-ekg ()
     ("Navigation"
-     (("t" ekg-show-today "today" :exit t)
-      ("g" ekg-show-tag :exit t))
+     (("t" ekg-show-notes-for-today "today" :exit t)
+      ("g" ekg-show-notes-with-tag "tag" :exit t))
      "Capture"
      (("c" ekg-capture)
       ("u" ash/capture-literature-note))))
@@ -627,7 +627,7 @@
 
 (use-package modus-themes
   :ensure t
-  :init
+  :config
   (setq modus-themes-italic-constructs t
         modus-themes-bold-constructs t
         modus-themes-visible-fringes t
@@ -636,7 +636,6 @@
         modus-themes-org-agenda '((header-block . (variable-pitch scale-title))
                                   (scheduled . uniform))
         modus-themes-variable-pitch-headings t
-        modus-themes-completions 'opinionated
         modus-themes-variable-pitch-ui t
         modus-themes-rainbow-headings t
         modus-themes-section-headings t
@@ -647,15 +646,14 @@
         modus-themes-scale-3 1.15
         modus-themes-scale-4 1.2
         modus-themes-scale-5 1.3)
-  (modus-themes-load-themes)
-  (modus-themes-load-operandi))
+  (modus-themes-load-theme 'modus-operandi))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
 
 (setq-default org-startup-indented t
               org-bullets-bullet-list '("①" "②" "③" "④" "⑤" "⑥" "⑦" "⑧" "⑨") 
-              org-ellipsis "  " ;; folding symbol
+              org-ellipsis " … " ;; folding symbol
               org-pretty-entities t
               org-hide-emphasis-markers t
               ;; show actually italicized text instead of /italicized text/
@@ -671,6 +669,8 @@
 
 (use-package notmuch
   :hook (notmuch-show-mode . visual-line-mode))
+
+(use-package ol-notmuch)
 
 (with-eval-after-load 'message
   (setq message-cite-style message-cite-style-gmail)
@@ -768,11 +768,11 @@
       org-hide-emphasis-markers t
       org-use-sub-superscripts "{}"
       org-startup-with-inline-images t
-      org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s")
+      org-agenda-prefix-format '((agenda . " %i %-18:c%?-12t% s[%3e]")
                                  (timeline . "  % s")
                                  (todo . " %i %-18:c")
-                                 (tags . " %i %-18:c")
-                                 (search . " %i %-18:c"))
+                                 (tags . " %i %-18:c[%3e]")
+                                 (search . " %i %-18:c[%3e]"))
       org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
       org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
       org-cycle-separator-lines 0
@@ -1072,10 +1072,7 @@
   (require 'oc)
   (setq org-cite-insert-processor 'citar
         org-cite-follow-processor 'citar
-        org-cite-activate-processor 'citar)
-  ;; if I don't load this, my bibliography gets cached and never refreshed.
-  (require 'citar-filenotify)
-  (citar-filenotify-setup '(LaTeX-mode-hook org-mode-hook)))
+        org-cite-activate-processor 'citar))
 
 (setq org-export-with-toc nil
       org-export-preserve-breaks t
