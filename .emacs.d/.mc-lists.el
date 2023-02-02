@@ -21,6 +21,8 @@
         org-end-of-line
         org-force-self-insert
         org-self-insert-command
+        puni-backward-delete-char
+        puni-backward-kill-word
         puni-forward-kill-word
         sp-backward-delete-char
         sp-backward-kill-word
