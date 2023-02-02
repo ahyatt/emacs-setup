@@ -614,6 +614,8 @@
   (global-tree-sitter-mode))
 (use-package tree-sitter-langs)
 
+(use-package flycheck-package)
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))

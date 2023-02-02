@@ -672,7 +672,7 @@ it doesn't work on long files, so let's bind it to special-commands.
 #+BEGIN_SRC emacs-lisp
 (use-package multiple-cursors
   :pin melpa
-  :general)
+  :bind (("s-r" . mc/mark-all-like-this-dwim)))
 
 (use-package phi-search
   :bind (("M-C-s" . phi-search)
@@ -772,6 +772,10 @@ This gives emacs the power to interact with the AST.
   :config
   (global-tree-sitter-mode))
 (use-package tree-sitter-langs)
+#+end_src
+*** ELPA helpers
+#+begin_src emacs-lisp
+(use-package flycheck-package)
 #+end_src
 ** Help
 
