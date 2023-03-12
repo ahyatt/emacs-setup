@@ -430,7 +430,10 @@
   (pretty-hydra-define hydra-ekg ()
     ("Navigation"
      (("t" ekg-show-notes-for-today "today" :exit t)
-      ("g" ekg-show-notes-with-tag "tag" :exit t))
+      ("g" ekg-show-notes-with-tag "tag" :exit t)
+      ("r" ekg-show-notes-latest-captured "latest" :exit t)
+      ("b" ekg-embedding-show-similar-to-current-buffer "similar to buffer" :exit t)
+      ("s" ekg-embedding-search "search" :exit t))
      "Capture"
      (("c" ekg-capture)
       ("u" ash/capture-literature-note))))
