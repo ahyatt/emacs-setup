@@ -23,6 +23,7 @@
         org-self-insert-command
         puni-backward-delete-char
         puni-backward-kill-word
+        puni-forward-delete-char
         puni-forward-kill-word
         sp-backward-delete-char
         sp-backward-kill-word
