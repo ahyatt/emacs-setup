@@ -1333,14 +1333,6 @@ Citations are built into org mode, but it's nice to have a way to complete them.
         org-cite-follow-processor 'citar
         org-cite-activate-processor 'citar))
 #+end_src
-**** Exporting
-We also need to make exporting better to work more naturally with the actual Roam research site.
-#+begin_src emacs-lisp
-(setq org-export-with-toc nil
-      org-export-preserve-breaks t
-      org-export-with-properties t
-      org-export-with-tags nil)
-#+end_src
 *** Org UI tweaks
 Use package =org-modern=.  We tried this before, but this time we'll make sure and tweak the fonts the get it right.  Hopefully there isn't the weird errors I saw before either.
 

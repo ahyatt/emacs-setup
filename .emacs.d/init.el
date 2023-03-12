@@ -1076,11 +1076,6 @@
         org-cite-follow-processor 'citar
         org-cite-activate-processor 'citar))
 
-(setq org-export-with-toc nil
-      org-export-preserve-breaks t
-      org-export-with-properties t
-      org-export-with-tags nil)
-
 (use-package org-modern
   :custom
   (org-auto-align-tags nil)
