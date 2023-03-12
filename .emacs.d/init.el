@@ -186,8 +186,8 @@
   ;; Completion category overrides for file helps with tramp, this is mentioned in the vertico docs.
   (setq completion-styles '(orderless)
         completion-ignore-case t
-	    completion-category-defaults nil
-	    completion-category-overrides '((file (styles basic partial-completion))))
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles basic partial-completion))))
   :config
   ;; We make the SPC key insert a literal space and the same for the
   ;; question mark.  Spaces are used to delimit orderless groups, while
@@ -211,7 +211,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-	'(read-only t cursor-intangible t face minibuffer-prompt))
+    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -277,7 +277,7 @@
   ;; auto-updating embark collect buffer
   :hook
   (embark-collect-mode . embark-consult-preview-minor-mode))
-    
+
 (use-package consult-flycheck
   :bind (:map flycheck-command-map
               ("!" . consult-flycheck))
@@ -542,7 +542,7 @@
 
 (use-package multiple-cursors
   :pin melpa
-  :general)
+  :bind (("s-r" . mc/mark-all-like-this-dwim)))
 
 (use-package phi-search
   :bind (("M-C-s" . phi-search)
@@ -657,7 +657,7 @@
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
 
 (setq-default org-startup-indented t
-              org-bullets-bullet-list '("①" "②" "③" "④" "⑤" "⑥" "⑦" "⑧" "⑨") 
+              org-bullets-bullet-list '("①" "②" "③" "④" "⑤" "⑥" "⑦" "⑧" "⑨")
               org-ellipsis " … " ;; folding symbol
               org-pretty-entities t
               org-hide-emphasis-markers t
@@ -859,7 +859,7 @@
      (when (string-match (rx (seq (group (= 4 digit)) "-" (group (= 2 digit)) "-" (group (= 2 digit))))
                          (org-roam-node-title n))
        (date-to-time (org-roam-node-title n))))
-   
+
    (defun org-roam-backlinks-sort (a b)
      "Sort A, B, with dailies last (but from most recent)."
      (let* ((da (ash/org-roam-node-is-daily (org-roam-backlink-source-node a)))
@@ -914,7 +914,7 @@
                                                   :file (nth 1 random-row)
                                                   :point (nth 2 random-row))
                             other-window)))
-   
+
    (defun ash/roam-tag-filter (tag)
      "Return function that filters based on TAG."
      (lambda (n) (member tag (org-roam-node-tags n))))
@@ -922,7 +922,7 @@
    ;; To be used in `org-roam-dailies-capture-template'.
    (defun ash/problem-org-output ()
      "Return org structure for each org-roam problem."
-     (mapconcat 
+     (mapconcat
       (lambda (node) (format "- [[id:%s][%s]]: " (org-roam-node-id node) (org-roam-node-title node)))
       (-filter (ash/roam-tag-filter "problem") (org-roam-node-list))
       "\n"))
@@ -971,7 +971,7 @@
    (defun ash/log-to-roam (text)
      "Log TEXT to the current daily roam node."
      (ash/org-roam-add-to-today "Log" text))
-   
+
    (defun ash/org-roam-copy-todo-to-today ()
      (interactive)
      (let ((org-refile-keep t)
@@ -990,7 +990,7 @@
        ;; Only refile if the target file is different than the current file
        (unless (equal (file-truename today-file)
                       (file-truename (buffer-file-name)))
-         (save-window-excursion 
+         (save-window-excursion
            (save-excursion
              (org-refile nil nil (list "Completed Tasks" today-file nil pos))
              (org-refile-goto-last-stored)
@@ -1040,11 +1040,11 @@
      (interactive)
      (ash/org-roam-complete-tag "project"))
 
-   
+
    ;; When new org-roam nodes are created, note it.
 
    ;; Unfortunately, this isn't a good place to put it - not enough is set up before the hook.
-   
+
    ;; (add-hook 'org-roam-capture-new-node-hook
    ;; #'ash/log-org-roam-node-creation)
    )
