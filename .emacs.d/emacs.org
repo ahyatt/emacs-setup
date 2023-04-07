@@ -910,10 +910,13 @@ Darkroom is a distraction-free experience.  It handles margins as well as font s
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 #+end_src
 ** Terminal
-Use vterm, which is good for when you need full terminal emulation.
+Use emacs-eat, a completely in-emacs terminal emulator
 #+begin_src emacs-lisp
-(use-package vterm
-    :ensure t)
+(use-package eat
+  :config
+  (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
+  ;; For `eat-eshell-visual-command-mode'.
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 #+end_src
 ** Tab Bar
 I use the tab bar to sort specific activies, such as mail, elfeed, and projects each into their own tab.

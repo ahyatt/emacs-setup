@@ -701,8 +701,11 @@
 (use-package darkroom
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 
-(use-package vterm
-    :ensure t)
+(use-package eat
+  :config
+  (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
+  ;; For `eat-eshell-visual-command-mode'.
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 
 (setq tab-bar-select-tab-modifiers '(super))
 
