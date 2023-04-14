@@ -1158,3 +1158,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   (notmuch-hello)
   (tab-bar-select-tab 4)
   (find-file "~/.emacs.d/emacs.org"))
+(put 'narrow-to-region 'disabled nil)
+(put 'list-threads 'disabled nil)
