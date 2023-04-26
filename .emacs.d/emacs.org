@@ -178,6 +178,25 @@ https://xenodium.com/rm-important-txt-oh-sht/.
   (cl-assert (executable-find "trash") nil "'trash' must be installed. Needs \"brew install trash\"")
   (call-process "trash" nil 0 nil "-F"  file))
 #+end_src
+** Better ielm
+From https://www.n16f.net/blog/making-ielm-more-comfortable/
+#+begin_src emacs-lisp
+(add-hook 'ielm-mode-hook 'eldoc-mode)
+(defun g-ielm-init-history ()
+  (let ((path (expand-file-name "ielm/history" user-emacs-directory)))
+    (make-directory (file-name-directory path) t)
+    (setq-local comint-input-ring-file-name path))
+  (setq-local comint-input-ring-size 10000)
+  (setq-local comint-input-ignoredups t)
+  (comint-read-input-ring))
+(add-hook 'ielm-mode-hook 'g-ielm-init-history)
+
+(defun g-ielm-write-history (&rest _args)
+  (with-file-modes #o600
+    (comint-write-input-ring)))
+
+(advice-add 'ielm-send-input :after 'g-ielm-write-history)
+#+end_src
 
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
@@ -573,7 +592,8 @@ Hydra is useful for doing lots of things in succession.
      "State"
      (("v" straight-freeze-versions "freeze" :exit t)
       ("t" straight-thaw-versions "thaw" :exit t)
-      ("d" straight-prune-build "prune" :exit t))))
+      ("d" straight-prune-build "prune" :exit t)
+      ("." straight-pull-recipe-repositories "pull repos"))))
   (pretty-hydra-define hydra-yas ()
     ("Snippets"
      (("n" yas-new-snippet "new" :exit t)
