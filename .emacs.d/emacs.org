@@ -1475,7 +1475,7 @@ Finally, set up tabs the way I like them, so everything has its place.
   (org-agenda nil "l")
   (delete-other-windows)
   (tab-bar-select-tab 2)
-  (org-roam-node-random)
+  (ekg-show-notes-latest-modified)
   (delete-other-windows)
   (delete-other-windows)
   (tab-bar-select-tab 3)
