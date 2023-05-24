@@ -12,21 +12,17 @@
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+(unless (package-installed-p 'quelpa)
+  (with-temp-buffer
+    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+    (eval-buffer)
+    (quelpa-self-upgrade)))
 
-(straight-use-package 'use-package)
-(setq straight-use-package-by-default t)
+(quelpa
+ '(quelpa-use-package
+   :fetcher git
+   :url "https://github.com/quelpa/quelpa-use-package.git"))
+(require 'quelpa-use-package)
 
 (blink-cursor-mode 0)                           ; Disable the cursor blinking
 (scroll-bar-mode 0)                             ; Disable the scroll bar
@@ -453,22 +449,6 @@
      "Capture"
      (("c" ekg-capture)
       ("u" ash/capture-literature-note))))
-  (pretty-hydra-define hydra-straight ()
-    ("Package specific"
-     (("c" straight-check-package "check" :exit t)
-      ("n" straight-normalize-package "normalize" :exit t)
-      ("r" straight-rebuild-package "rebuild" :exit t)
-      ("p" straight-pull-package "pull" :exit t))
-     "All packages"
-     (("C" straight-check-all "check" :exit t)
-      ("N" straight-normalize-all "normalize" :exit t)
-      ("R" straight-rebuild-all "rebuild" :exit t)
-      ("P" straight-pull-all "pull" :exit t))
-     "State"
-     (("v" straight-freeze-versions "freeze" :exit t)
-      ("t" straight-thaw-versions "thaw" :exit t)
-      ("d" straight-prune-build "prune" :exit t)
-      ("." straight-pull-recipe-repositories "pull repos"))))
   (pretty-hydra-define hydra-yas ()
     ("Snippets"
      (("n" yas-new-snippet "new" :exit t)
@@ -531,7 +511,6 @@
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
       ("k" hydra-ekg/body "ekg" :exit t)
-      ("S" hydra-straight/body "straight" :exit t)
       ("g" magit-status "magit" :exit t)
       ("!" ash/el-secretario-daily-review "secretary" :exit t))
      "Editing"
@@ -700,7 +679,7 @@
   (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
 
 (use-package doom-modeline
-  :ensure t
+  :disabled t
   :init (doom-modeline-mode 1)
   :config (setq doom-modeline-buffer-encoding nil
                 doom-modeline-minor-modes nil))
@@ -835,15 +814,13 @@
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 
-(use-package emacsql-sqlite3)
-
 ;; Required library for testing
 (use-package kv)
 (use-package triples
-  :straight '(:host github :repo "ahyatt/triples" :branch "develop"))
+  :quelpa (:fetcher github :repo "ahyatt/triples" :branch "develop" :upgrade t))
 
 (use-package ekg
-  :straight '(ekg :type git :host github :repo "ahyatt/ekg")
+  :quelpa (ekg :fetcher github :repo "ahyatt/ekg" :branch "develop" :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
   :config
@@ -888,7 +865,6 @@
  (global-org-modern-mode))
 
 (use-package org-appear
-  :straight (org-appear :type git :host github :repo "awth13/org-appear")
   :hook (org-mode . org-appear-mode)
   :config (setq org-appear-autolinks nil
                 org-appear-autosubmarkers t))
@@ -914,9 +890,6 @@
   :hook (org-mode . org-auto-tangle-mode))
 
 (setq epa-pinentry-mode 'loopback)
-
-(straight-use-package '(emacs-sdcv :type git :host github :repo "gucong/emacs-sdcv"))
-(require 'sdcv-mode)
 
 (defun ash/strdec-to-hex (n)
   "Given a decimal as a string, convert to hex.

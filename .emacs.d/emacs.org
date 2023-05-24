@@ -25,27 +25,21 @@ Code comes from http://melpa.org/#/getting-started.
 We use use-package so before first running, install this with `package-install`.
 
 #+begin_src emacs-lisp
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+(unless (package-installed-p 'quelpa)
+  (with-temp-buffer
+    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+    (eval-buffer)
+    (quelpa-self-upgrade)))
 #+end_src
 
-Finally, let's switch to the straight vesion of use-package, so everything is
-consistent (otherwise straight could be trying to use packages that overlap with
-the ELPA packages that use-package straight).
+Let's use quelpa with use-package, which I still like using more than anything else.
 
 #+begin_src emacs-lisp
-(straight-use-package 'use-package)
-(setq straight-use-package-by-default t)
+(quelpa
+ '(quelpa-use-package
+   :fetcher git
+   :url "https://github.com/quelpa/quelpa-use-package.git"))
+(require 'quelpa-use-package)
 #+end_src
 
 * Better defaults
@@ -578,22 +572,6 @@ Hydra is useful for doing lots of things in succession.
      "Capture"
      (("c" ekg-capture)
       ("u" ash/capture-literature-note))))
-  (pretty-hydra-define hydra-straight ()
-    ("Package specific"
-     (("c" straight-check-package "check" :exit t)
-      ("n" straight-normalize-package "normalize" :exit t)
-      ("r" straight-rebuild-package "rebuild" :exit t)
-      ("p" straight-pull-package "pull" :exit t))
-     "All packages"
-     (("C" straight-check-all "check" :exit t)
-      ("N" straight-normalize-all "normalize" :exit t)
-      ("R" straight-rebuild-all "rebuild" :exit t)
-      ("P" straight-pull-all "pull" :exit t))
-     "State"
-     (("v" straight-freeze-versions "freeze" :exit t)
-      ("t" straight-thaw-versions "thaw" :exit t)
-      ("d" straight-prune-build "prune" :exit t)
-      ("." straight-pull-recipe-repositories "pull repos"))))
   (pretty-hydra-define hydra-yas ()
     ("Snippets"
      (("n" yas-new-snippet "new" :exit t)
@@ -656,7 +634,6 @@ Hydra is useful for doing lots of things in succession.
      (("m" hydra-mail/body "mail" :exit t)
       ("o" hydra-org-main/body "org" :exit t)
       ("k" hydra-ekg/body "ekg" :exit t)
-      ("S" hydra-straight/body "straight" :exit t)
       ("g" magit-status "magit" :exit t)
       ("!" ash/el-secretario-daily-review "secretary" :exit t))
      "Editing"
@@ -895,10 +872,11 @@ Also fix the message quoting in gmail
   (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
 #+end_src
 
-Improve the looks of the modeline with Powerline.
+Improve the looks of the modeline with Powerline. Currently not working
+correctly (claims "bar is not a defined segment"), so disabling.
 #+BEGIN_SRC emacs-lisp
 (use-package doom-modeline
-  :ensure t
+  :disabled t
   :init (doom-modeline-mode 1)
   :config (setq doom-modeline-buffer-encoding nil
                 doom-modeline-minor-modes nil))
@@ -1075,20 +1053,15 @@ To me, org-pomodoro is very effective to maintain focus.
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 #+END_SRC
-*** emacsql-sqlite3
-My sqlite no longer works, it times out.  I've found switching to this package solves the problem.
-#+begin_src emacs-lisp
-(use-package emacsql-sqlite3)
-#+end_src
 *** ekg
 #+begin_src emacs-lisp
 ;; Required library for testing
 (use-package kv)
 (use-package triples
-  :straight '(:host github :repo "ahyatt/triples" :branch "develop"))
+  :quelpa (:fetcher github-ssh :repo "ahyatt/triples" :branch "develop" :upgrade t))
 
 (use-package ekg
-  :straight '(ekg :type git :host github :repo "ahyatt/ekg")
+  :quelpa (ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop" :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
   :config
@@ -1142,7 +1115,6 @@ Very nice for editing within org elements - and conversely, without something
 like this I find editing org elements frustrating.
 #+begin_src emacs-lisp
 (use-package org-appear
-  :straight (org-appear :type git :host github :repo "awth13/org-appear")
   :hook (org-mode . org-appear-mode)
   :config (setq org-appear-autolinks nil
                 org-appear-autosubmarkers t))
@@ -1188,12 +1160,6 @@ We can just auto-tangle on save:
 Without this, I can't open a gpg file.
 #+begin_src elisp
 (setq epa-pinentry-mode 'loopback)
-#+end_src
-* Writing
-** Dictionary
-#+begin_src emacs-lisp
-(straight-use-package '(emacs-sdcv :type git :host github :repo "gucong/emacs-sdcv"))
-(require 'sdcv-mode)
 #+end_src
 * Useful functions
 Emacs doesn't have 64-bit-int processing except via calc.
