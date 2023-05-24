@@ -837,7 +837,7 @@
 
 (use-package emacsql-sqlite3)
 
-;; Required library
+;; Required library for testing
 (use-package kv)
 (use-package triples
   :straight '(:host github :repo "ahyatt/triples" :branch "develop"))
@@ -866,7 +866,13 @@
                          (save-excursion (org-back-to-heading t) (point))
                          (save-excursion (org-end-of-subtree t t) (point))))))
 
-  (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change))
+  (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
+  (add-to-list 'display-buffer-alist '("*EKG Capture\\*"
+                                       (display-buffer-in-side-window)
+                                       (side . right)
+                                       (slot . 0)
+                                       (window-width . 80)
+                                       (window-parameters . no-delete-other-windows))))
 
 (use-package org-modern
   :custom

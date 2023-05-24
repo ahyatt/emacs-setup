@@ -1111,7 +1111,13 @@ My sqlite no longer works, it times out.  I've found switching to this package s
                          (save-excursion (org-back-to-heading t) (point))
                          (save-excursion (org-end-of-subtree t t) (point))))))
 
-  (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change))
+  (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
+  (add-to-list 'display-buffer-alist '("*EKG Capture\\*"
+                                       (display-buffer-in-side-window)
+                                       (side . right)
+                                       (slot . 0)
+                                       (window-width . 80)
+                                       (window-parameters . no-delete-other-windows))))
 #+end_src
 *** *** Org UI tweaks
 Use package =org-modern=.  We tried this before, but this time we'll make sure and tweak the fonts the get it right.  Hopefully there isn't the weird errors I saw before either.
