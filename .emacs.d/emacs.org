@@ -7,29 +7,35 @@
 Let's start by making sure we have MELPA stable, which is a
 requirement for a lot that follows.
 
-Code comes from http://melpa.org/#/getting-started.
+Code, slightly simplified, comes from http://melpa.org/#/getting-started.
 #+BEGIN_SRC emacs-lisp
-(require 'package)
-(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-                    (not (gnutls-available-p))))
-       (proto (if no-ssl "http" "https")))
-  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
-  (when (< emacs-major-version 24)
-    ;; For important compatibility libraries like cl-lib
-    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
-(package-initialize)
+  (require 'package)
+  (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                      (not (gnutls-available-p))))
+         (proto (if no-ssl "http" "https")))
+    ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+    (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+    (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t))
+  (package-initialize)
 #+END_SRC
 
-We use use-package so before first running, install this with `package-install`.
+Refresh archive and set up use-package.
+#+begin_src emacs-lisp
+  (when (not package-archive-contents)
+    (package-refresh-contents))
+
+  (package-install 'use-package)
+
+  (use-package use-package-ensure
+    :config  (setq use-package-always-ensure t))
+#+end_src
 
 #+begin_src emacs-lisp
-(unless (package-installed-p 'quelpa)
-  (with-temp-buffer
-    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-    (eval-buffer)
-    (quelpa-self-upgrade)))
+  (unless (package-installed-p 'quelpa)
+    (with-temp-buffer
+      (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
+      (eval-buffer)
+      (quelpa-self-upgrade)))
 #+end_src
 
 Let's use quelpa with use-package, which I still like using more than anything else.
@@ -1058,10 +1064,12 @@ To me, org-pomodoro is very effective to maintain focus.
 ;; Required library for testing
 (use-package kv)
 (use-package triples
-  :quelpa (:fetcher github-ssh :repo "ahyatt/triples" :branch "develop" :upgrade t))
+  :quelpa ((triples :fetcher github-ssh :repo "ahyatt/triples" :branch "develop")
+           :upgrade t))
 
 (use-package ekg
-  :quelpa (ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop" :upgrade t)
+  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
+           :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
   :config

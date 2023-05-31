@@ -6,11 +6,16 @@
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
   (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t)
-  (when (< emacs-major-version 24)
-    ;; For important compatibility libraries like cl-lib
-    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t))
 (package-initialize)
+
+(when (not package-archive-contents)
+  (package-refresh-contents))
+
+(package-install 'use-package)
+
+(use-package use-package-ensure
+  :config  (setq use-package-always-ensure t))
 
 (unless (package-installed-p 'quelpa)
   (with-temp-buffer
@@ -817,10 +822,12 @@
 ;; Required library for testing
 (use-package kv)
 (use-package triples
-  :quelpa (:fetcher github :repo "ahyatt/triples" :branch "develop" :upgrade t))
+  :quelpa ((triples :fetcher github-ssh :repo "ahyatt/triples" :branch "develop")
+           :upgrade t))
 
 (use-package ekg
-  :quelpa (ekg :fetcher github :repo "ahyatt/ekg" :branch "develop" :upgrade t)
+  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
+           :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
   :config
