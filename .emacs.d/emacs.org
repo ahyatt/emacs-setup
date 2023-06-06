@@ -714,7 +714,8 @@ There’s a lot of really good editing tools. Puni is a more simple and modern a
   :defer t
   :diminish ""
   :init (puni-global-mode) (electric-pair-mode)
-  (add-hook 'org-mode-hook #'puni-disable-puni-mode))
+  (add-hook 'org-mode-hook #'puni-disable-puni-mode)
+  (add-hook 'org-mode-hook (lambda () (electric-pair-mode -1))))
 #+END_SRC
 
 Git gutter highlights changes to files.

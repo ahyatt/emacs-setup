@@ -562,7 +562,8 @@
   :defer t
   :diminish ""
   :init (puni-global-mode) (electric-pair-mode)
-  (add-hook 'org-mode-hook #'puni-disable-puni-mode))
+  (add-hook 'org-mode-hook #'puni-disable-puni-mode)
+  (add-hook 'org-mode-hook (lambda () (electric-pair-mode -1))))
 
 (use-package git-gutter
   :ensure t
