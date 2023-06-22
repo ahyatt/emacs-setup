@@ -852,7 +852,7 @@
                          (save-excursion (org-end-of-subtree t t) (point))))))
 
   (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
-  (add-to-list 'display-buffer-alist '("*EKG Capture\\*"
+  (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
                                        (side . right)
                                        (slot . 0)
