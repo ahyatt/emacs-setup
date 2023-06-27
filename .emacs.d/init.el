@@ -843,7 +843,7 @@
           (progn
             (setf (ekg-note-text (car notes)) (concat (ekg-note-text (car notes)) "\n" text))
             (ekg-save-note (car notes)))
-        (ekg-save-note (ekg-note-create text 'text-mode `(,(ekg-tag-for-date) "log"))))))
+        (ekg-save-note (ekg-note-create :text text :mode 'text-mode :tags `(,(ekg-tag-for-date) "log"))))))
 
   (defun ash/on-todo-state-change ()
     (when (equal org-state "DONE")
