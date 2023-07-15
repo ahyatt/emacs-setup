@@ -1099,7 +1099,7 @@ To me, org-pomodoro is very effective to maintain focus.
                                        (side . right)
                                        (slot . 0)
                                        (window-width . 80)
-                                       (window-parameters (no-delete-other-windows . t))))
+                                       (window-parameters (no-delete-other-windows . t)))))
 #+end_src
 *** *** Org UI tweaks
 Use package =org-modern=.  We tried this before, but this time we'll make sure and tweak the fonts the get it right.  Hopefully there isn't the weird errors I saw before either.

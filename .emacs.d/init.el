@@ -857,7 +857,7 @@
                                        (side . right)
                                        (slot . 0)
                                        (window-width . 80)
-                                       (window-parameters (no-delete-other-windows . t))))
+                                       (window-parameters (no-delete-other-windows . t)))))
 
 (use-package org-modern
   :custom
