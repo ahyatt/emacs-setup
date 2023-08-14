@@ -272,14 +272,15 @@
   (defun ash/org-link ()
     "Get the link from an org-link."
     (require 's)
-    (let ((context (org-element-context)))
-      (cond ((and (eq (car context) 'link)
-                  (equal (plist-get (cadr context) :type) "file"))
-             (cons 'file (plist-get (cadr context) :path)))
-            ((and (eq (car context) 'link)
-                  (member (plist-get (cadr context) :type) '("http" "https")))
-             (cons 'url (concat (plist-get (cadr context) :type) ":" (s-trim-right (plist-get (cadr context) :path)))))
-            (t nil))))
+    (when (eq major-mode 'org-mode)
+      (let ((context (org-element-context)))
+        (cond ((and (eq (car context) 'link)
+                    (equal (plist-get (cadr context) :type) "file"))
+               (cons 'file (plist-get (cadr context) :path)))
+              ((and (eq (car context) 'link)
+                    (member (plist-get (cadr context) :type) '("http" "https")))
+               (cons 'url (concat (plist-get (cadr context) :type) ":" (s-trim-right (plist-get (cadr context) :path)))))
+              (t nil)))))
   (add-to-list 'embark-target-finders 'ash/org-link))
 
 (use-package consult
@@ -561,9 +562,9 @@
 (use-package puni
   :defer t
   :diminish ""
-  :init (puni-global-mode) (electric-pair-mode)
+  :init (puni-global-mode) (electric-pair-mode 1)
   (add-hook 'org-mode-hook #'puni-disable-puni-mode)
-  (add-hook 'org-mode-hook (lambda () (electric-pair-mode -1))))
+  (add-hook 'org-mode-hook #'electric-pair-local-mode))
 
 (use-package git-gutter
   :ensure t
@@ -771,7 +772,6 @@
       org-agenda-skip-scheduled-if-done 't
       org-src-window-setup 'other-window
       org-src-tab-acts-natively t
-      org-fontify-whole-heading-line t
       org-fontify-done-headline t
       org-edit-src-content-indentation 0
       org-fontify-quote-and-verse-blocks t
@@ -858,19 +858,6 @@
                                        (slot . 0)
                                        (window-width . 80)
                                        (window-parameters (no-delete-other-windows . t)))))
-
-(use-package org-modern
-  :custom
-  (org-auto-align-tags nil)
-  (org-tags-column 0)
-  (org-catch-invisible-edits 'show-and-error)
-  (org-special-ctrl-a/e t)
-  (org-insert-heading-respect-content t)
-  (org-agenda-block-separator ?─)
-  (org-agenda-current-time-string
-   "⭠ now ─────────────────────────────────────────────────")
-  :init
- (global-org-modern-mode))
 
 (use-package org-appear
   :hook (org-mode . org-appear-mode)

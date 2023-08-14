@@ -374,14 +374,15 @@ Embark is a framework for actions, including those done on completions.
   (defun ash/org-link ()
     "Get the link from an org-link."
     (require 's)
-    (let ((context (org-element-context)))
-      (cond ((and (eq (car context) 'link)
-                  (equal (plist-get (cadr context) :type) "file"))
-             (cons 'file (plist-get (cadr context) :path)))
-            ((and (eq (car context) 'link)
-                  (member (plist-get (cadr context) :type) '("http" "https")))
-             (cons 'url (concat (plist-get (cadr context) :type) ":" (s-trim-right (plist-get (cadr context) :path)))))
-            (t nil))))
+    (when (eq major-mode 'org-mode)
+      (let ((context (org-element-context)))
+        (cond ((and (eq (car context) 'link)
+                    (equal (plist-get (cadr context) :type) "file"))
+               (cons 'file (plist-get (cadr context) :path)))
+              ((and (eq (car context) 'link)
+                    (member (plist-get (cadr context) :type) '("http" "https")))
+               (cons 'url (concat (plist-get (cadr context) :type) ":" (s-trim-right (plist-get (cadr context) :path)))))
+              (t nil)))))
   (add-to-list 'embark-target-finders 'ash/org-link))
 #+end_src
 
@@ -713,9 +714,9 @@ There’s a lot of really good editing tools. Puni is a more simple and modern a
 (use-package puni
   :defer t
   :diminish ""
-  :init (puni-global-mode) (electric-pair-mode)
+  :init (puni-global-mode) (electric-pair-mode 1)
   (add-hook 'org-mode-hook #'puni-disable-puni-mode)
-  (add-hook 'org-mode-hook (lambda () (electric-pair-mode -1))))
+  (add-hook 'org-mode-hook #'electric-pair-local-mode))
 #+END_SRC
 
 Git gutter highlights changes to files.
@@ -1003,7 +1004,6 @@ This requires =rg= (ripgrep).
       org-agenda-skip-scheduled-if-done 't
       org-src-window-setup 'other-window
       org-src-tab-acts-natively t
-      org-fontify-whole-heading-line t
       org-fontify-done-headline t
       org-edit-src-content-indentation 0
       org-fontify-quote-and-verse-blocks t
@@ -1101,24 +1101,6 @@ To me, org-pomodoro is very effective to maintain focus.
                                        (window-width . 80)
                                        (window-parameters (no-delete-other-windows . t)))))
 #+end_src
-*** *** Org UI tweaks
-Use package =org-modern=.  We tried this before, but this time we'll make sure and tweak the fonts the get it right.  Hopefully there isn't the weird errors I saw before either.
-
-#+begin_src emacs-lisp
-(use-package org-modern
-  :custom
-  (org-auto-align-tags nil)
-  (org-tags-column 0)
-  (org-catch-invisible-edits 'show-and-error)
-  (org-special-ctrl-a/e t)
-  (org-insert-heading-respect-content t)
-  (org-agenda-block-separator ?─)
-  (org-agenda-current-time-string
-   "⭠ now ─────────────────────────────────────────────────")
-  :init
- (global-org-modern-mode))
-#+end_src
-
 *** org-appear
 Very nice for editing within org elements - and conversely, without something
 like this I find editing org elements frustrating.

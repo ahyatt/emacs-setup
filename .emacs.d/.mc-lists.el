@@ -26,6 +26,7 @@
         puni-backward-kill-word
         puni-forward-delete-char
         puni-forward-kill-word
+        puni-kill-region
         sp-backward-delete-char
         sp-backward-kill-word
         sp-delete-char
