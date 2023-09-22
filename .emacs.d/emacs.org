@@ -124,7 +124,7 @@ the same file.
 Enable fullscreen (emacs uber alles).
 
 #+BEGIN_SRC emacs-lisp
-(if (eq window-system 'ns)
+(if (member window-system '(ns mac))
     (toggle-frame-maximized)
   (toggle-frame-fullscreen))
 #+END_SRC
