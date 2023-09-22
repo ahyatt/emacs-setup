@@ -89,7 +89,7 @@
 (put 'upcase-region 'disabled nil)                ; Enable upcase-region
 (set-default-coding-systems 'utf-8)               ; Default to utf-8 encoding
 
-(if (eq window-system 'ns)
+(if (member window-system '(ns mac))
     (toggle-frame-maximized)
   (toggle-frame-fullscreen))
 
@@ -826,8 +826,13 @@
   :quelpa ((triples :fetcher github-ssh :repo "ahyatt/triples" :branch "develop")
            :upgrade t))
 
+;; This is pulled in by ekg, but since I'm the author I'd like to have it
+;; specially fetched and always keep it upgraded.
+(use-package llm
+  :quelpa ((llm :fetcher github-ssh :repo "ahyatt/llm" :upgrade t)))
+
 (use-package ekg
-  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
+  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "llm-on-llm")
            :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
