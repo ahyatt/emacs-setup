@@ -140,11 +140,9 @@
           'executable-make-buffer-file-executable-if-script-p)
 
 (defun ash/get-current-url ()
-  (replace-regexp-in-string (rx (or (seq string-start ?\") (seq ?\" string-end))) ""
-                            (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window")))
+  (string-trim (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 (defun ash/get-current-title ()
-  (replace-regexp-in-string (rx (or (seq string-start ?\") (seq ?\" string-end))) ""
-                            (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window")))
+  (string-trim (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
@@ -566,7 +564,7 @@
   :diminish ""
   :init (puni-global-mode) (electric-pair-mode 1)
   (add-hook 'org-mode-hook #'puni-disable-puni-mode)
-  (add-hook 'org-mode-hook #'electric-pair-local-mode))
+  (add-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1))))
 
 (use-package git-gutter
   :ensure t
@@ -727,6 +725,7 @@
 (defun ash-goto-agenda (&optional _)
   (interactive)
   (let ((buf (get-buffer "*Org Agenda(l)*")))
+    (tab-bar-switch-to-tab "org")
     (if buf
         (progn (switch-to-buffer buf)
                (delete-other-windows))
@@ -840,6 +839,7 @@
   :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
   :general
   ("<f11>" 'ekg-capture)
+  ("C-<f11>" 'ash/capture-literature-note)
   :config
   (require 'ekg-embedding)
   (ekg-embedding-generate-on-save)
@@ -847,21 +847,24 @@
     (interactive)
     (ekg-capture-url (ash/get-current-url) (ash/get-current-title)))
 
-  (defun ash/log-to-ekg (text)
+  (defun ash/log-to-ekg (text &optional org-mode)
     "Log TEXT as a note to EKG's date, appending if possible."
     (let ((notes (ekg-get-notes-with-tags (list (ekg-tag-for-date) "log"))))
       (if notes
           (progn
             (setf (ekg-note-text (car notes)) (concat (ekg-note-text (car notes)) "\n" text))
             (ekg-save-note (car notes)))
-        (ekg-save-note (ekg-note-create :text text :mode 'text-mode :tags `(,(ekg-tag-for-date) "log"))))))
+        (ekg-save-note (ekg-note-create :text text :mode (if org-mode 'org-mode 'text-mode)
+                                        :tags `(,(ekg-tag-for-date) "log"))))))
 
   (defun ash/on-todo-state-change ()
     (when (equal org-state "DONE")
         (ash/log-to-ekg (buffer-substring
                          (save-excursion (org-back-to-heading t) (point))
-                         (save-excursion (org-end-of-subtree t t) (point))))))
-
+                         (save-excursion (org-end-of-subtree t t) (point)))
+                        t)))
+  (dolist (h '(ekg-capture-mode-hook ekg-edit-mode-hook ekg-notes-mode-hook))
+    (add-hook h (lambda () (variable-pitch-mode 1))))
   (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
   (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
