@@ -140,9 +140,11 @@
           'executable-make-buffer-file-executable-if-script-p)
 
 (defun ash/get-current-url ()
-  (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window"))
+  (replace-regexp-in-string (rx (or (seq string-start ?\") (seq ?\" string-end))) ""
+                            (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window")))
 (defun ash/get-current-title ()
-  (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window"))
+  (replace-regexp-in-string (rx (or (seq string-start ?\") (seq ?\" string-end))) ""
+                            (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window")))
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
@@ -829,14 +831,16 @@
 ;; This is pulled in by ekg, but since I'm the author I'd like to have it
 ;; specially fetched and always keep it upgraded.
 (use-package llm
-  :quelpa ((llm :fetcher github-ssh :repo "ahyatt/llm" :upgrade t)))
+  :quelpa ((llm :fetcher github-ssh :repo "ahyatt/llm") :upgrade t))
 
 (use-package ekg
-  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "llm-on-llm")
+  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
            :upgrade t)
   :general
   ("<f11>" 'ekg-capture)
   :config
+  (require 'ekg-embedding)
+  (ekg-embedding-generate-on-save)
   (defun ash/capture-literature-note ()
     (interactive)
     (ekg-capture-url (ash/get-current-url) (ash/get-current-title)))
