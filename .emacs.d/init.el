@@ -836,6 +836,8 @@
 (use-package ekg
   :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
            :upgrade t)
+  ;; Use variable pitch fonts for notes
+  :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
   :general
   ("<f11>" 'ekg-capture)
   :config
