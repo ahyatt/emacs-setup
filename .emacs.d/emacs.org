@@ -1099,15 +1099,8 @@ To me, org-pomodoro is very effective to maintain focus.
         (ekg-save-note (ekg-note-create :text text :mode (if org-mode 'org-mode 'text-mode)
                                         :tags `(,(ekg-tag-for-date) "log"))))))
 
-  (defun ash/on-todo-state-change ()
-    (when (equal org-state "DONE")
-        (ash/log-to-ekg (buffer-substring
-                         (save-excursion (org-back-to-heading t) (point))
-                         (save-excursion (org-end-of-subtree t t) (point)))
-                        t)))
   (dolist (h '(ekg-capture-mode-hook ekg-edit-mode-hook ekg-notes-mode-hook))
     (add-hook h (lambda () (variable-pitch-mode 1))))
-  (add-to-list 'org-after-todo-state-change-hook #'ash/on-todo-state-change)
   (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
                                        (side . right)
