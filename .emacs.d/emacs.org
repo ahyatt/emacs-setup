@@ -1124,6 +1124,19 @@ Mermaid is a tool for drawing systems diagrams.
 #+begin_src emacs-lisp
 (use-package ob-mermaid)
 #+end_src
+* LLM-related
+** The normal LLM provider
+#+begin_src emacs-lisp
+(defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
+#+end_src
+** ellama
+#+begin_src emacs-lisp
+(use-package ellama
+  :init
+  (setopt ellama-language "Portguese")
+  (setopt ellama-provider emacs-llm-default-provider))
+#+end_src
+
 * Tangling-related
 
 We need to add some functions to make dealing with this file easier.

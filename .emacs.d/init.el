@@ -873,6 +873,13 @@
 
 (use-package ob-mermaid)
 
+(defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
+
+(use-package ellama
+  :init
+  (setopt ellama-language "Portguese")
+  (setopt ellama-provider emacs-llm-default-provider))
+
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
   (interactive)
