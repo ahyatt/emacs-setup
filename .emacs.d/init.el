@@ -93,6 +93,8 @@
     (toggle-frame-maximized)
   (toggle-frame-fullscreen))
 
+(global-set-key (kbd "s-8") 'toggle-frame-fullscreen)
+
 (add-hook 'focus-out-hook #'garbage-collect)
 
 (ffap-bindings)
@@ -146,6 +148,11 @@
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
+
+(use-package websocket
+  :quelpa ((websocket :fetcher github-ssh
+                            :repo "ahyatt/emacs-websocket" :branch "main")
+           :upgrade t))
 
 (use-package general
   :config
@@ -285,7 +292,9 @@
 
 (use-package consult
   :config
-  (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode))
+  (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
+  :general
+  ("C-x b" 'consult-buffer))
 
 (use-package embark-consult
   :ensure t
@@ -670,26 +679,16 @@
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
-(use-package messages-are-flowing
-  :config
-  (add-hook 'message-mode-hook 'messages-are-flowing-use-and-mark-hard-newlines)
-  (add-hook 'message-mode-hook 'visual-line-mode))
-
 (use-package notmuch
   :hook (notmuch-show-mode . visual-line-mode))
 
 (use-package ol-notmuch)
 
-(with-eval-after-load 'message
-  (setq message-cite-style message-cite-style-gmail)
-  (setq message-citation-line-function 'message-insert-formatted-citation-line)
-  (setq message-citation-line-format "On %a, %b %e, %Y at %I:%M %p %f wrote:\n"))
-
 (use-package doom-modeline
-  :disabled t
   :init (doom-modeline-mode 1)
   :config (setq doom-modeline-buffer-encoding nil
-                doom-modeline-minor-modes nil))
+                doom-modeline-minor-modes nil
+                doom-modeline-icon nil))
 
 (use-package all-the-icons)
 
@@ -741,9 +740,12 @@
       org-log-done t
       org-agenda-span 'day
       org-agenda-include-diary t
+      org-agenda-start-with-clockreport-mode t
+      org-agenda-start-with-archives-mode t
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
+      org-confirm-babel-evaluate nil
       org-catch-invisible-edits 'error
       org-agenda-sticky t
       org-agenda-start-with-log-mode t
@@ -762,8 +764,6 @@
                                       (todo "PERMANENT")
                                       (todo "WAITING|EXTREVIEW|DELEGATED")
                                       (tags-todo "deepwork/!-WAITING-EXTREVIEW-DELEGATED")
-                                      (tags-todo "collab/!-WAITING-EXTREVIEW-DELEGATED")
-                                      (tags-todo "quick/!-WAITING-EXTREVIEW-DELEGATED")
                                       (tags-todo "-quick-collab-deepwork/!-WAITING-EXTREVIEW-DELEGATED"))))
       org-enforce-todo-dependencies t
       org-agenda-todo-ignore-scheduled 'future
@@ -804,7 +804,10 @@
       org-completion-use-ido t
       org-use-fast-todo-selection t
       org-habit-show-habits t)
-(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)))
+
+(require 'org-agenda)
+(org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
+                                                         (python . t)))
 
 (use-package org-contrib
   :config
@@ -882,7 +885,7 @@
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
-  (interactive)
+  (interactive nil org-mode)
   (org-babel-tangle 0 "~/.emacs.d/init.el"))
 
 (general-define-key :keymaps 'org-mode-map
@@ -913,22 +916,115 @@ This has to be done as a string to handle 64-bit or larger ints."
   (kmacro "C-x 1 C-x 3 C-x o"))
 (general-define-key "s-b" 'ash/mirror-buffer)
 
-(when (= 1 (length (tab-bar-tabs)))
-  (tab-bar-new-tab)
-  (tab-bar-new-tab)
-  (tab-bar-new-tab)
-  (tab-bar-rename-tab "org" 1)
-  (tab-bar-rename-tab "ekg" 2)
-  (tab-bar-rename-tab "mail" 3)
-  (tab-bar-rename-tab "emacs" 4)
-  (tab-bar-select-tab 1)
-  (org-agenda nil "l")
-  (delete-other-windows)
-  (tab-bar-select-tab 2)
-  (ekg-show-notes-latest-modified)
-  (delete-other-windows)
-  (delete-other-windows)
-  (tab-bar-select-tab 3)
-  (notmuch-hello)
-  (tab-bar-select-tab 4)
-  (find-file "~/.emacs.d/emacs.org"))
+(use-package meow
+  :config
+;; It seems really odd that meow doesn't just define this themselves.
+  (defun meow-setup ()
+    (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+    (meow-motion-overwrite-define-key
+     '("j" . meow-next)
+     '("k" . meow-prev)
+     '("<escape>" . ignore))
+    (meow-leader-define-key
+     ;; SPC j/k will run the original command in MOTION state.
+     '("j" . "H-j")
+     '("k" . "H-k")
+     ;; Use SPC (0-9) for digit arguments.
+     '("1" . meow-digit-argument)
+     '("2" . meow-digit-argument)
+     '("3" . meow-digit-argument)
+     '("4" . meow-digit-argument)
+     '("5" . meow-digit-argument)
+     '("6" . meow-digit-argument)
+     '("7" . meow-digit-argument)
+     '("8" . meow-digit-argument)
+     '("9" . meow-digit-argument)
+     '("0" . meow-digit-argument)
+     '("/" . meow-keypad-describe-key)
+     '("?" . meow-cheatsheet))
+    (meow-normal-define-key
+     '("0" . meow-expand-0)
+     '("9" . meow-expand-9)
+     '("8" . meow-expand-8)
+     '("7" . meow-expand-7)
+     '("6" . meow-expand-6)
+     '("5" . meow-expand-5)
+     '("4" . meow-expand-4)
+     '("3" . meow-expand-3)
+     '("2" . meow-expand-2)
+     '("1" . meow-expand-1)
+     '("-" . negative-argument)
+     '(";" . meow-reverse)
+     '("," . meow-inner-of-thing)
+     '("." . meow-bounds-of-thing)
+     '("[" . meow-beginning-of-thing)
+     '("]" . meow-end-of-thing)
+     '("a" . meow-append)
+     '("A" . meow-open-below)
+     '("b" . meow-back-word)
+     '("B" . meow-back-symbol)
+     '("c" . meow-change)
+     '("d" . meow-delete)
+     '("D" . meow-backward-delete)
+     '("e" . meow-next-word)
+     '("E" . meow-next-symbol)
+     '("f" . meow-find)
+     '("g" . meow-cancel-selection)
+     '("G" . meow-grab)
+     '("h" . meow-left)
+     '("H" . meow-left-expand)
+     '("i" . meow-insert)
+     '("I" . meow-open-above)
+     '("j" . meow-next)
+     '("J" . meow-next-expand)
+     '("k" . meow-prev)
+     '("K" . meow-prev-expand)
+     '("l" . meow-right)
+     '("L" . meow-right-expand)
+     '("m" . meow-join)
+     '("n" . meow-search)
+     '("o" . meow-block)
+     '("O" . meow-to-block)
+     '("p" . meow-yank)
+     '("q" . meow-quit)
+     '("Q" . meow-goto-line)
+     '("r" . meow-replace)
+     '("R" . meow-swap-grab)
+     '("s" . meow-kill)
+     '("t" . meow-till)
+     '("u" . meow-undo)
+     '("U" . meow-undo-in-selection)
+     '("v" . meow-visit)
+     '("w" . meow-mark-word)
+     '("W" . meow-mark-symbol)
+     '("x" . meow-line)
+     '("X" . meow-goto-line)
+     '("y" . meow-save)
+     '("Y" . meow-sync-grab)
+     '("z" . meow-pop-selection)
+     '("'" . repeat)
+     '("<escape>" . ignore)))
+  (require 'meow-cheatsheet-layout)
+  (meow-setup)
+  (meow-global-mode 1))
+
+(use-package tabspaces
+  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
+  :commands (tabspaces-switch-or-create-workspace
+             tabspaces-open-or-create-project-and-workspace)
+  :general
+  ;; I was unable to get tabspaces-keymap-prefix to work, so I have to resort to
+  ;; making new bindings.
+  ("s-v b" 'tabspaces-switch-to-buffer)
+  ("s-v s" 'tabspaces-switch-or-create-workspace)
+  ("s-v t" 'tabspaces-switch-buffer-and-tab)
+  :custom
+  (tabspaces-use-filtered-buffers-as-default t)
+  (tabspaces-default-tab "main")
+  (tabspaces-remove-to-default t)
+  (tabspaces-include-buffers '("*scratch*"))
+  (tabspaces-initialize-project-with-todo t)
+  (tabspaces-todo-file-name "project-todo.org")
+  ;; sessions
+  (tabspaces-session t)
+  (tabspaces-session-auto-restore t))

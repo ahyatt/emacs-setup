@@ -18,6 +18,10 @@
         hydra-structural/sp-change-inner
         indent-for-tab-command
         insert-char
+        meow-insert
+        meow-insert-exit
+        meow-next-word
+        meow-right
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert
@@ -27,6 +31,7 @@
         puni-forward-delete-char
         puni-forward-kill-word
         puni-forward-sexp
+        puni-kill-line
         puni-kill-region
         sp-backward-delete-char
         sp-backward-kill-word
