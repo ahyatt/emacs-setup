@@ -18,8 +18,12 @@
         hydra-structural/sp-change-inner
         indent-for-tab-command
         insert-char
+        meow-bounds-of-thing
+        meow-change
+        meow-delete
         meow-insert
         meow-insert-exit
+        meow-mark-word
         meow-next-word
         meow-right
         org-beginning-of-line
@@ -40,6 +44,7 @@
         sp-kill-region
         sp-kill-word
         sp-remove-active-pair-overlay
+        wdired--self-insert
         ))
 
 (setq mc/cmds-to-run-once
@@ -57,6 +62,7 @@
         hydra-multiple-cursors/mc/mark-next-lines
         hydra-multiple-cursors/mc/mark-next-lines-and-exit
         hydra-multiple-cursors/mc/mark-previous-like-this
+        ignore
         major-mode-hydra
         mc/mark-next-lines
         org-cycle
