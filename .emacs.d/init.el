@@ -563,6 +563,8 @@
 
 (global-set-key (kbd "M-z") #'zap-up-to-char)
 
+(use-package vundo)
+
 (use-package magit
   :general ("C-x g" 'magit-status))
 
@@ -954,6 +956,7 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("2" . meow-expand-2)
      '("1" . meow-expand-1)
      '("-" . negative-argument)
+     '("=" . meow-pop-to-mark)
      '(";" . meow-reverse)
      '("," . meow-inner-of-thing)
      '("." . meow-bounds-of-thing)
@@ -986,6 +989,7 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("o" . meow-block)
      '("O" . meow-to-block)
      '("p" . meow-yank)
+     '("P" . meow-pop-grab)
      '("q" . meow-quit)
      '("Q" . meow-goto-line)
      '("r" . meow-replace)
@@ -1007,6 +1011,49 @@ This has to be done as a string to handle 64-bit or larger ints."
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1))
+
+(setq meow-org-motion-keymap (make-keymap))
+(meow-define-state org-motion
+  "Org-mode structural motion"
+  :lighter "[O]"
+  :keymap meow-org-motion-keymap)
+
+(meow-define-keys 'org-motion
+  '("<escape>" . meow-normal-mode)
+  '("i" . meow-insert-mode)
+  '("g" . meow-normal-mode)
+  '("u" .  meow-undo)
+  ;; Moving between headlines
+  '("k" .  org-previous-visible-heading)
+  '("j" .  org-next-visible-heading)
+  ;; Moving between headings at the same level
+  '("p" .  org-backward-heading-same-level)
+  '("n" .  org-forward-heading-same-level)
+  ;; Clock
+  '("I" .  org-clock-in)
+  '("O" .  org-clock-out)
+  ;; Moving up and down in the outline
+  '("K" .  outline-up-heading)
+  ;; Subtree de/promotion
+  '("L" .  org-demote-subtree)
+  '("H" .  org-promote-subtree)
+  ;; Completion-style search of headings
+  '("v" .  consult-org-heading)
+  ;; Setting subtree metadata
+  '("l" .  org-set-property)
+  '("t" .  org-todo)
+  '("d" .  org-deadline)
+  '("s" .  org-schedule)
+  '("e" .  org-set-effort)
+  ;; Block navigation
+  '("b" .  org-previous-block)
+  '("f" .  org-next-block)
+  ;; Narrowing/widening
+  '("N" .  org-narrow-to-subtree)
+  '("W" .  widen))
+
+(meow-define-keys 'normal
+  '("O" . meow-org-motion-mode))
 
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
