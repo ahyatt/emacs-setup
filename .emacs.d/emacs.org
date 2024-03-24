@@ -210,9 +210,9 @@ Tired of marking scripts executable, or forgetting to do so?  Now you don’t ha
 It's useful to have methods of getting the URLs (for Mac only)
 #+begin_src emacs-lisp
 (defun ash/get-current-url ()
-  (string-trim (do-applescript "tell application \"Google Chrome\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim (do-applescript "tell application \"Arc\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 (defun ash/get-current-title ()
-  (string-trim (do-applescript "tell application \"Google Chrome\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim (do-applescript "tell application \"Arc\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 #+end_src
 * Packages
 There's only one manual step in setting this all up - install -use-package-.
@@ -953,6 +953,27 @@ Also allow it to be used in org
 This requires =rg= (ripgrep).
 #+begin_src emacs-lisp
 (use-package deadgrep)
+#+end_src
+** Browser integration
+#+begin_src emacs-lisp
+(use-package atomic-chrome
+  :demand t
+  :hook (visual-line-mode . atomic-chrome-edit-mode)
+  :quelpa ((atomic-chrome
+            :fetcher github
+            :repo "KarimAziev/atomic-chrome"
+            :upgrade t))
+  :commands (atomic-chrome-start-server)
+  :config
+  (atomic-chrome-start-server)
+  ;; Other things to possibly modify,
+  ;;   (setq-default atomic-chrome-extension-type-list '(atomic-chrome))
+  ;; and 'atomic-chrome-create-file-strategy
+
+  (setq-default atomic-chrome-buffer-open-style 'frame)
+  (setq-default atomic-chrome-auto-remove-file t)
+  (setq-default atomic-chrome-url-major-mode-alist
+                '(("github.com" . gfm-mode))))
 #+end_src
 * Org config
 #+BEGIN_SRC emacs-lisp
