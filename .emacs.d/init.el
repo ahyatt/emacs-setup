@@ -38,6 +38,7 @@
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
  auto-window-vscroll nil                          ; Lighten vertical scroll
  bookmark-save-flag 1                             ; Always save bookmarks
+ calc-kill-line-numbering nil                     ; Do not show line numbers in calc
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
@@ -102,6 +103,9 @@
 (setq-default custom-file (expand-file-name ".custom.el" user-emacs-directory))
 (when (file-exists-p custom-file)
   (load custom-file))
+
+(setq mac-command-modifier 'super)
+(setq mac-option-modifier 'meta)
 
 (set-input-method "rfc1345")
 
@@ -327,8 +331,9 @@
      (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
+  :general ("s-j" 'avy-goto-char-timer)
   :config
-  (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
+  (require 'avy)
   (defun ash/avy-goto-url()
     "Use avy to go to an URL in the buffer."
     (interactive)
@@ -544,6 +549,11 @@
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
 
+(use-package casual
+  :ensure t
+  :general
+  ("C-o" 'casual-main-menu))
+
 (use-package yasnippet
   :diminish yas-minor-mode
   :config
@@ -630,6 +640,28 @@
   :config
   (global-tree-sitter-mode))
 (use-package tree-sitter-langs)
+
+(use-package combobulate
+  :quelpa ((combobulate :fetcher github :repo "mickeynp/combobulate"))
+  :preface
+  ;; You can customize Combobulate's key prefix here.
+  ;; Note that you may have to restart Emacs for this to take effect!
+  (setq combobulate-key-prefix "s-o")
+
+  ;; Optional, but recommended.
+  ;;
+  ;; You can manually enable Combobulate with `M-x
+  ;; combobulate-mode'.
+  :hook
+  ((python-ts-mode . combobulate-mode)
+   (typst-ts-mode . combobulate-mode)
+   (js-ts-mode . combobulate-mode)
+   (html-ts-mode . combobulate-mode)
+   (css-ts-mode . combobulate-mode)
+   (yaml-ts-mode . combobulate-mode)
+   (typescript-ts-mode . combobulate-mode)
+   (json-ts-mode . combobulate-mode)
+   (tsx-ts-mode . combobulate-mode)))
 
 (use-package flycheck-package)
 
@@ -725,7 +757,7 @@
 
 (use-package atomic-chrome
   :demand t
-  :hook (visual-line-mode . atomic-chrome-edit-mode)
+  :hook (atomic-chrome-edit-mode . visual-line-mode)
   :quelpa ((atomic-chrome
             :fetcher github
             :repo "KarimAziev/atomic-chrome"
@@ -939,7 +971,7 @@ This has to be done as a string to handle 64-bit or larger ints."
 
 (use-package meow
   :config
-;; It seems really odd that meow doesn't just define this themselves.
+  ;; It seems really odd that meow doesn't just define this themselves.
   (defun meow-setup ()
     (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
     (meow-motion-overwrite-define-key
@@ -1029,7 +1061,9 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("<escape>" . ignore)))
   (require 'meow-cheatsheet-layout)
   (meow-setup)
-  (meow-global-mode 1))
+  (meow-global-mode 1)
+  (add-to-list 'meow-mode-state-list '(eshell-mode . insert))
+  (add-to-list 'meow-mode-state-list '(calc-mode . insert))
 
 (setq meow-org-motion-keymap (make-keymap))
 (meow-define-state org-motion
@@ -1073,6 +1107,8 @@ This has to be done as a string to handle 64-bit or larger ints."
 
 (meow-define-keys 'normal
   '("O" . meow-org-motion-mode))
+
+(add-to-list 'meow-mode-state-list '(org-mode . org-motion)))
 
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 

@@ -69,6 +69,7 @@ the same file.
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
  auto-window-vscroll nil                          ; Lighten vertical scroll
  bookmark-save-flag 1                             ; Always save bookmarks
+ calc-kill-line-numbering nil                     ; Do not show line numbers in calc
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
@@ -150,6 +151,12 @@ customization to live in a different file.
 (when (file-exists-p custom-file)
   (load custom-file))
 #+END_SRC
+
+On the mac, fix the keys the way I prefer
+#+begin_src emacs-lisp
+(setq mac-command-modifier 'super)
+(setq mac-option-modifier 'meta)
+#+end_src
 ** Input method
 The TeX input method is really cool and super flexible, but I've been playing with the =rfc1345= which is a bit quicker and still very powerful.
 
@@ -451,8 +458,9 @@ Avy for quick jumping & buffer navigation is great.
 
 #+BEGIN_SRC emacs-lisp
 (use-package avy
+  :general ("s-j" 'avy-goto-char-timer)
   :config
-  (advice-add 'spacemacs/avy-goto-url :after (lambda () (browse-url-at-point)))
+  (require 'avy)
   (defun ash/avy-goto-url()
     "Use avy to go to an URL in the buffer."
     (interactive)
@@ -671,6 +679,13 @@ Hydra is useful for doing lots of things in succession.
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
 #+END_SRC
+** Calc helpers
+#+begin_src emacs-lisp
+(use-package casual
+  :ensure t
+  :general
+  ("C-o" 'casual-main-menu))
+#+end_src
 
 ** Expansion
 yassnippet is a great way to create templates and use them.
@@ -796,6 +811,30 @@ This gives emacs the power to interact with the AST.
   :config
   (global-tree-sitter-mode))
 (use-package tree-sitter-langs)
+#+end_src
+*** Combobulate
+#+begin_src emacs-lisp
+(use-package combobulate
+  :quelpa ((combobulate :fetcher github :repo "mickeynp/combobulate"))
+  :preface
+  ;; You can customize Combobulate's key prefix here.
+  ;; Note that you may have to restart Emacs for this to take effect!
+  (setq combobulate-key-prefix "s-o")
+
+  ;; Optional, but recommended.
+  ;;
+  ;; You can manually enable Combobulate with `M-x
+  ;; combobulate-mode'.
+  :hook
+  ((python-ts-mode . combobulate-mode)
+   (typst-ts-mode . combobulate-mode)
+   (js-ts-mode . combobulate-mode)
+   (html-ts-mode . combobulate-mode)
+   (css-ts-mode . combobulate-mode)
+   (yaml-ts-mode . combobulate-mode)
+   (typescript-ts-mode . combobulate-mode)
+   (json-ts-mode . combobulate-mode)
+   (tsx-ts-mode . combobulate-mode)))
 #+end_src
 *** ELPA helpers
 #+begin_src emacs-lisp
@@ -958,7 +997,7 @@ This requires =rg= (ripgrep).
 #+begin_src emacs-lisp
 (use-package atomic-chrome
   :demand t
-  :hook (visual-line-mode . atomic-chrome-edit-mode)
+  :hook (atomic-chrome-edit-mode . visual-line-mode)
   :quelpa ((atomic-chrome
             :fetcher github
             :repo "KarimAziev/atomic-chrome"
@@ -1229,7 +1268,7 @@ those customizations.
 #+begin_src emacs-lisp
 (use-package meow
   :config
-;; It seems really odd that meow doesn't just define this themselves.
+  ;; It seems really odd that meow doesn't just define this themselves.
   (defun meow-setup ()
     (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
     (meow-motion-overwrite-define-key
@@ -1319,7 +1358,9 @@ those customizations.
      '("<escape>" . ignore)))
   (require 'meow-cheatsheet-layout)
   (meow-setup)
-  (meow-global-mode 1))
+  (meow-global-mode 1)
+  (add-to-list 'meow-mode-state-list '(eshell-mode . insert))
+  (add-to-list 'meow-mode-state-list '(calc-mode . insert))
 #+end_src
 
 And meow state for org mode navigation
@@ -1366,6 +1407,9 @@ And meow state for org mode navigation
 
 (meow-define-keys 'normal
   '("O" . meow-org-motion-mode))
+
+(add-to-list 'meow-mode-state-list '(org-mode . org-motion)))
+
 #+end_src
 * Tab setup
 Finally, set up tabs the way I like them, so everything has its place.
