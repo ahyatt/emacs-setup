@@ -14,21 +14,6 @@
 
 (package-install 'use-package)
 
-(use-package use-package-ensure
-  :config  (setq use-package-always-ensure t))
-
-(unless (package-installed-p 'quelpa)
-  (with-temp-buffer
-    (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-    (eval-buffer)
-    (quelpa-self-upgrade)))
-
-(quelpa
- '(quelpa-use-package
-   :fetcher git
-   :url "https://github.com/quelpa/quelpa-use-package.git"))
-(require 'quelpa-use-package)
-
 (blink-cursor-mode 0)                           ; Disable the cursor blinking
 (scroll-bar-mode 0)                             ; Disable the scroll bar
 (tool-bar-mode 0)                               ; Disable the tool bar
@@ -152,11 +137,6 @@
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
-
-(use-package websocket
-  :quelpa ((websocket :fetcher github-ssh
-                            :repo "ahyatt/emacs-websocket" :branch "main")
-           :upgrade t))
 
 (use-package general
   :config
@@ -642,7 +622,7 @@
 (use-package tree-sitter-langs)
 
 (use-package combobulate
-  :quelpa ((combobulate :fetcher github :repo "mickeynp/combobulate"))
+  :disable t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -713,11 +693,6 @@
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
-(use-package notmuch
-  :hook (notmuch-show-mode . visual-line-mode))
-
-(use-package ol-notmuch)
-
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :config (setq doom-modeline-buffer-encoding nil
@@ -727,8 +702,7 @@
 (use-package all-the-icons)
 
 (add-hook 'org-mode-hook #'variable-pitch-mode)
-(add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
-(add-hook 'notmuch-show-hook #'variable-pitch-mode)
+(add-hook 'gnus-article-mode #'variable-pitch-mode)
 
 (winner-mode 1)
 (define-key winner-mode-map (kbd "<M-left>") #'winner-undo)
@@ -877,20 +851,7 @@
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 
-;; Required library for testing
-(use-package kv)
-(use-package triples
-  :quelpa ((triples :fetcher github-ssh :repo "ahyatt/triples" :branch "develop")
-           :upgrade t))
-
-;; This is pulled in by ekg, but since I'm the author I'd like to have it
-;; specially fetched and always keep it upgraded.
-(use-package llm
-  :quelpa ((llm :fetcher github-ssh :repo "ahyatt/llm") :upgrade t))
-
 (use-package ekg
-  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
-           :upgrade t)
   ;; Use variable pitch fonts for notes
   :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
   :general
@@ -1062,8 +1023,8 @@ This has to be done as a string to handle 64-bit or larger ints."
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
-  (add-to-list 'meow-mode-state-list '(eshell-mode . insert))
-  (add-to-list 'meow-mode-state-list '(calc-mode . insert))
+  (dolist (mode '(eshell-mode calc-mode help-mode info-mode))
+    (add-to-list 'meow-mode-state-list `(,mode . insert))))
 
 (setq meow-org-motion-keymap (make-keymap))
 (meow-define-state org-motion

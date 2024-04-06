@@ -25,28 +25,10 @@ Refresh archive and set up use-package.
     (package-refresh-contents))
 
   (package-install 'use-package)
-
-  (use-package use-package-ensure
-    :config  (setq use-package-always-ensure t))
 #+end_src
 
-#+begin_src emacs-lisp
-  (unless (package-installed-p 'quelpa)
-    (with-temp-buffer
-      (url-insert-file-contents "https://raw.githubusercontent.com/quelpa/quelpa/master/quelpa.el")
-      (eval-buffer)
-      (quelpa-self-upgrade)))
-#+end_src
-
-Let's use quelpa with use-package, which I still like using more than anything else.
-
-#+begin_src emacs-lisp
-(quelpa
- '(quelpa-use-package
-   :fetcher git
-   :url "https://github.com/quelpa/quelpa-use-package.git"))
-(require 'quelpa-use-package)
-#+end_src
+We used to use quelpa, but it didn't work either in self-installing or
+installing some packages (but not others). Let's just use the standards.
 
 * Better defaults
 
@@ -230,14 +212,6 @@ First, let's just make sure use-package works the way we want it to.
   (setq-default use-package-always-ensure t)
   (require 'use-package)
 #+END_SRC
-** Packages I maintain
-(and aren't set up elsewhere)
-#+begin_src emacs-lisp
-(use-package websocket
-  :quelpa ((websocket :fetcher github-ssh
-                            :repo "ahyatt/emacs-websocket" :branch "main")
-           :upgrade t))
-#+end_src
 ** Helper packages
 *** General
 General is an easier way to do keybindings.
@@ -813,9 +787,10 @@ This gives emacs the power to interact with the AST.
 (use-package tree-sitter-langs)
 #+end_src
 *** Combobulate
+Combobulate is interesting, but not on an ELPA yet, so let's not install.
 #+begin_src emacs-lisp
 (use-package combobulate
-  :quelpa ((combobulate :fetcher github :repo "mickeynp/combobulate"))
+  :disable t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -907,17 +882,6 @@ Also, set up Org buffers to look prettier, see https://lepisma.github.io/2017/10
               org-fontify-quote-and-verse-blocks t)
 #+END_SRC
 
-But also mails should use long lines.
-#+begin_src emacs-lisp
-(use-package notmuch
-  :hook (notmuch-show-mode . visual-line-mode))
-#+end_src
-
-Make it work with org-mode
-#+begin_src emacs-lisp
-(use-package ol-notmuch)
-#+end_src
-
 Improve the looks of the modeline with Powerline. Currently not working
 correctly (claims "bar is not a defined segment"), so disabling. UPDATE:
 Although I didn't do anything, it seems to work now. But it does seem to need to
@@ -939,8 +903,7 @@ Powerline needs =all-the-icons=.  After install, run =M-x all-the-icons-install-
 And use variable pitch when it makes sense.
 #+begin_src emacs-lisp
 (add-hook 'org-mode-hook #'variable-pitch-mode)
-(add-hook 'notmuch-message-mode-hook #'variable-pitch-mode)
-(add-hook 'notmuch-show-hook #'variable-pitch-mode)
+(add-hook 'gnus-article-mode #'variable-pitch-mode)
 #+end_src
 
 *** Window management
@@ -1129,20 +1092,7 @@ To me, org-pomodoro is very effective to maintain focus.
 #+END_SRC
 *** ekg
 #+begin_src emacs-lisp
-;; Required library for testing
-(use-package kv)
-(use-package triples
-  :quelpa ((triples :fetcher github-ssh :repo "ahyatt/triples" :branch "develop")
-           :upgrade t))
-
-;; This is pulled in by ekg, but since I'm the author I'd like to have it
-;; specially fetched and always keep it upgraded.
-(use-package llm
-  :quelpa ((llm :fetcher github-ssh :repo "ahyatt/llm") :upgrade t))
-
 (use-package ekg
-  :quelpa ((ekg :fetcher github-ssh :repo "ahyatt/ekg" :branch "develop")
-           :upgrade t)
   ;; Use variable pitch fonts for notes
   :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
   :general
@@ -1359,8 +1309,9 @@ those customizations.
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
-  (add-to-list 'meow-mode-state-list '(eshell-mode . insert))
-  (add-to-list 'meow-mode-state-list '(calc-mode . insert))
+  (dolist (mode '(eshell-mode calc-mode help-mode info-mode))
+    (add-to-list 'meow-mode-state-list `(,mode . insert))))
+  
 #+end_src
 
 And meow state for org mode navigation
