@@ -1363,12 +1363,25 @@ those customizations.
   (add-to-list 'meow-mode-state-list '(calc-mode . insert))
 #+end_src
 
+Make it so we can have per-major-mode states
+#+begin_src emacs-lisp
+(defconst meow-per-mode-state-list nil
+  "Alist of major modes and their corresponding meow state.")
+
+(defun meow-enter-mode-state-list ()
+  (interactive)
+  (when-let ((state (assoc-default major-mode meow-per-mode-state-list)))
+    (funcall (intern (format "meow-%s-mode" state)))))
+
+(meow-define-keys 'normal '("/" . meow-enter-mode-state-list))
+#+end_src
+
 And meow state for org mode navigation
 #+begin_src emacs-lisp
 (setq meow-org-motion-keymap (make-keymap))
 (meow-define-state org-motion
   "Org-mode structural motion"
-  :lighter "[O]"
+  :lighter "[/]"
   :keymap meow-org-motion-keymap)
 
 (meow-define-keys 'org-motion
@@ -1405,11 +1418,7 @@ And meow state for org mode navigation
   '("N" .  org-narrow-to-subtree)
   '("W" .  widen))
 
-(meow-define-keys 'normal
-  '("O" . meow-org-motion-mode))
-
-(add-to-list 'meow-mode-state-list '(org-mode . org-motion)))
-
+(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion)))
 #+end_src
 * Tab setup
 Finally, set up tabs the way I like them, so everything has its place.
