@@ -1065,10 +1065,20 @@ This has to be done as a string to handle 64-bit or larger ints."
                         (lambda () (vterm-copy-mode 1))
                         nil t))))
 
+(defconst meow-per-mode-state-list nil
+  "Alist of major modes and their corresponding meow state.")
+
+(defun meow-enter-mode-state-list ()
+  (interactive)
+  (when-let ((state (assoc-default major-mode meow-per-mode-state-list)))
+    (funcall (intern (format "meow-%s-mode" state)))))
+
+(meow-define-keys 'normal '("/" . meow-enter-mode-state-list))
+
 (setq meow-org-motion-keymap (make-keymap))
 (meow-define-state org-motion
   "Org-mode structural motion"
-  :lighter "[O]"
+  :lighter "[/]"
   :keymap meow-org-motion-keymap)
 
 (meow-define-keys 'org-motion
@@ -1111,10 +1121,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("a" . org-archive-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
-(meow-define-keys 'normal
-  '("O" . meow-org-motion-mode))
-
-(add-to-list 'meow-mode-state-list '(org-mode . org-motion))
+(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion)))
 
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
