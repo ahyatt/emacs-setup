@@ -23,6 +23,7 @@
         meow-delete
         meow-insert
         meow-insert-exit
+        meow-left
         meow-mark-word
         meow-next-word
         meow-right

@@ -181,7 +181,6 @@
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
   (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
   (add-to-list 'completion-at-point-functions #'cape-tex)
   (add-to-list 'completion-at-point-functions #'cape-rfc1345))
 
@@ -558,6 +557,19 @@
 (use-package magit
   :general ("C-x g" 'magit-status))
 
+(use-package eglot
+  :disabled t
+  :hook ((python-ts-mode . eglot-ensure)
+         (python-mode . eglot-ensure))
+  :config
+  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver")))
+  (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver")))
+  (setq-default eglot-workspace-configuration
+                '((:pylsp .
+                          (:configurationSources
+                           ["flake8"]
+                           :plugins (:pycodestyle (:enabled nil) :mccabe (:enabled nil) :pyflakes (:enabled nil) :flake8 (:enabled t)))))))
+
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
 (use-package puni
@@ -620,6 +632,11 @@
   :config
   (global-tree-sitter-mode))
 (use-package tree-sitter-langs)
+
+;; Assuming python-ts-mode is installed
+;; Add a hook to automatically use python-ts-mode for Python files
+
+(add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
 
 (use-package combobulate
   :disable t
@@ -748,6 +765,9 @@
   (setq-default atomic-chrome-url-major-mode-alist
                 '(("github.com" . gfm-mode))))
 
+
+(use-package gmail-message-mode)
+
 (defun ash-goto-agenda (&optional _)
   (interactive)
   (let ((buf (get-buffer "*Org Agenda(l)*")))
@@ -855,8 +875,8 @@
   ;; Use variable pitch fonts for notes
   :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
   :general
-  ("<f11>" 'ekg-capture)
-  ("C-<f11>" 'ash/capture-literature-note)
+  ("<f1>" 'ekg-capture)
+  ("C-<f1>" 'ash/capture-literature-note)
   :config
   (require 'ekg-embedding)
   (ekg-embedding-generate-on-save)
@@ -934,7 +954,8 @@ This has to be done as a string to handle 64-bit or larger ints."
   :config
   ;; It seems really odd that meow doesn't just define this themselves.
   (defun meow-setup ()
-    (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+    (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty
+          meow-use-clipboard t)
     (meow-motion-overwrite-define-key
      '("j" . meow-next)
      '("k" . meow-prev)
@@ -974,6 +995,8 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("." . meow-bounds-of-thing)
      '("[" . meow-beginning-of-thing)
      '("]" . meow-end-of-thing)
+     '(">" . meow-open-below)
+     '("<" . meow-open-above)
      '("a" . meow-append)
      '("A" . meow-open-below)
      '("b" . meow-back-word)
@@ -1023,8 +1046,24 @@ This has to be done as a string to handle 64-bit or larger ints."
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
-  (dolist (mode '(eshell-mode calc-mode help-mode info-mode))
-    (add-to-list 'meow-mode-state-list `(,mode . insert))))
+  (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
+    (add-to-list 'meow-mode-state-list `(,mode . insert)))
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (add-hook 'meow-insert-enter-hook
+                        (lambda () (eat-shell-emacs-char-mode 1))
+                        nil t)
+              (add-hook 'meow-insert-exit-hook
+                        (lambda () ((eat-eshell-char-mode 1)))
+                        nil t)))
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (add-hook 'meow-insert-enter-hook
+                        (lambda () (vterm-copy-mode -1))
+                        nil t)
+              (add-hook 'meow-insert-exit-hook
+                        (lambda () (vterm-copy-mode 1))
+                        nil t))))
 
 (setq meow-org-motion-keymap (make-keymap))
 (meow-define-state org-motion
@@ -1047,12 +1086,15 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("I" .  org-clock-in)
   '("O" .  org-clock-out)
   ;; Moving up and down in the outline
-  '("K" .  outline-up-heading)
-  ;; Subtree de/promotion
+  '("," .  outline-up-heading)
+  '("." .  org-down-element)
+  ;; Subtree de/promotion, and reordering
   '("L" .  org-demote-subtree)
   '("H" .  org-promote-subtree)
+  '("J" .  org-move-subtree-down)
+  '("K" .  org-move-subtree-up)
   ;; Completion-style search of headings
-  '("v" .  consult-org-heading)
+  '("v" .  imenu)
   ;; Setting subtree metadata
   '("l" .  org-set-property)
   '("t" .  org-todo)
@@ -1064,12 +1106,15 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("f" .  org-next-block)
   ;; Narrowing/widening
   '("N" .  org-narrow-to-subtree)
-  '("W" .  widen))
+  '("W" .  widen)
+  ;; Editing
+  '("a" . org-archive-subtree)
+  '("T" .  org-insert-todo-heading-respect-content))
 
 (meow-define-keys 'normal
   '("O" . meow-org-motion-mode))
 
-(add-to-list 'meow-mode-state-list '(org-mode . org-motion)))
+(add-to-list 'meow-mode-state-list '(org-mode . org-motion))
 
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
