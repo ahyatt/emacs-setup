@@ -530,8 +530,7 @@
 
 (use-package casual
   :ensure t
-  :general
-  ("C-o" 'casual-main-menu))
+  :bind (:map calc-mode-map ("C-o" . casual-main-menu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode

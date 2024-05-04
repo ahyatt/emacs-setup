@@ -656,8 +656,7 @@ Hydra is useful for doing lots of things in succession.
 #+begin_src emacs-lisp
 (use-package casual
   :ensure t
-  :general
-  ("C-o" 'casual-main-menu))
+  :bind (:map calc-mode-map ("C-o" . casual-main-menu)))
 #+end_src
 
 ** Expansion
