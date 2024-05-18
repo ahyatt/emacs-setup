@@ -32,6 +32,7 @@
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
+ dired-vc-rename-file t                           ; Rename files in vc via dired
  display-time-default-load-average nil            ; Don't display load average
  display-time-format "%H:%M"                      ; Format the time string
  fill-column 80                                   ; Set width for automatic line breaks
@@ -629,16 +630,55 @@
 
 (use-package tree-sitter
   :config
-  (global-tree-sitter-mode))
+  (global-tree-sitter-mode)
+  (setq treesit-language-source-alist
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (c "https://github.com/tree-sitter/tree-sitter-c")
+          (cmake "https://github.com/uyha/tree-sitter-cmake")
+          (common-lisp "https://github.com/theHamsta/tree-sitter-commonlisp")
+          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
+          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (lua "https://github.com/Azganoth/tree-sitter-lua")
+          (make "https://github.com/alemuller/tree-sitter-make")
+          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (r "https://github.com/r-lib/tree-sitter-r")
+          (rust "https://github.com/tree-sitter/tree-sitter-rust")
+          (toml "https://github.com/tree-sitter/tree-sitter-toml")
+          (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
+          (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml"))))
 (use-package tree-sitter-langs)
+
+(use-package markdown-mode)
+(use-package flymake-markdownlint)
+
+(use-package yaml-mode)
+(use-package flycheck-yamllint)
 
 ;; Assuming python-ts-mode is installed
 ;; Add a hook to automatically use python-ts-mode for Python files
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
 
+(use-package flycheck-mypy)
+(use-package lsp-pyright
+  :ensure t
+  :config
+  (lsp-register-custom-settings
+   '(("python.analysis.logLevel" "Trace" t))))
+(use-package flycheck-pycheckers
+  :hook (flycheck-mode . flycheck-pycheckers-setup))
+
 (use-package combobulate
-  :disable t
+  :disabled t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -659,7 +699,40 @@
    (json-ts-mode . combobulate-mode)
    (tsx-ts-mode . combobulate-mode)))
 
+(use-package apheleia
+  :config
+  (apheleia-global-mode +1)
+  (setq fill-column 88)
+  (setf (alist-get 'isort apheleia-formatters)
+        '("isort" "--stdout" "--profile=black" "--sl" file))
+  (setf (alist-get 'dotnet-format apheleia-formatters)
+        '("dotnet" "format"))
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        '(isort black))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist)
+        '(isort black))
+  (setf (alist-get 'csharp-mode apheleia-mode-alist)
+        '(dotnet-format))
+  (setf (alist-get 'csharp-ts-mode apheleia-mode-alist)
+        '(dotnet-format))
+  (advice-add 'apheleia-format-buffer :around
+              (lambda (orig-fun &rest args)
+                (let ((default-directory (or (locate-dominating-file buffer-file-name ".git")
+                                             default-directory)))
+                  (apply orig-fun args)))))
+
 (use-package flycheck-package)
+
+(use-package lsp-mode
+  :config
+  (lsp-register-custom-settings
+   '(("pyls.plugins.pyls_mypy.enabled" t t)
+     ("pyls.plugins.pyls_mypy.live_mode" t t)))
+  :hook ((python-mode . lsp-deferred)
+         (python-ts-mode . lsp-deferred)
+         (csharp-mode . lsp-deferred)
+         (csharp-ts-mode . lsp-deferred)))
+(use-package lsp-ui)
 
 (use-package which-key
   :diminish
@@ -744,28 +817,6 @@
 (use-package ol-notmuch)
 
 (use-package deadgrep)
-
-(use-package atomic-chrome
-  :demand t
-  :hook (atomic-chrome-edit-mode . visual-line-mode)
-  :quelpa ((atomic-chrome
-            :fetcher github
-            :repo "KarimAziev/atomic-chrome"
-            :upgrade t))
-  :commands (atomic-chrome-start-server)
-  :config
-  (atomic-chrome-start-server)
-  ;; Other things to possibly modify,
-  ;;   (setq-default atomic-chrome-extension-type-list '(atomic-chrome))
-  ;; and 'atomic-chrome-create-file-strategy
-
-  (setq-default atomic-chrome-buffer-open-style 'frame)
-  (setq-default atomic-chrome-auto-remove-file t)
-  (setq-default atomic-chrome-url-major-mode-alist
-                '(("github.com" . gfm-mode))))
-
-
-(use-package gmail-message-mode)
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
@@ -1046,23 +1097,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   (meow-setup)
   (meow-global-mode 1)
   (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
-    (add-to-list 'meow-mode-state-list `(,mode . insert)))
-  (add-hook 'eshell-mode-hook
-            (lambda ()
-              (add-hook 'meow-insert-enter-hook
-                        (lambda () (eat-shell-emacs-char-mode 1))
-                        nil t)
-              (add-hook 'meow-insert-exit-hook
-                        (lambda () ((eat-eshell-char-mode 1)))
-                        nil t)))
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (add-hook 'meow-insert-enter-hook
-                        (lambda () (vterm-copy-mode -1))
-                        nil t)
-              (add-hook 'meow-insert-exit-hook
-                        (lambda () (vterm-copy-mode 1))
-                        nil t))))
+    (add-to-list 'meow-mode-state-list `(,mode . insert))))
 
 (defconst meow-per-mode-state-list nil
   "Alist of major modes and their corresponding meow state.")
@@ -1120,7 +1155,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("a" . org-archive-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
-(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion)))
+(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 

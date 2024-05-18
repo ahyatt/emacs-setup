@@ -60,6 +60,7 @@ the same file.
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
+ dired-vc-rename-file t                           ; Rename files in vc via dired
  display-time-default-load-average nil            ; Don't display load average
  display-time-format "%H:%M"                      ; Format the time string
  fill-column 80                                   ; Set width for automatic line breaks
@@ -700,6 +701,7 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 (use-package vundo)
 #+end_src
 ** Programming
+
 *** Magit
 #+begin_src emacs-lisp
 (use-package magit
@@ -797,8 +799,43 @@ This gives emacs the power to interact with the AST.
 #+begin_src emacs-lisp
 (use-package tree-sitter
   :config
-  (global-tree-sitter-mode))
+  (global-tree-sitter-mode)
+  (setq treesit-language-source-alist
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (c "https://github.com/tree-sitter/tree-sitter-c")
+          (cmake "https://github.com/uyha/tree-sitter-cmake")
+          (common-lisp "https://github.com/theHamsta/tree-sitter-commonlisp")
+          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
+          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (lua "https://github.com/Azganoth/tree-sitter-lua")
+          (make "https://github.com/alemuller/tree-sitter-make")
+          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (r "https://github.com/r-lib/tree-sitter-r")
+          (rust "https://github.com/tree-sitter/tree-sitter-rust")
+          (toml "https://github.com/tree-sitter/tree-sitter-toml")
+          (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
+          (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml"))))
 (use-package tree-sitter-langs)
+#+end_src
+*** Markdown
+#+begin_src emacs-lisp
+(use-package markdown-mode)
+(use-package flymake-markdownlint)
+#+end_src
+
+*** YAML
+#+begin_src emacs-lisp
+(use-package yaml-mode)
+(use-package flycheck-yamllint)
 #+end_src
 *** Python
 Let's use treesit mode, which should already be available.
@@ -811,12 +848,24 @@ Let's use treesit mode, which should already be available.
 #+END_SRC
 
 We also want type checking.
+#+begin_src emacs-lisp
+(use-package flycheck-mypy)
+(use-package lsp-pyright
+  :ensure t
+  :config
+  (lsp-register-custom-settings
+   '(("python.analysis.logLevel" "Trace" t))))
+(use-package flycheck-pycheckers
+  :hook (flycheck-mode . flycheck-pycheckers-setup))
+
+#+end_src
+
 
 *** Combobulate
 Combobulate is interesting, but not on an ELPA yet, so let's not install.
 #+begin_src emacs-lisp
 (use-package combobulate
-  :disable t
+  :disabled t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -837,9 +886,43 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
    (json-ts-mode . combobulate-mode)
    (tsx-ts-mode . combobulate-mode)))
 #+end_src
+*** Auto-formatting with Apheleia
+#+begin_src emacs-lisp
+(use-package apheleia
+  :config
+  (apheleia-global-mode +1)
+  (setq fill-column 88)
+  (setf (alist-get 'isort apheleia-formatters)
+        '("isort" "--stdout" "--profile=black" "--sl" file))
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        '(isort black))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist)
+        '(isort black))
+  (advice-add 'apheleia-format-buffer :around
+              (lambda (orig-fun &rest args)
+                (let ((default-directory (or (locate-dominating-file buffer-file-name ".git")
+                                             default-directory)))
+                  (apply orig-fun args)))))
+#+end_src
 *** ELPA helpers
 #+begin_src emacs-lisp
 (use-package flycheck-package)
+#+end_src
+*** LSP
+I've had some issues getting Eglot to work, and LSP seems to have more features,
+so that's what I'm using.
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :config
+  (lsp-register-custom-settings
+   '(("pyls.plugins.pyls_mypy.enabled" t t)
+     ("pyls.plugins.pyls_mypy.live_mode" t t)))
+  :hook ((python-mode . lsp-deferred)
+         (python-ts-mode . lsp-deferred)
+         (csharp-mode . lsp-deferred)
+         (csharp-ts-mode . lsp-deferred)))
+(use-package lsp-ui)
+
 #+end_src
 ** Help
 
@@ -981,30 +1064,6 @@ Also allow it to be used in org
 This requires =rg= (ripgrep).
 #+begin_src emacs-lisp
 (use-package deadgrep)
-#+end_src
-** Browser integration
-#+begin_src emacs-lisp
-(use-package atomic-chrome
-  :demand t
-  :hook (atomic-chrome-edit-mode . visual-line-mode)
-  :quelpa ((atomic-chrome
-            :fetcher github
-            :repo "KarimAziev/atomic-chrome"
-            :upgrade t))
-  :commands (atomic-chrome-start-server)
-  :config
-  (atomic-chrome-start-server)
-  ;; Other things to possibly modify,
-  ;;   (setq-default atomic-chrome-extension-type-list '(atomic-chrome))
-  ;; and 'atomic-chrome-create-file-strategy
-
-  (setq-default atomic-chrome-buffer-open-style 'frame)
-  (setq-default atomic-chrome-auto-remove-file t)
-  (setq-default atomic-chrome-url-major-mode-alist
-                '(("github.com" . gfm-mode))))
-
-
-(use-package gmail-message-mode)
 #+end_src
 * Org config
 #+BEGIN_SRC emacs-lisp
@@ -1342,23 +1401,7 @@ those customizations.
   (meow-setup)
   (meow-global-mode 1)
   (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
-    (add-to-list 'meow-mode-state-list `(,mode . insert)))
-  (add-hook 'eshell-mode-hook
-            (lambda ()
-              (add-hook 'meow-insert-enter-hook
-                        (lambda () (eat-shell-emacs-char-mode 1))
-                        nil t)
-              (add-hook 'meow-insert-exit-hook
-                        (lambda () ((eat-eshell-char-mode 1)))
-                        nil t)))
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (add-hook 'meow-insert-enter-hook
-                        (lambda () (vterm-copy-mode -1))
-                        nil t)
-              (add-hook 'meow-insert-exit-hook
-                        (lambda () (vterm-copy-mode 1))
-                        nil t))))
+    (add-to-list 'meow-mode-state-list `(,mode . insert))))
 
 #+end_src
 
@@ -1423,7 +1466,7 @@ And meow state for org mode navigation
   '("a" . org-archive-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
-(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion)))
+(add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 #+end_src
 * Tab setup
 Finally, set up tabs the way I like them, so everything has its place.
