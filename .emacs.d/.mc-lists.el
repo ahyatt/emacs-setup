@@ -3,31 +3,41 @@
 
 (setq mc/cmds-to-run-for-all
       '(
+        acm-complete
         backward-sexp
         c-electric-colon
         c-electric-delete-forward
         c-electric-paren
         c-electric-semi&comma
+        copilot-accept-completion
         dabbrev-expand
         delete-horizontal-space
         delete-indentation
         down-list
         end-of-visual-line
+        find-file-at-point
         forward-sexp
         hydra-all/hydra-structural/body-and-exit
         hydra-structural/sp-change-inner
         indent-for-tab-command
         insert-char
+        meow-append
+        meow-back-word
         meow-bounds-of-thing
         meow-change
         meow-delete
+        meow-inner-of-thing
         meow-insert
         meow-insert-exit
         meow-kill
         meow-left
         meow-mark-word
         meow-next-word
+        meow-prev
         meow-right
+        meow-till
+        meow-undo
+        meow-yank
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert
@@ -46,12 +56,15 @@
         sp-kill-region
         sp-kill-word
         sp-remove-active-pair-overlay
+        undefined
         wdired--self-insert
         ))
 
 (setq mc/cmds-to-run-once
       '(
         ash/mirror-buffer
+        electric-pair-delete-pair
+        find-file-at-point
         helm-M-x
         hydra-all/body
         hydra-all/hydra-multiple-cursors/body-and-exit
@@ -67,6 +80,7 @@
         ignore
         major-mode-hydra
         mc/mark-next-lines
+        meow-search
         org-cycle
         phi-search-backward
         toggle-input-method

@@ -9,14 +9,13 @@ requirement for a lot that follows.
 
 Code, slightly simplified, comes from http://melpa.org/#/getting-started.
 #+BEGIN_SRC emacs-lisp
-  (require 'package)
-  (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-                      (not (gnutls-available-p))))
-         (proto (if no-ssl "http" "https")))
-    ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-    (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-    (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t))
-  (package-initialize)
+(require 'package)
+(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
+(package-initialize)
 #+END_SRC
 
 Refresh archive and set up use-package.
@@ -29,6 +28,11 @@ Refresh archive and set up use-package.
 
 We used to use quelpa, but it didn't work either in self-installing or
 installing some packages (but not others). Let's just use the standards.
+
+Use the standard way to integrate =use-package= with standard VC systems:
+#+begin_src emacs-lisp
+(require 'vc-use-package)
+#+end_src
 
 * Better defaults
 
@@ -79,13 +83,14 @@ the same file.
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
  sentence-end-double-space nil                    ; End a sentence after a dot and a space
- show-trailing-whitespace nil                     ; Display trailing whitespaces
+ show-trailing-whitespace t                       ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
  switch-to-buffer-obey-display-actions t          ; Use display action rules for manual window switching
  tab-first-completion 'word                       ; Complete unless we're in the middle of the word.
  tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
+ trash-directory "~/.Trash"                       ; Set trash directory
  tooltip-use-echo-area t                          ; Good for non-mouse-users
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
@@ -158,18 +163,6 @@ See https://www.quae.nl/rfc1345.html for details.
       kept-old-versions 2
       create-lockfiles nil)
 #+end_src
-** Trash
-Use system trash on Macs (which is where I run my emacs these days). From
-https://xenodium.com/rm-important-txt-oh-sht/.
-#+begin_src emacs-lisp
-(setq trash-directory "~/.Trash")
-
-;; See `trash-directory' as it requires defining `system-move-file-to-trash'.
-(defun system-move-file-to-trash (file)
-  "Use \"trash\" to move FILE to the system trash."
-  (cl-assert (executable-find "trash") nil "'trash' must be installed. Needs \"brew install trash\"")
-  (call-process "trash" nil 0 nil "-F"  file))
-#+end_src
 ** Better ielm
 From https://www.n16f.net/blog/making-ielm-more-comfortable/
 #+begin_src emacs-lisp
@@ -189,7 +182,12 @@ From https://www.n16f.net/blog/making-ielm-more-comfortable/
 
 (advice-add 'ielm-send-input :after 'g-ielm-write-history)
 #+end_src
-
+** Better dired
+wdired is great and I want easier access to it.
+#+begin_src emacs-lisp
+(require 'dired)
+(define-key dired-mode-map (kbd "C-c C-c") 'wdired-change-to-wdired-mode)
+#+end_src
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
 #+BEGIN_SRC emacs-lisp
@@ -707,21 +705,52 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 (use-package magit
   :general ("C-x g" 'magit-status))
 #+end_src
-*** Eglot
-Eglot is very useful to connect to LSP clients.  However, I can't get it to not crash on startup.
+*** LSP variants
+**** LSP
+LSP has worked in situations where Eglot does not, but it can be pretty flaky, so I'm disabling it.
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :disabled t
+  :config
+  (lsp-register-custom-settings
+   '(("lsp-pylsp-plugins-pylint-enabled" t t)))
+  (setq lsp-warn-no-matched-clients nil)
+  :hook ((python-base-mode . lsp-mode)
+         (csharp-mode . lsp-mode)))
+(use-package lsp-ui)
+
+#+end_src
+
+**** Eglot
+Eglot is smaller, and I've had good success with it when it works.  However, now, I can't get it to not crash on startup.
 #+begin_src emacs-lisp
 (use-package eglot
-  :disabled t
-  :hook ((python-ts-mode . eglot-ensure)
-         (python-mode . eglot-ensure))
+  :hook ((csharp-mode . eglot))
   :config
-  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver")))
-  (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver")))
+  (add-to-list 'eglot-server-programs '(python-base-mode . ("pyright-langserver")))
   (setq-default eglot-workspace-configuration
                 '((:pylsp .
                           (:configurationSources
                            ["flake8"]
                            :plugins (:pycodestyle (:enabled nil) :mccabe (:enabled nil) :pyflakes (:enabled nil) :flake8 (:enabled t)))))))
+
+(use-package flycheck-eglot)
+(use-package consult-eglot)
+(use-package consult-eglot-embark
+  :config
+  (consult-eglot-embark-mode))
+#+end_src
+**** LSP Bridge
+LSP Bridge is very fast, although somewhat annoying at times.
+#+begin_src emacs-lisp
+(use-package lsp-bridge
+  :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
+  :general
+  ("<f2>" 'lsp-bridge-diagnostic-list)
+  :bind (:map lsp-bridge-mode-map
+              ("M-." . lsp-bridge-find-def)
+              ("M-?" . lsp-bridge-find-references))
+  :hook (python-base-mode . lsp-bridge-mode))
 #+end_src
 *** Programming modes
 Let's assume .h files are c++, because I mostly don't program in c.
@@ -849,15 +878,11 @@ Let's use treesit mode, which should already be available.
 
 We also want type checking.
 #+begin_src emacs-lisp
-(use-package flycheck-mypy)
 (use-package lsp-pyright
-  :ensure t
-  :config
-  (lsp-register-custom-settings
-   '(("python.analysis.logLevel" "Trace" t))))
-(use-package flycheck-pycheckers
-  :hook (flycheck-mode . flycheck-pycheckers-setup))
-
+  :ensure t)
+(add-hook 'python-base-mode-hook (lambda ()
+                                   (flycheck-select-checker 'python-pyright)
+                                   (setq flycheck-disabled-checkers '(python-mypy))))
 #+end_src
 
 
@@ -894,10 +919,13 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
   (setq fill-column 88)
   (setf (alist-get 'isort apheleia-formatters)
         '("isort" "--stdout" "--profile=black" "--sl" file))
-  (setf (alist-get 'python-mode apheleia-mode-alist)
-        '(isort black))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist)
         '(isort black))
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        '(isort black))
+  (setf (alist-get 'bazel-mode apheleia-mode-alist)
+        '(buildifier))
+
   (advice-add 'apheleia-format-buffer :around
               (lambda (orig-fun &rest args)
                 (let ((default-directory (or (locate-dominating-file buffer-file-name ".git")
@@ -907,22 +935,6 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
 *** ELPA helpers
 #+begin_src emacs-lisp
 (use-package flycheck-package)
-#+end_src
-*** LSP
-I've had some issues getting Eglot to work, and LSP seems to have more features,
-so that's what I'm using.
-#+begin_src emacs-lisp
-(use-package lsp-mode
-  :config
-  (lsp-register-custom-settings
-   '(("pyls.plugins.pyls_mypy.enabled" t t)
-     ("pyls.plugins.pyls_mypy.live_mode" t t)))
-  :hook ((python-mode . lsp-deferred)
-         (python-ts-mode . lsp-deferred)
-         (csharp-mode . lsp-deferred)
-         (csharp-ts-mode . lsp-deferred)))
-(use-package lsp-ui)
-
 #+end_src
 ** Help
 
@@ -1182,7 +1194,8 @@ To me, org-pomodoro is very effective to maintain focus.
 #+begin_src emacs-lisp
 (use-package ekg
   ;; Use variable pitch fonts for notes
-  :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
+  :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
+         ((ekg-capture-mode ekg-edit-mode) . visual-line-mode))
   :general
   ("<f1>" 'ekg-capture)
   ("C-<f1>" 'ash/capture-literature-note)
@@ -1204,7 +1217,8 @@ To me, org-pomodoro is very effective to maintain focus.
                                         :tags `(,(ekg-tag-for-date) "log"))))))
 
   (dolist (h '(ekg-capture-mode-hook ekg-edit-mode-hook ekg-notes-mode-hook))
-    (add-hook h (lambda () (variable-pitch-mode 1))))
+    (add-hook h (lambda ()
+                  (when (boundp 'flycheck-mode) (flycheck-mode -1)))))
   (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
                                        (side . right)
@@ -1468,6 +1482,13 @@ And meow state for org mode navigation
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 #+end_src
+
+Add meow commands for tree-sitter.
+#+begin_src emacs-lisp
+(use-package meow-tree-sitter
+  :config
+  (meow-tree-sitter-register-defaults))
+#+end_src
 * Tab setup
 Finally, set up tabs the way I like them, so everything has its place.
 #+begin_src emacs-lisp
@@ -1475,12 +1496,6 @@ Finally, set up tabs the way I like them, so everything has its place.
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
   :commands (tabspaces-switch-or-create-workspace
              tabspaces-open-or-create-project-and-workspace)
-  :general
-  ;; I was unable to get tabspaces-keymap-prefix to work, so I have to resort to
-  ;; making new bindings.
-  ("s-v b" 'tabspaces-switch-to-buffer)
-  ("s-v s" 'tabspaces-switch-or-create-workspace)
-  ("s-v t" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
