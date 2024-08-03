@@ -5,14 +5,15 @@
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/") t))
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
 (package-initialize)
 
 (when (not package-archive-contents)
   (package-refresh-contents))
 
 (package-install 'use-package)
+
+(require 'vc-use-package)
 
 (blink-cursor-mode 0)                           ; Disable the cursor blinking
 (scroll-bar-mode 0)                             ; Disable the scroll bar
@@ -51,13 +52,14 @@
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
  sentence-end-double-space nil                    ; End a sentence after a dot and a space
- show-trailing-whitespace nil                     ; Display trailing whitespaces
+ show-trailing-whitespace t                       ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
  switch-to-buffer-obey-display-actions t          ; Use display action rules for manual window switching
  tab-first-completion 'word                       ; Complete unless we're in the middle of the word.
  tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
+ trash-directory "~/.Trash"                       ; Set trash directory
  tooltip-use-echo-area t                          ; Good for non-mouse-users
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
@@ -104,14 +106,6 @@
       kept-old-versions 2
       create-lockfiles nil)
 
-(setq trash-directory "~/.Trash")
-
-;; See `trash-directory' as it requires defining `system-move-file-to-trash'.
-(defun system-move-file-to-trash (file)
-  "Use \"trash\" to move FILE to the system trash."
-  (cl-assert (executable-find "trash") nil "'trash' must be installed. Needs \"brew install trash\"")
-  (call-process "trash" nil 0 nil "-F"  file))
-
 (add-hook 'ielm-mode-hook 'eldoc-mode)
 (defun g-ielm-init-history ()
   (let ((path (expand-file-name "ielm/history" user-emacs-directory)))
@@ -127,6 +121,9 @@
     (comint-write-input-ring)))
 
 (advice-add 'ielm-send-input :after 'g-ielm-write-history)
+
+(require 'dired)
+(define-key dired-mode-map (kbd "C-c C-c") 'wdired-change-to-wdired-mode)
 
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
@@ -557,18 +554,40 @@
 (use-package magit
   :general ("C-x g" 'magit-status))
 
-(use-package eglot
+(use-package lsp-mode
   :disabled t
-  :hook ((python-ts-mode . eglot-ensure)
-         (python-mode . eglot-ensure))
   :config
-  (add-to-list 'eglot-server-programs '(python-ts-mode . ("pyright-langserver")))
-  (add-to-list 'eglot-server-programs '(python-mode . ("pyright-langserver")))
+  (lsp-register-custom-settings
+   '(("lsp-pylsp-plugins-pylint-enabled" t t)))
+  (setq lsp-warn-no-matched-clients nil)
+  :hook ((python-base-mode . lsp-mode)
+         (csharp-mode . lsp-mode)))
+(use-package lsp-ui)
+
+(use-package eglot
+  :hook ((csharp-mode . eglot))
+  :config
+  (add-to-list 'eglot-server-programs '(python-base-mode . ("pyright-langserver")))
   (setq-default eglot-workspace-configuration
                 '((:pylsp .
                           (:configurationSources
                            ["flake8"]
                            :plugins (:pycodestyle (:enabled nil) :mccabe (:enabled nil) :pyflakes (:enabled nil) :flake8 (:enabled t)))))))
+
+(use-package flycheck-eglot)
+(use-package consult-eglot)
+(use-package consult-eglot-embark
+  :config
+  (consult-eglot-embark-mode))
+
+(use-package lsp-bridge
+  :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
+  :general
+  ("<f2>" 'lsp-bridge-diagnostic-list)
+  :bind (:map lsp-bridge-mode-map
+              ("M-." . lsp-bridge-find-def)
+              ("M-?" . lsp-bridge-find-references))
+  :hook (python-base-mode . lsp-bridge-mode))
 
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
@@ -668,14 +687,11 @@
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
 
-(use-package flycheck-mypy)
 (use-package lsp-pyright
-  :ensure t
-  :config
-  (lsp-register-custom-settings
-   '(("python.analysis.logLevel" "Trace" t))))
-(use-package flycheck-pycheckers
-  :hook (flycheck-mode . flycheck-pycheckers-setup))
+  :ensure t)
+(add-hook 'python-base-mode-hook (lambda ()
+                                   (flycheck-select-checker 'python-pyright)
+                                   (setq flycheck-disabled-checkers '(python-mypy))))
 
 (use-package combobulate
   :disabled t
@@ -705,16 +721,13 @@
   (setq fill-column 88)
   (setf (alist-get 'isort apheleia-formatters)
         '("isort" "--stdout" "--profile=black" "--sl" file))
-  (setf (alist-get 'dotnet-format apheleia-formatters)
-        '("dotnet" "format"))
-  (setf (alist-get 'python-mode apheleia-mode-alist)
-        '(isort black))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist)
         '(isort black))
-  (setf (alist-get 'csharp-mode apheleia-mode-alist)
-        '(dotnet-format))
-  (setf (alist-get 'csharp-ts-mode apheleia-mode-alist)
-        '(dotnet-format))
+  (setf (alist-get 'python-mode apheleia-mode-alist)
+        '(isort black))
+  (setf (alist-get 'bazel-mode apheleia-mode-alist)
+        '(buildifier))
+
   (advice-add 'apheleia-format-buffer :around
               (lambda (orig-fun &rest args)
                 (let ((default-directory (or (locate-dominating-file buffer-file-name ".git")
@@ -722,17 +735,6 @@
                   (apply orig-fun args)))))
 
 (use-package flycheck-package)
-
-(use-package lsp-mode
-  :config
-  (lsp-register-custom-settings
-   '(("pyls.plugins.pyls_mypy.enabled" t t)
-     ("pyls.plugins.pyls_mypy.live_mode" t t)))
-  :hook ((python-mode . lsp-deferred)
-         (python-ts-mode . lsp-deferred)
-         (csharp-mode . lsp-deferred)
-         (csharp-ts-mode . lsp-deferred)))
-(use-package lsp-ui)
 
 (use-package which-key
   :diminish
@@ -923,7 +925,8 @@
 
 (use-package ekg
   ;; Use variable pitch fonts for notes
-  :hook ((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
+  :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
+         ((ekg-capture-mode ekg-edit-mode) . visual-line-mode))
   :general
   ("<f1>" 'ekg-capture)
   ("C-<f1>" 'ash/capture-literature-note)
@@ -945,7 +948,8 @@
                                         :tags `(,(ekg-tag-for-date) "log"))))))
 
   (dolist (h '(ekg-capture-mode-hook ekg-edit-mode-hook ekg-notes-mode-hook))
-    (add-hook h (lambda () (variable-pitch-mode 1))))
+    (add-hook h (lambda ()
+                  (when (boundp 'flycheck-mode) (flycheck-mode -1)))))
   (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
                                        (side . right)
@@ -1157,16 +1161,14 @@ This has to be done as a string to handle 64-bit or larger ints."
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 
+(use-package meow-tree-sitter
+  :config
+  (meow-tree-sitter-register-defaults))
+
 (use-package tabspaces
   :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
   :commands (tabspaces-switch-or-create-workspace
              tabspaces-open-or-create-project-and-workspace)
-  :general
-  ;; I was unable to get tabspaces-keymap-prefix to work, so I have to resort to
-  ;; making new bindings.
-  ("s-v b" 'tabspaces-switch-to-buffer)
-  ("s-v s" 'tabspaces-switch-or-create-workspace)
-  ("s-v t" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
