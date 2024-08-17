@@ -131,7 +131,9 @@
 (defun ash/get-current-url ()
   (string-trim (do-applescript "tell application \"Arc\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 (defun ash/get-current-title ()
-  (string-trim (do-applescript "tell application \"Arc\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim
+   (do-applescript "tell application \"Arc\" to return title of front window")
+   (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
@@ -309,7 +311,7 @@
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
-  :config
+  :init
   (require 'avy)
   (defun ash/avy-goto-url()
     "Use avy to go to an URL in the buffer."
@@ -551,6 +553,11 @@
 
 (use-package vundo)
 
+(add-hook 'before-save-hook
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
+
 (use-package magit
   :general ("C-x g" 'magit-status))
 
@@ -768,7 +775,13 @@
         modus-themes-scale-3 1.15
         modus-themes-scale-4 1.2
         modus-themes-scale-5 1.3)
-  (modus-themes-load-theme 'modus-operandi))
+  ;; (modus-themes-load-theme 'modus-operandi)
+  )
+
+(use-package nano-theme
+  :ensure t
+  :config
+  (nano-light))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -802,11 +815,21 @@
 (use-package darkroom
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 
+(use-package eshell-git-prompt
+  :after eshell
+  :custom
+  (eshell-git-prompt-use-theme 'multiline2)
+  :custom-face
+  (eshell-git-prompt-multiline2-dir-face ((t (:weight ultra-bold :foreground "grey")))))
+
 (use-package eat
   :config
   (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
   ;; For `eat-eshell-visual-command-mode'.
-  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+  (when (eq system-type 'darwin)
+    (define-key eat-semi-char-mode-map (kbd "C-h")  #'eat-self-input)
+    (define-key eat-semi-char-mode-map (kbd "<backspace>") (kbd "C-h"))))
 
 (setq tab-bar-select-tab-modifiers '(super))
 
@@ -935,7 +958,8 @@
   (ekg-embedding-generate-on-save)
   (defun ash/capture-literature-note ()
     (interactive)
-    (ekg-capture-url (ash/get-current-url) (ash/get-current-title)))
+    (let ((url (ash/get-current-url)))
+      (ekg-capture-url url (ash/get-current-title))))
 
   (defun ash/log-to-ekg (text &optional org-mode)
     "Log TEXT as a note to EKG's date, appending if possible."
@@ -963,6 +987,9 @@
                 org-appear-autosubmarkers t))
 
 (use-package ob-mermaid)
+
+(add-to-list 'load-path "~/src/llm")
+(require 'llm)
 
 (defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
 

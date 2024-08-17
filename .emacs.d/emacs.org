@@ -200,7 +200,9 @@ It's useful to have methods of getting the URLs (for Mac only)
 (defun ash/get-current-url ()
   (string-trim (do-applescript "tell application \"Arc\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 (defun ash/get-current-title ()
-  (string-trim (do-applescript "tell application \"Arc\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim
+   (do-applescript "tell application \"Arc\" to return title of front window")
+   (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 #+end_src
 * Packages
 There's only one manual step in setting this all up - install -use-package-.
@@ -431,7 +433,7 @@ Avy for quick jumping & buffer navigation is great.
 #+BEGIN_SRC emacs-lisp
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
-  :config
+  :init
   (require 'avy)
   (defun ash/avy-goto-url()
     "Use avy to go to an URL in the buffer."
@@ -699,6 +701,14 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 (use-package vundo)
 #+end_src
 ** Programming
+*** Remove trailing whitespace
+#+begin_src emacs-lisp
+
+(add-hook 'before-save-hook
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
+#+end_src
 
 *** Magit
 #+begin_src emacs-lisp
@@ -911,6 +921,7 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
    (json-ts-mode . combobulate-mode)
    (tsx-ts-mode . combobulate-mode)))
 #+end_src
+
 *** Auto-formatting with Apheleia
 #+begin_src emacs-lisp
 (use-package apheleia
@@ -979,8 +990,12 @@ various places.
         modus-themes-scale-2 1.1
         modus-themes-scale-3 1.15
         modus-themes-scale-4 1.2
-        modus-themes-scale-5 1.3)
-  (modus-themes-load-theme 'modus-operandi))
+        modus-themes-scale-5 1.3))
+
+(use-package nano-theme
+  :ensure t
+  :config
+  (nano-light))
 #+END_SRC
 
 Make org prettier.
@@ -1041,13 +1056,26 @@ Darkroom is a distraction-free experience.  It handles margins as well as font s
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 #+end_src
 ** Terminal
+*** eshell-git
+#+begin_src emacs-lisp
+(use-package eshell-git-prompt
+  :after eshell
+  :custom
+  (eshell-git-prompt-use-theme 'multiline2)
+  :custom-face
+  (eshell-git-prompt-multiline2-dir-face ((t (:weight ultra-bold :foreground "grey")))))
+#+end_src
+*** emacs-eat
 Use emacs-eat, a completely in-emacs terminal emulator
 #+begin_src emacs-lisp
 (use-package eat
   :config
   (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
   ;; For `eat-eshell-visual-command-mode'.
-  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+  (when (eq system-type 'darwin)
+    (define-key eat-semi-char-mode-map (kbd "C-h")  #'eat-self-input)
+    (define-key eat-semi-char-mode-map (kbd "<backspace>") (kbd "C-h"))))
 #+end_src
 ** Tab Bar
 I use the tab bar to sort specific activies, such as mail, elfeed, and projects each into their own tab.
@@ -1204,7 +1232,8 @@ To me, org-pomodoro is very effective to maintain focus.
   (ekg-embedding-generate-on-save)
   (defun ash/capture-literature-note ()
     (interactive)
-    (ekg-capture-url (ash/get-current-url) (ash/get-current-title)))
+    (let ((url (ash/get-current-url)))
+      (ekg-capture-url url (ash/get-current-title))))
 
   (defun ash/log-to-ekg (text &optional org-mode)
     "Log TEXT as a note to EKG's date, appending if possible."
@@ -1243,6 +1272,11 @@ Mermaid is a tool for drawing systems diagrams.
 (use-package ob-mermaid)
 #+end_src
 * LLM-related
+** Load the llm dev version
+#+begin_src emacs-lisp
+(add-to-list 'load-path "~/src/llm")
+(require 'llm)
+#+end_src
 ** The normal LLM provider
 #+begin_src emacs-lisp
 (defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
