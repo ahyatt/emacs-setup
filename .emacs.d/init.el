@@ -774,9 +774,7 @@
         modus-themes-scale-2 1.1
         modus-themes-scale-3 1.15
         modus-themes-scale-4 1.2
-        modus-themes-scale-5 1.3)
-  ;; (modus-themes-load-theme 'modus-operandi)
-  )
+        modus-themes-scale-5 1.3))
 
 (use-package nano-theme
   :ensure t
@@ -814,6 +812,10 @@
 
 (use-package darkroom
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
+
+(use-package spacious-padding
+  :config
+  (spacious-padding-mode 1))
 
 (use-package eshell-git-prompt
   :after eshell
