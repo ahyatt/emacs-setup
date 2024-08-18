@@ -125,13 +125,22 @@
 (require 'dired)
 (define-key dired-mode-map (kbd "C-c C-c") 'wdired-change-to-wdired-mode)
 
+(use-package proced
+  :ensure nil
+  :defer t
+  :custom
+  (proced-enable-color-flag t)
+  (proced-tree-flag t))
+
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
 (defun ash/get-current-url ()
   (string-trim (do-applescript "tell application \"Arc\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 (defun ash/get-current-title ()
-  (string-trim (do-applescript "tell application \"Arc\" to return Title of active tab of front window")  (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim
+   (do-applescript "tell application \"Arc\" to return title of front window")
+   (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 
 (setq-default use-package-always-ensure t)
 (require 'use-package)
@@ -309,7 +318,7 @@
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
-  :config
+  :init
   (require 'avy)
   (defun ash/avy-goto-url()
     "Use avy to go to an URL in the buffer."
@@ -551,6 +560,11 @@
 
 (use-package vundo)
 
+(add-hook 'before-save-hook
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
+
 (use-package magit
   :general ("C-x g" 'magit-status))
 
@@ -567,7 +581,6 @@
 (use-package eglot
   :hook ((csharp-mode . eglot))
   :config
-  (add-to-list 'eglot-server-programs '(python-base-mode . ("pyright-langserver")))
   (setq-default eglot-workspace-configuration
                 '((:pylsp .
                           (:configurationSources
@@ -581,6 +594,7 @@
   (consult-eglot-embark-mode))
 
 (use-package lsp-bridge
+  :disabled
   :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
   :general
   ("<f2>" 'lsp-bridge-diagnostic-list)
@@ -693,6 +707,11 @@
                                    (flycheck-select-checker 'python-pyright)
                                    (setq flycheck-disabled-checkers '(python-mypy))))
 
+(use-package virtualenvwrapper
+  :ensure t
+  :init
+  (venv-initialize-eshell))
+
 (use-package combobulate
   :disabled t
   :preface
@@ -736,6 +755,19 @@
 
 (use-package flycheck-package)
 
+(use-package copilot
+  :vc (:fetcher github :repo "zerolfx/copilot.el")
+  :hook (prog-mode . copilot-mode)
+  :bind (("C-c M-f" . copilot-complete)
+         :map copilot-completion-map
+         ("C-g" . 'copilot-clear-overlay)
+         ("M-p" . 'copilot-previous-completion)
+         ("M-n" . 'copilot-next-completion)
+         ("<tab>" . 'copilot-accept-completion)
+         ("M-f" . 'copilot-accept-completion-by-word)
+         ("M-<return>" . 'copilot-accept-completion-by-line))
+  :ensure t)
+
 (use-package which-key
   :diminish
   :config (which-key-mode 1))
@@ -767,8 +799,12 @@
         modus-themes-scale-2 1.1
         modus-themes-scale-3 1.15
         modus-themes-scale-4 1.2
-        modus-themes-scale-5 1.3)
-  (modus-themes-load-theme 'modus-operandi))
+        modus-themes-scale-5 1.3))
+
+(use-package nano-theme
+  :ensure t
+  :config
+  (nano-light))
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -802,11 +838,25 @@
 (use-package darkroom
   :hook ((notmuch-message-mode notmuch-show org-capture-mode) . darkroom-mode))
 
+(use-package spacious-padding
+  :config
+  (spacious-padding-mode 1))
+
+(use-package eshell-git-prompt
+  :after eshell
+  :custom
+  (eshell-git-prompt-use-theme 'multiline2)
+  :custom-face
+  (eshell-git-prompt-multiline2-dir-face ((t (:weight ultra-bold :foreground "grey")))))
+
 (use-package eat
   :config
   (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
   ;; For `eat-eshell-visual-command-mode'.
-  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
+  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+  (when (eq system-type 'darwin)
+    (define-key eat-semi-char-mode-map (kbd "C-h")  #'eat-self-input)
+    (define-key eat-semi-char-mode-map (kbd "<backspace>") (kbd "C-h"))))
 
 (general-define-key "s-p" 'project-find-file)
 
@@ -937,7 +987,8 @@
   (ekg-embedding-generate-on-save)
   (defun ash/capture-literature-note ()
     (interactive)
-    (ekg-capture-url (ash/get-current-url) (ash/get-current-title)))
+    (let ((url (ash/get-current-url)))
+      (ekg-capture-url url (ash/get-current-title))))
 
   (defun ash/log-to-ekg (text &optional org-mode)
     "Log TEXT as a note to EKG's date, appending if possible."
@@ -965,6 +1016,9 @@
                 org-appear-autosubmarkers t))
 
 (use-package ob-mermaid)
+
+(add-to-list 'load-path "~/src/llm")
+(require 'llm)
 
 (defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
 
