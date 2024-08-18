@@ -1049,6 +1049,11 @@ Use emacs-eat, a completely in-emacs terminal emulator
   ;; For `eat-eshell-visual-command-mode'.
   (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 #+end_src
+** Projects
+Projects work by default, but let's make a few mappings.
+#+begin_src emacs-lisp
+(general-define-key "s-p" 'project-find-file)
+#+end_src
 ** Tab Bar
 I use the tab bar to sort specific activies, such as mail, elfeed, and projects each into their own tab.
 #+begin_src emacs-lisp

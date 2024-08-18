@@ -808,6 +808,8 @@
   ;; For `eat-eshell-visual-command-mode'.
   (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode))
 
+(general-define-key "s-p" 'project-find-file)
+
 (setq tab-bar-select-tab-modifiers '(super))
 
 (use-package notmuch
