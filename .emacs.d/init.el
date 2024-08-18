@@ -581,7 +581,6 @@
 (use-package eglot
   :hook ((csharp-mode . eglot))
   :config
-  (add-to-list 'eglot-server-programs '(python-base-mode . ("pyright-langserver")))
   (setq-default eglot-workspace-configuration
                 '((:pylsp .
                           (:configurationSources
@@ -595,6 +594,7 @@
   (consult-eglot-embark-mode))
 
 (use-package lsp-bridge
+  :disabled
   :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
   :general
   ("<f2>" 'lsp-bridge-diagnostic-list)

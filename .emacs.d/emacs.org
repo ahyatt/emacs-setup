@@ -747,7 +747,6 @@ Eglot is smaller, and I've had good success with it when it works.  However, now
 (use-package eglot
   :hook ((csharp-mode . eglot))
   :config
-  (add-to-list 'eglot-server-programs '(python-base-mode . ("pyright-langserver")))
   (setq-default eglot-workspace-configuration
                 '((:pylsp .
                           (:configurationSources
@@ -764,6 +763,7 @@ Eglot is smaller, and I've had good success with it when it works.  However, now
 LSP Bridge is very fast, although somewhat annoying at times.
 #+begin_src emacs-lisp
 (use-package lsp-bridge
+  :disabled
   :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
   :general
   ("<f2>" 'lsp-bridge-diagnostic-list)
