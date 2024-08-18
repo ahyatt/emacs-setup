@@ -125,6 +125,13 @@
 (require 'dired)
 (define-key dired-mode-map (kbd "C-c C-c") 'wdired-change-to-wdired-mode)
 
+(use-package proced
+  :ensure nil
+  :defer t
+  :custom
+  (proced-enable-color-flag t)
+  (proced-tree-flag t))
+
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
 
@@ -700,6 +707,11 @@
                                    (flycheck-select-checker 'python-pyright)
                                    (setq flycheck-disabled-checkers '(python-mypy))))
 
+(use-package virtualenvwrapper
+  :ensure t
+  :init
+  (venv-initialize-eshell))
+
 (use-package combobulate
   :disabled t
   :preface
@@ -742,6 +754,19 @@
                   (apply orig-fun args)))))
 
 (use-package flycheck-package)
+
+(use-package copilot
+  :vc (:fetcher github :repo "zerolfx/copilot.el")
+  :hook (prog-mode . copilot-mode)
+  :bind (("C-c M-f" . copilot-complete)
+         :map copilot-completion-map
+         ("C-g" . 'copilot-clear-overlay)
+         ("M-p" . 'copilot-previous-completion)
+         ("M-n" . 'copilot-next-completion)
+         ("<tab>" . 'copilot-accept-completion)
+         ("M-f" . 'copilot-accept-completion-by-word)
+         ("M-<return>" . 'copilot-accept-completion-by-line))
+  :ensure t)
 
 (use-package which-key
   :diminish

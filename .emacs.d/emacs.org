@@ -188,6 +188,16 @@ wdired is great and I want easier access to it.
 (require 'dired)
 (define-key dired-mode-map (kbd "C-c C-c") 'wdired-change-to-wdired-mode)
 #+end_src
+** Other tool configuration
+#+begin_src emacs-lisp
+(use-package proced
+  :ensure nil
+  :defer t
+  :custom
+  (proced-enable-color-flag t)
+  (proced-tree-flag t))
+#+end_src
+
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
 #+BEGIN_SRC emacs-lisp
@@ -894,8 +904,13 @@ We also want type checking.
                                    (flycheck-select-checker 'python-pyright)
                                    (setq flycheck-disabled-checkers '(python-mypy))))
 #+end_src
-
-
+**** venv management
+#+begin_src emacs-lisp
+(use-package virtualenvwrapper
+  :ensure t
+  :init
+  (venv-initialize-eshell))
+#+end_src
 *** Combobulate
 Combobulate is interesting, but not on an ELPA yet, so let's not install.
 #+begin_src emacs-lisp
@@ -946,6 +961,22 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
 *** ELPA helpers
 #+begin_src emacs-lisp
 (use-package flycheck-package)
+#+end_src
+*** Copilot
+#+begin_src emacs-lisp
+(use-package copilot
+  :vc (:fetcher github :repo "zerolfx/copilot.el")
+  :hook (prog-mode . copilot-mode)
+  :bind (("C-c M-f" . copilot-complete)
+         :map copilot-completion-map
+         ("C-g" . 'copilot-clear-overlay)
+         ("M-p" . 'copilot-previous-completion)
+         ("M-n" . 'copilot-next-completion)
+         ("<tab>" . 'copilot-accept-completion)
+         ("M-f" . 'copilot-accept-completion-by-word)
+         ("M-<return>" . 'copilot-accept-completion-by-line))
+  :ensure t)
+
 #+end_src
 ** Help
 
