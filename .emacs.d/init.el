@@ -858,6 +858,8 @@
     (define-key eat-semi-char-mode-map (kbd "C-h")  #'eat-self-input)
     (define-key eat-semi-char-mode-map (kbd "<backspace>") (kbd "C-h"))))
 
+(general-define-key "s-p" 'project-find-file)
+
 (setq tab-bar-select-tab-modifiers '(super))
 
 (use-package notmuch
