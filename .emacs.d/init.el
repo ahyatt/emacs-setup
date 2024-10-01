@@ -297,7 +297,9 @@
 
 (use-package consult-flycheck
   :bind (:map flycheck-command-map
-              ("!" . consult-flycheck))
+              ("!" . consult-flycheck)
+              :map prog-mode-map
+              ("<f2>" . flycheck-list-errors))
   ;; If flycheck idle change delay is too short, then it overwrites the helpful
   ;; messages about how to call elisp functions, etc.
   :config (setq flycheck-idle-change-delay 15))
@@ -569,11 +571,12 @@
   :general ("C-x g" 'magit-status))
 
 (use-package lsp-mode
-  :disabled t
   :config
   (lsp-register-custom-settings
    '(("lsp-pylsp-plugins-pylint-enabled" t t)))
   (setq lsp-warn-no-matched-clients nil)
+  :general
+  ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
          (csharp-mode . lsp-mode)))
 (use-package lsp-ui)
@@ -597,7 +600,7 @@
   :disabled
   :vc (:fetcher github :repo "manateelazycat/lsp-bridge")
   :general
-  ("<f2>" 'lsp-bridge-diagnostic-list)
+  ("<f10>" 'lsp-bridge-diagnostic-list)
   :bind (:map lsp-bridge-mode-map
               ("M-." . lsp-bridge-find-def)
               ("M-?" . lsp-bridge-find-references))
@@ -802,9 +805,16 @@
         modus-themes-scale-5 1.3))
 
 (use-package nano-theme
+  :ensure t)
+
+(use-package ef-themes
   :ensure t
-  :config
-  (nano-light))
+  :custom
+  (ef-themes-mixed-fonts t)
+  (ef-themes-variable-pitch-ui t))
+
+;; Selection of our default theme
+(ef-themes-select 'ef-day)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -842,9 +852,13 @@
   :config
   (spacious-padding-mode 1))
 
+(use-package auto-dim-other-buffers
+  :ensure t
+  :config
+  (auto-dim-other-buffers-mode 1))
+
 (use-package eshell-git-prompt
-  :after eshell
-  :custom
+  :config
   (eshell-git-prompt-use-theme 'multiline2)
   :custom-face
   (eshell-git-prompt-multiline2-dir-face ((t (:weight ultra-bold :foreground "grey")))))
