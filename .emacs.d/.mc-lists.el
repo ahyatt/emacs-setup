@@ -32,6 +32,7 @@
         meow-kill
         meow-left
         meow-mark-word
+        meow-next
         meow-next-word
         meow-prev
         meow-right
