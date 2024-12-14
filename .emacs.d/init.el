@@ -13,6 +13,11 @@
 
 (package-install 'use-package)
 
+(add-to-list 'display-buffer-alist
+             '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
+               (display-buffer-no-window)
+               (allow-no-window . t)))
+
 (require 'vc-use-package)
 
 (blink-cursor-mode 0)                           ; Disable the cursor blinking
@@ -131,6 +136,12 @@
   :custom
   (proced-enable-color-flag t)
   (proced-tree-flag t))
+
+(use-package vlf
+  :config
+  (require 'vlf-setup)
+  :demand t
+  :ensure t)
 
 (add-hook 'after-save-hook
           'executable-make-buffer-file-executable-if-script-p)
@@ -539,7 +550,10 @@
 
 (use-package casual
   :ensure t
-  :bind (:map calc-mode-map ("C-o" . casual-main-menu)))
+  :config
+    (setq transient-align-variable-pitch t)
+    :bind (("s-o" . casual-editkit-main-tmenu)
+           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode

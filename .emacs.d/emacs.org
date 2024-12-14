@@ -26,6 +26,14 @@ Refresh archive and set up use-package.
   (package-install 'use-package)
 #+end_src
 
+Remove warnings when compiling (from [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:c12c3baa-49bc-4fc8-8eb5-cf3fb53903ef][Prot's config]]):
+#+begin_src emacs-lisp
+(add-to-list 'display-buffer-alist
+             '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
+               (display-buffer-no-window)
+               (allow-no-window . t)))
+#+end_src
+
 We used to use quelpa, but it didn't work either in self-installing or
 installing some packages (but not others). Let's just use the standards.
 
@@ -197,6 +205,14 @@ wdired is great and I want easier access to it.
   (proced-enable-color-flag t)
   (proced-tree-flag t))
 #+end_src
+** Very large files
+#+begin_src emacs-lisp
+(use-package vlf
+  :config
+  (require 'vlf-setup)
+  :demand t
+  :ensure t)
+#+end_src
 
 * Useful additions
 Tired of marking scripts executable, or forgetting to do so?  Now you don’t have to!
@@ -214,6 +230,7 @@ It's useful to have methods of getting the URLs (for Mac only)
    (do-applescript "tell application \"Arc\" to return title of front window")
    (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 #+end_src
+
 * Packages
 There's only one manual step in setting this all up - install -use-package-.
 
@@ -669,7 +686,10 @@ Hydra is useful for doing lots of things in succession.
 #+begin_src emacs-lisp
 (use-package casual
   :ensure t
-  :bind (:map calc-mode-map ("C-o" . casual-main-menu)))
+  :config
+    (setq transient-align-variable-pitch t)
+    :bind (("s-o" . casual-editkit-main-tmenu)
+           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 #+end_src
 
 ** Expansion
