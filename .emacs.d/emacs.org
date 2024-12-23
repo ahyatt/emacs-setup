@@ -238,7 +238,6 @@ There's only one manual step in setting this all up - install -use-package-.
 First, let's just make sure use-package works the way we want it to.
 
 #+BEGIN_SRC emacs-lisp
-  (setq-default use-package-always-ensure t)
   (require 'use-package)
 #+END_SRC
 ** Helper packages
@@ -739,15 +738,12 @@ LSP has worked in situations where Eglot does not, but it can be pretty flaky, s
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :config
-  (lsp-register-custom-settings
-   '(("lsp-pylsp-plugins-pylint-enabled" t t)))
   (setq lsp-warn-no-matched-clients nil)
   :general
   ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
          (csharp-mode . lsp-mode)))
 (use-package lsp-ui)
-
 #+end_src
 
 **** Eglot
@@ -909,9 +905,10 @@ We also want type checking.
 #+begin_src emacs-lisp
 (use-package lsp-pyright
   :ensure t)
+;; setup flycheck
 (add-hook 'python-base-mode-hook (lambda ()
                                    (flycheck-select-checker 'python-pyright)
-                                   (setq flycheck-disabled-checkers '(python-mypy))))
+                                   (setq flycheck-disabled-checkers '(python-mypy python-pylint))))
 #+end_src
 **** venv management
 #+begin_src emacs-lisp
@@ -924,7 +921,6 @@ We also want type checking.
 Combobulate is interesting, but not on an ELPA yet, so let's not install.
 #+begin_src emacs-lisp
 (use-package combobulate
-  :disabled t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -955,9 +951,9 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
   (setf (alist-get 'isort apheleia-formatters)
         '("isort" "--stdout" "--profile=black" "--sl" file))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'python-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'bazel-mode apheleia-mode-alist)
         '(buildifier))
 
@@ -974,7 +970,8 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
 *** Copilot
 #+begin_src emacs-lisp
 (use-package copilot
-  :vc (:fetcher github :repo "zerolfx/copilot.el")
+  :ensure nil
+  :vc (:fetcher github :repo "copilot-emacs/copilot.el")
   :hook (prog-mode . copilot-mode)
   :bind (("C-c M-f" . copilot-complete)
          :map copilot-completion-map
@@ -983,9 +980,7 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
          ("M-n" . 'copilot-next-completion)
          ("<tab>" . 'copilot-accept-completion)
          ("M-f" . 'copilot-accept-completion-by-word)
-         ("M-<return>" . 'copilot-accept-completion-by-line))
-  :ensure t)
-
+         ("M-<return>" . 'copilot-accept-completion-by-line)))
 #+end_src
 ** Help
 

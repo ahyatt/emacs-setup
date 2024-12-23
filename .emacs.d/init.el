@@ -154,7 +154,6 @@
    (do-applescript "tell application \"Arc\" to return title of front window")
    (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 
-(setq-default use-package-always-ensure t)
 (require 'use-package)
 
 (use-package general
@@ -576,8 +575,6 @@
 
 (use-package lsp-mode
   :config
-  (lsp-register-custom-settings
-   '(("lsp-pylsp-plugins-pylint-enabled" t t)))
   (setq lsp-warn-no-matched-clients nil)
   :general
   ("<f2>" 'lsp-ui-flycheck-list)
@@ -710,9 +707,10 @@
 
 (use-package lsp-pyright
   :ensure t)
+;; setup flycheck
 (add-hook 'python-base-mode-hook (lambda ()
                                    (flycheck-select-checker 'python-pyright)
-                                   (setq flycheck-disabled-checkers '(python-mypy))))
+                                   (setq flycheck-disabled-checkers '(python-mypy python-pylint))))
 
 (use-package virtualenvwrapper
   :ensure t
@@ -720,7 +718,6 @@
   (venv-initialize-eshell))
 
 (use-package combobulate
-  :disabled t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -748,9 +745,9 @@
   (setf (alist-get 'isort apheleia-formatters)
         '("isort" "--stdout" "--profile=black" "--sl" file))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'python-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'bazel-mode apheleia-mode-alist)
         '(buildifier))
 
@@ -763,7 +760,8 @@
 (use-package flycheck-package)
 
 (use-package copilot
-  :vc (:fetcher github :repo "zerolfx/copilot.el")
+  :ensure nil
+  :vc (:fetcher github :repo "copilot-emacs/copilot.el")
   :hook (prog-mode . copilot-mode)
   :bind (("C-c M-f" . copilot-complete)
          :map copilot-completion-map
@@ -772,8 +770,7 @@
          ("M-n" . 'copilot-next-completion)
          ("<tab>" . 'copilot-accept-completion)
          ("M-f" . 'copilot-accept-completion-by-word)
-         ("M-<return>" . 'copilot-accept-completion-by-line))
-  :ensure t)
+         ("M-<return>" . 'copilot-accept-completion-by-line)))
 
 (use-package which-key
   :diminish
