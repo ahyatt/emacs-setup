@@ -99,6 +99,8 @@
 
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
+(setq mac-pass-command-to-system nil)
+(setq mac-pass-control-to-system nil)
 
 (set-input-method "rfc1345")
 
@@ -870,6 +872,12 @@
   :ensure t
   :config
   (auto-dim-other-buffers-mode 1))
+
+(use-package vertico-posframe
+  :config (vertico-posframe-mode 1))
+
+(use-package transient-posframe
+  :config (transient-posframe-mode 1))
 
 (use-package eshell-git-prompt
   :config

@@ -29,6 +29,7 @@
         meow-inner-of-thing
         meow-insert
         meow-insert-exit
+        meow-keypad-self-insert
         meow-kill
         meow-left
         meow-mark-word
@@ -81,6 +82,7 @@
         ignore
         major-mode-hydra
         mc/mark-next-lines
+        meow-keypad
         meow-search
         org-cycle
         phi-search-backward

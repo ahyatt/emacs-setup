@@ -152,6 +152,8 @@ On the mac, fix the keys the way I prefer
 #+begin_src emacs-lisp
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
+(setq mac-pass-command-to-system nil)
+(setq mac-pass-control-to-system nil)
 #+end_src
 ** Input method
 The TeX input method is really cool and super flexible, but I've been playing with the =rfc1345= which is a bit quicker and still very powerful.
@@ -1130,6 +1132,14 @@ Darkroom is a distraction-free experience.  It handles margins as well as font s
   :ensure t
   :config
   (auto-dim-other-buffers-mode 1))
+#+end_src
+*** Posframe
+#+begin_src emacs-lisp
+(use-package vertico-posframe
+  :config (vertico-posframe-mode 1))
+
+(use-package transient-posframe
+  :config (transient-posframe-mode 1))
 #+end_src
 ** Terminal
 *** eshell-git
