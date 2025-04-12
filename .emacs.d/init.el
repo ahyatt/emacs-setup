@@ -183,26 +183,13 @@
   (setq vertico-resize t
         vertico-cycle t))
 
-(use-package corfu
-  :custom
-  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  (corfu-auto t)                 ;; Enable auto completion
-  (corfu-separator ?\s)          ;; Orderless field separator
-  (corfu-auto-delay 0.8)         ;; Pause a bit before completion, else it's annoying.
-
-  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-  :init
-  (global-corfu-mode))
-
-;; More completions
-(use-package cape
+(use-package completion-preview
   :config
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  (add-to-list 'completion-at-point-functions #'cape-abbrev)
-  (add-to-list 'completion-at-point-functions #'cape-tex)
-  (add-to-list 'completion-at-point-functions #'cape-rfc1345))
+  (global-completion-preview-mode 1) 
+  :bind
+  (:map completion-preview-active-mode-map
+            ("C-n" . completion-preview-next-candidate)
+            ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -798,36 +785,18 @@
          ("C-h h" . helpful-at-point)
          ("C-h c" . helpful-command)))
 
-(use-package modus-themes
-  :ensure t
-  :config
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs t
-        modus-themes-visible-fringes t
-        modus-themes-mixed-fonts t
-        modus-themes-intense-standard-completions t
-        modus-themes-org-agenda '((header-block . (variable-pitch scale-title))
-                                  (scheduled . uniform))
-        modus-themes-variable-pitch-headings t
-        modus-themes-variable-pitch-ui t
-        modus-themes-rainbow-headings t
-        modus-themes-section-headings t
-        modus-themes-scale-headings t
-        modus-themes-region '(bg-only no-extend)
-        modus-themes-scale-1 1.05
-        modus-themes-scale-2 1.1
-        modus-themes-scale-3 1.15
-        modus-themes-scale-4 1.2
-        modus-themes-scale-5 1.3))
-
-(use-package nano-theme
-  :ensure t)
-
 (use-package ef-themes
   :ensure t
   :custom
   (ef-themes-mixed-fonts t)
-  (ef-themes-variable-pitch-ui t))
+  (ef-themes-variable-pitch-ui t)
+  (defun ash/ef-themes-custom-faces ()
+    "Customization on top of ef-themes."
+    (ef-themes-with-colors
+      (custom-set-faces
+       `(hydra-face-blue ((,c :foreground ,accent-0))))))
+  (add-hook 'ef-themes-post-load-hook
+            #'ash/ef-themes-custom-faces))
 
 ;; Selection of our default theme
 (ef-themes-select 'ef-day)
@@ -1011,6 +980,48 @@
     (let ((org-pomodoro-length (mod (- 30 (cadr (decode-time (current-time)))) 30)))
       (org-pomodoro))))
 
+(use-package org-appear
+  :hook (org-mode . org-appear-mode)
+  :config (setq org-appear-autolinks nil
+                org-appear-autosubmarkers t))
+
+(use-package ob-mermaid)
+
+(add-to-list 'load-path "~/src/llm")
+(require 'llm)
+
+;; This fix is needed to properly use auth-source-search.
+(setq epa-pinentry-mode 'loopback)
+
+(require 'llm-openai)
+(require 'llm-gemini)
+(require 'llm-claude)
+(require 'llm-deepseek)
+(defconst ash/llm-claude (make-llm-claude :key (plist-get (car (auth-source-search :host "llm.claude")) :secret)))
+(defconst ash/llm-openai (make-llm-openai :chat-model "gpt-4o" :key (plist-get (car (auth-source-search :host "llm.openai")) :secret)))
+(defconst ash/llm-openai-small (make-llm-openai :chat-model "gpt-4o-mini" :key (plist-get (car (auth-source-search :host "llm.openai")) :secret)))
+(defconst ash/llm-gemini (make-llm-gemini :key (plist-get (car (auth-source-search :host "llm.gemini")) :secret)))
+(defconst ash/llm-deepseek-reasoner (make-llm-deepseek :key (plist-get (car (auth-source-search :host "llm.deepseek")) :secret) :chat-model "deepseek-reasoner"))
+(defvar emacs-llm-default-provider ash/llm-claude "The default LLM provider to use in Emacs.")
+
+(use-package ellama
+  :init
+  (setopt ellama-language "Portguese")
+  (setopt ellama-provider emacs-llm-default-provider))
+
+(use-package magit-gptcommit
+  :ensure t
+  :bind (:map git-commit-mode-map
+              ("C-c C-g" . magit-gptcommit-commit-accept))
+  :custom
+  (magit-gptcommit-llm-provider ash/llm-claude)
+
+  :config
+  ;; Eval (transient-remove-suffix 'magit-commit '(1 -1)) to remove gptcommit transient commands
+  (magit-gptcommit-status-buffer-setup))
+
+(add-to-list 'load-path "~/src/ekg")
+
 (use-package ekg
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
@@ -1046,23 +1057,6 @@
                                        (window-width . 80)
                                        (window-parameters (no-delete-other-windows . t)))))
 
-(use-package org-appear
-  :hook (org-mode . org-appear-mode)
-  :config (setq org-appear-autolinks nil
-                org-appear-autosubmarkers t))
-
-(use-package ob-mermaid)
-
-(add-to-list 'load-path "~/src/llm")
-(require 'llm)
-
-(defvar emacs-llm-default-provider nil "The default LLM provider to use in Emacs.")
-
-(use-package ellama
-  :init
-  (setopt ellama-language "Portguese")
-  (setopt ellama-provider emacs-llm-default-provider))
-
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
   (interactive nil org-mode)
@@ -1080,8 +1074,6 @@
 (use-package org-auto-tangle
   :defer t
   :hook (org-mode . org-auto-tangle-mode))
-
-(setq epa-pinentry-mode 'loopback)
 
 (defun ash/strdec-to-hex (n)
   "Given a decimal as a string, convert to hex.
