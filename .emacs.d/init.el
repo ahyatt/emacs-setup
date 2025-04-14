@@ -1032,6 +1032,8 @@
   :config
   (require 'ekg-embedding)
   (ekg-embedding-generate-on-save)
+
+  (require 'ekg-llm)
   (defun ash/capture-literature-note ()
     (interactive)
     (let ((url (ash/get-current-url)))
@@ -1055,7 +1057,8 @@
                                        (side . right)
                                        (slot . 0)
                                        (window-width . 80)
-                                       (window-parameters (no-delete-other-windows . t)))))
+                                       (window-parameters (no-delete-other-windows . t))))
+  (setq ekg-llm-provider ash/llm-gemini))
 
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
