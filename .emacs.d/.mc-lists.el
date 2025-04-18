@@ -23,6 +23,7 @@
         insert-char
         meow-append
         meow-back-word
+        meow-backward-delete
         meow-bounds-of-thing
         meow-change
         meow-delete
@@ -89,4 +90,5 @@
         org-cycle
         phi-search-backward
         toggle-input-method
+        wdired-finish-edit
         ))

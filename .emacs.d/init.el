@@ -98,8 +98,6 @@
 
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
-(setq mac-pass-command-to-system nil)
-(setq mac-pass-control-to-system nil)
 
 (set-input-method "rfc1345")
 
@@ -223,7 +221,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-    '(read-only t cursor-intangible t face minibuffer-prompt))
+        '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -314,7 +312,7 @@
   "Toggles window dedication in the selected window."
   (interactive)
   (set-window-dedicated-p (selected-window)
-     (not (window-dedicated-p (selected-window)))))
+                          (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
@@ -538,9 +536,9 @@
 (use-package casual
   :ensure t
   :config
-    (setq transient-align-variable-pitch t)
-    :bind (("s-o" . casual-editkit-main-tmenu)
-           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
+  (setq transient-align-variable-pitch t)
+  :bind (("s-o" . casual-editkit-main-tmenu)
+         :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -566,9 +564,9 @@
 (add-hook 'prog-mode-hook
           (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
-  (lambda ()
-    (when (derived-mode-p 'prog-mode)
-      (delete-trailing-whitespace))))
+          (lambda ()
+            (when (derived-mode-p 'prog-mode)
+              (delete-trailing-whitespace))))
 
 (use-package magit
   :general ("C-x g" 'magit-status))
@@ -853,9 +851,11 @@
   (auto-dim-other-buffers-mode 1))
 
 (use-package vertico-posframe
+  :ensure t
   :config (vertico-posframe-mode 1))
 
 (use-package transient-posframe
+  :ensure t
   :config (transient-posframe-mode 1))
 
 (use-package eshell-git-prompt
@@ -1077,7 +1077,7 @@
 
 (general-define-key :keymaps 'org-mode-map
                     :predicate '(s-contains? "emacs.org" (buffer-name))
-            "C-c t" 'ash/tangle-config)
+                    "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
@@ -1099,7 +1099,7 @@ This has to be done as a string to handle 64-bit or larger ints."
 
 (defalias 'ash/mirror-buffer
   (kmacro "C-x 1 C-x 3 C-x o"))
-(general-define-key "s-b" 'ash/mirror-buffer)
+(general-define-key "s-B" 'ash/mirror-buffer)
 
 (use-package meow
   :config
@@ -1112,9 +1112,6 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("k" . meow-prev)
      '("<escape>" . ignore))
     (meow-leader-define-key
-     ;; SPC j/k will run the original command in MOTION state.
-     '("j" . "H-j")
-     '("k" . "H-k")
      ;; Use SPC (0-9) for digit arguments.
      '("1" . meow-digit-argument)
      '("2" . meow-digit-argument)
@@ -1254,6 +1251,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("W" .  widen)
   ;; Editing
   '("a" . org-archive-subtree)
+  '("C-k" . org-cut-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
@@ -1263,9 +1261,11 @@ This has to be done as a string to handle 64-bit or larger ints."
   (meow-tree-sitter-register-defaults))
 
 (use-package tabspaces
-  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
+  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup.
   :commands (tabspaces-switch-or-create-workspace
              tabspaces-open-or-create-project-and-workspace)
+  :general
+  ("s-b" 'project-switch-to-buffer)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1276,3 +1276,4 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
+(put 'narrow-to-region 'disabled nil)

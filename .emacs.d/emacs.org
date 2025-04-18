@@ -151,8 +151,6 @@ On the mac, fix the keys the way I prefer
 #+begin_src emacs-lisp
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
-(setq mac-pass-command-to-system nil)
-(setq mac-pass-control-to-system nil)
 #+end_src
 ** Input method
 The TeX input method is really cool and super flexible, but I've been playing with the =rfc1345= which is a bit quicker and still very powerful.
@@ -429,6 +427,8 @@ Winnum for moving between windows is very convenient
   ("M-3" 'winum-select-window-3)
   ("M-4" 'winum-select-window-4))
 #+END_SRC
+
+#+RESULTS:
 
 [[https://www.masteringemacs.org/article/demystifying-emacs-window-manager][Mickey Petersen's guide to the Emacs Window Manager]] has lots of useful
 information and tips, which leads to the following snippets:
@@ -863,7 +863,7 @@ This gives emacs the power to interact with the AST.
           (css "https://github.com/tree-sitter/tree-sitter-css")
           (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
           (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (go "https://github.com/tree-sitter/tree-sitter-go" "v0.23.0")
           (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
           (html "https://github.com/tree-sitter/tree-sitter-html")
           (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
@@ -1105,9 +1105,11 @@ Darkroom is a distraction-free experience.  It handles margins as well as font s
 *** Posframe
 #+begin_src emacs-lisp
 (use-package vertico-posframe
+  :ensure t
   :config (vertico-posframe-mode 1))
 
 (use-package transient-posframe
+  :ensure t
   :config (transient-posframe-mode 1))
 #+end_src
 ** Terminal
@@ -1431,7 +1433,7 @@ those customizations.
 #+begin_src emacs-lisp
 (defalias 'ash/mirror-buffer
   (kmacro "C-x 1 C-x 3 C-x o"))
-(general-define-key "s-b" 'ash/mirror-buffer)
+(general-define-key "s-B" 'ash/mirror-buffer)
 #+end_src
 * Alternative keybindings
 ** Meow
@@ -1447,9 +1449,6 @@ those customizations.
      '("k" . meow-prev)
      '("<escape>" . ignore))
     (meow-leader-define-key
-     ;; SPC j/k will run the original command in MOTION state.
-     '("j" . "H-j")
-     '("k" . "H-k")
      ;; Use SPC (0-9) for digit arguments.
      '("1" . meow-digit-argument)
      '("2" . meow-digit-argument)
@@ -1596,6 +1595,7 @@ And meow state for org mode navigation
   '("W" .  widen)
   ;; Editing
   '("a" . org-archive-subtree)
+  '("C-k" . org-cut-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
@@ -1611,9 +1611,11 @@ Add meow commands for tree-sitter.
 Finally, set up tabs the way I like them, so everything has its place.
 #+begin_src emacs-lisp
 (use-package tabspaces
-  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
+  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup.
   :commands (tabspaces-switch-or-create-workspace
              tabspaces-open-or-create-project-and-workspace)
+  :general
+  ("s-b" 'project-switch-to-buffer)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
