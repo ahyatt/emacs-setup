@@ -57,7 +57,6 @@
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
  sentence-end-double-space nil                    ; End a sentence after a dot and a space
- show-trailing-whitespace t                       ; Display trailing whitespaces
  split-height-threshold nil                       ; Disable vertical window splitting
  split-width-threshold nil                        ; Disable horizontal window splitting
  switch-to-buffer-obey-display-actions t          ; Use display action rules for manual window switching
@@ -565,6 +564,8 @@
 
 (use-package vundo)
 
+(add-hook 'prog-mode-hook
+          (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
   (lambda ()
     (when (derived-mode-p 'prog-mode)
