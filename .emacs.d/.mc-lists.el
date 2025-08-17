@@ -36,6 +36,8 @@
         meow-next
         meow-next-word
         meow-prev
+        meow-quit
+        meow-replace
         meow-right
         meow-till
         meow-undo

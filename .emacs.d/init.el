@@ -815,11 +815,23 @@
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :config (setq doom-modeline-buffer-encoding nil
-                doom-modeline-minor-modes nil
-                doom-modeline-icon nil))
+(use-package telephone-line
+  :ensure t
+  :config
+  (setq telephone-line-primary-left-separator 'telephone-line-abs-left
+        telephone-line-secondary-left-separator 'telephone-line-gradient
+        telephone-line-primary-right-separator 'telephone-line-abs-right
+        telephone-line-secondary-right-separator 'telephone-line-gradient)
+
+  (setq telephone-line-lhs
+        '((evil . (telephone-line-meow-tag-segment))
+          (accent . (telephone-line-vc-segment))
+          (nil . (telephone-line-buffer-segment))))
+  (setq telephone-line-rhs
+        '((nil . (telephone-line-position-segment
+                  telephone-line-misc-info-segment))
+          (accent . (telephone-line-major-mode-segment))))
+  (telephone-line-mode 1))
 
 (use-package all-the-icons)
 
