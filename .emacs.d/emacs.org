@@ -734,7 +734,6 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 #+end_src
 *** LSP variants
 **** LSP
-LSP has worked in situations where Eglot does not, but it can be pretty flaky, so I'm disabling it.
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :config
@@ -742,7 +741,8 @@ LSP has worked in situations where Eglot does not, but it can be pretty flaky, s
   :general
   ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
-         (csharp-mode . lsp-mode)))
+         (go-mode . lsp-mode)
+         (go-ts-mode . lsp-mode)))
 (use-package lsp-ui)
 #+end_src
 

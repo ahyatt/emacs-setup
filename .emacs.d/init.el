@@ -181,11 +181,11 @@
 
 (use-package completion-preview
   :config
-  (global-completion-preview-mode 1) 
+  (global-completion-preview-mode 1)
   :bind
   (:map completion-preview-active-mode-map
-            ("C-n" . completion-preview-next-candidate)
-            ("C-p" . completion-preview-prev-candidate)))
+        ("C-n" . completion-preview-next-candidate)
+        ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -577,7 +577,8 @@
   :general
   ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
-         (csharp-mode . lsp-mode)))
+         (go-mode . lsp-mode)
+         (go-ts-mode . lsp-mode)))
 (use-package lsp-ui)
 
 (use-package eglot
@@ -675,7 +676,7 @@
           (css "https://github.com/tree-sitter/tree-sitter-css")
           (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
           (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (go "https://github.com/tree-sitter/tree-sitter-go" "v0.23.0")
           (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
           (html "https://github.com/tree-sitter/tree-sitter-html")
           (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))

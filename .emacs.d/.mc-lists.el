@@ -54,6 +54,7 @@
         puni-forward-sexp
         puni-kill-line
         puni-kill-region
+        query-replace
         sp-backward-delete-char
         sp-backward-kill-word
         sp-delete-char
