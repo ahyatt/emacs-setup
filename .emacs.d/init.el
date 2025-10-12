@@ -18,8 +18,6 @@
                (display-buffer-no-window)
                (allow-no-window . t)))
 
-(require 'vc-use-package)
-
 (blink-cursor-mode 0)                           ; Disable the cursor blinking
 (scroll-bar-mode 0)                             ; Disable the scroll bar
 (tool-bar-mode 0)                               ; Disable the tool bar
@@ -759,8 +757,9 @@
 (use-package flycheck-package)
 
 (use-package copilot
-  :ensure nil
-  :vc (:fetcher github :repo "copilot-emacs/copilot.el")
+  :vc (:url "https://github.com/copilot-emacs/copilot.el"
+            :rev :newest
+            :branch "main")
   :hook (prog-mode . copilot-mode)
   :bind (("C-c M-f" . copilot-complete)
          :map copilot-completion-map
@@ -951,7 +950,7 @@
                                  (todo . " %i %-18:c")
                                  (tags . " %i %-18:c[%3e]")
                                  (search . " %i %-18:c[%3e]"))
-      org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
+      org-modules nil
       org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
       org-cycle-separator-lines 0
       org-blank-before-new-entry '((heading) (plain-list-item . auto))
@@ -969,8 +968,7 @@
                              (file . find-file-other-window))
       org-speed-commands-user '(("w" . ash-org-start-work))
       org-completion-use-ido t
-      org-use-fast-todo-selection t
-      org-habit-show-habits t)
+      org-use-fast-todo-selection t)
 
 (require 'org-agenda)
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
@@ -1190,13 +1188,28 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("y" . meow-save)
      '("Y" . meow-sync-grab)
      '("z" . meow-pop-selection)
-     '("'" . repeat)
+     '("'" . )
      '("<escape>" . ignore)))
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
   (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
     (add-to-list 'meow-mode-state-list `(,mode . insert))))
+
+(use-package repeat-fu
+  :commands (repeat-fu-mode repeat-fu-execute)
+
+  :config
+  (setq repeat-fu-preset 'meow)
+
+  :hook
+  ((meow-mode)
+   .
+   (lambda ()
+     (when (and (not (minibufferp)) (not (derived-mode-p 'special-mode)))
+       (repeat-fu-mode)
+       (define-key meow-normal-state-keymap (kbd "C-'") 'repeat-fu-execute)
+       (define-key meow-insert-state-keymap (kbd "C-'") 'repeat-fu-execute)))))
 
 (defconst meow-per-mode-state-list nil
   "Alist of major modes and their corresponding meow state.")

@@ -37,11 +37,6 @@ Remove warnings when compiling (from [[https://protesilaos.com/codelog/2024-11-2
 We used to use quelpa, but it didn't work either in self-installing or
 installing some packages (but not others). Let's just use the standards.
 
-Use the standard way to integrate =use-package= with standard VC systems:
-#+begin_src emacs-lisp
-(require 'vc-use-package)
-#+end_src
-
 * Better defaults
 
 Most of this is taken from
@@ -970,8 +965,9 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
 *** Copilot
 #+begin_src emacs-lisp
 (use-package copilot
-  :ensure nil
-  :vc (:fetcher github :repo "copilot-emacs/copilot.el")
+  :vc (:url "https://github.com/copilot-emacs/copilot.el"
+            :rev :newest
+            :branch "main")
   :hook (prog-mode . copilot-mode)
   :bind (("C-c M-f" . copilot-complete)
          :map copilot-completion-map
@@ -1005,7 +1001,6 @@ various places.
 #+END_SRC
 ** Appearance
 *** Themes
-
 #+BEGIN_SRC emacs-lisp
 (use-package ef-themes
   :ensure t
@@ -1231,7 +1226,7 @@ This requires =rg= (ripgrep).
                                  (todo . " %i %-18:c")
                                  (tags . " %i %-18:c[%3e]")
                                  (search . " %i %-18:c[%3e]"))
-      org-modules '(org-bbdb org-docview org-info org-jsinfo org-wl org-habit org-gnus org-habit org-inlinetask)
+      org-modules nil
       org-drawers '("PROPERTIES" "CLOCK" "LOGBOOK" "NOTES")
       org-cycle-separator-lines 0
       org-blank-before-new-entry '((heading) (plain-list-item . auto))
@@ -1249,8 +1244,7 @@ This requires =rg= (ripgrep).
                              (file . find-file-other-window))
       org-speed-commands-user '(("w" . ash-org-start-work))
       org-completion-use-ido t
-      org-use-fast-todo-selection t
-      org-habit-show-habits t)
+      org-use-fast-todo-selection t)
 
 (require 'org-agenda)
 (org-babel-do-load-languages 'org-babel-load-languages '((shell . t)
@@ -1526,13 +1520,28 @@ those customizations.
      '("y" . meow-save)
      '("Y" . meow-sync-grab)
      '("z" . meow-pop-selection)
-     '("'" . repeat)
+     '("'" . )
      '("<escape>" . ignore)))
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
   (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
     (add-to-list 'meow-mode-state-list `(,mode . insert))))
+
+(use-package repeat-fu
+  :commands (repeat-fu-mode repeat-fu-execute)
+
+  :config
+  (setq repeat-fu-preset 'meow)
+
+  :hook
+  ((meow-mode)
+   .
+   (lambda ()
+     (when (and (not (minibufferp)) (not (derived-mode-p 'special-mode)))
+       (repeat-fu-mode)
+       (define-key meow-normal-state-keymap (kbd "C-'") 'repeat-fu-execute)
+       (define-key meow-insert-state-keymap (kbd "C-'") 'repeat-fu-execute)))))
 
 #+end_src
 
