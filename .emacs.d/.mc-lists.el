@@ -23,6 +23,7 @@
         insert-char
         meow-append
         meow-back-word
+        meow-backward-delete
         meow-bounds-of-thing
         meow-change
         meow-delete
@@ -53,6 +54,7 @@
         puni-forward-sexp
         puni-kill-line
         puni-kill-region
+        query-replace
         sp-backward-delete-char
         sp-backward-kill-word
         sp-delete-char
@@ -89,4 +91,5 @@
         org-cycle
         phi-search-backward
         toggle-input-method
+        wdired-finish-edit
         ))

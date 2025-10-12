@@ -146,8 +146,6 @@ On the mac, fix the keys the way I prefer
 #+begin_src emacs-lisp
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
-(setq mac-pass-command-to-system nil)
-(setq mac-pass-control-to-system nil)
 #+end_src
 ** Input method
 The TeX input method is really cool and super flexible, but I've been playing with the =rfc1345= which is a bit quicker and still very powerful.
@@ -233,7 +231,6 @@ There's only one manual step in setting this all up - install -use-package-.
 First, let's just make sure use-package works the way we want it to.
 
 #+BEGIN_SRC emacs-lisp
-  (setq-default use-package-always-ensure t)
   (require 'use-package)
 #+END_SRC
 ** Helper packages
@@ -425,6 +422,8 @@ Winnum for moving between windows is very convenient
   ("M-3" 'winum-select-window-3)
   ("M-4" 'winum-select-window-4))
 #+END_SRC
+
+#+RESULTS:
 
 [[https://www.masteringemacs.org/article/demystifying-emacs-window-manager][Mickey Petersen's guide to the Emacs Window Manager]] has lots of useful
 information and tips, which leads to the following snippets:
@@ -730,19 +729,16 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 #+end_src
 *** LSP variants
 **** LSP
-LSP has worked in situations where Eglot does not, but it can be pretty flaky, so I'm disabling it.
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :config
-  (lsp-register-custom-settings
-   '(("lsp-pylsp-plugins-pylint-enabled" t t)))
   (setq lsp-warn-no-matched-clients nil)
   :general
   ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
-         (csharp-mode . lsp-mode)))
+         (go-mode . lsp-mode)
+         (go-ts-mode . lsp-mode)))
 (use-package lsp-ui)
-
 #+end_src
 
 **** Eglot
@@ -862,7 +858,7 @@ This gives emacs the power to interact with the AST.
           (css "https://github.com/tree-sitter/tree-sitter-css")
           (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
           (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (go "https://github.com/tree-sitter/tree-sitter-go" "v0.23.0")
           (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
           (html "https://github.com/tree-sitter/tree-sitter-html")
           (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
@@ -904,9 +900,10 @@ We also want type checking.
 #+begin_src emacs-lisp
 (use-package lsp-pyright
   :ensure t)
+;; setup flycheck
 (add-hook 'python-base-mode-hook (lambda ()
                                    (flycheck-select-checker 'python-pyright)
-                                   (setq flycheck-disabled-checkers '(python-mypy))))
+                                   (setq flycheck-disabled-checkers '(python-mypy python-pylint))))
 #+end_src
 **** venv management
 #+begin_src emacs-lisp
@@ -919,7 +916,6 @@ We also want type checking.
 Combobulate is interesting, but not on an ELPA yet, so let's not install.
 #+begin_src emacs-lisp
 (use-package combobulate
-  :disabled t
   :preface
   ;; You can customize Combobulate's key prefix here.
   ;; Note that you may have to restart Emacs for this to take effect!
@@ -950,9 +946,9 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
   (setf (alist-get 'isort apheleia-formatters)
         '("isort" "--stdout" "--profile=black" "--sl" file))
   (setf (alist-get 'python-ts-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'python-mode apheleia-mode-alist)
-        '(isort black))
+        '(ruff ruff-isort))
   (setf (alist-get 'bazel-mode apheleia-mode-alist)
         '(buildifier))
 
@@ -980,9 +976,7 @@ Combobulate is interesting, but not on an ELPA yet, so let's not install.
          ("M-n" . 'copilot-next-completion)
          ("<tab>" . 'copilot-accept-completion)
          ("M-f" . 'copilot-accept-completion-by-word)
-         ("M-<return>" . 'copilot-accept-completion-by-line))
-  :ensure t)
-
+         ("M-<return>" . 'copilot-accept-completion-by-line)))
 #+end_src
 ** Help
 
@@ -1106,9 +1100,11 @@ Darkroom is a distraction-free experience.  It handles margins as well as font s
 *** Posframe
 #+begin_src emacs-lisp
 (use-package vertico-posframe
+  :ensure t
   :config (vertico-posframe-mode 1))
 
 (use-package transient-posframe
+  :ensure t
   :config (transient-posframe-mode 1))
 #+end_src
 ** Terminal
@@ -1431,7 +1427,7 @@ those customizations.
 #+begin_src emacs-lisp
 (defalias 'ash/mirror-buffer
   (kmacro "C-x 1 C-x 3 C-x o"))
-(general-define-key "s-b" 'ash/mirror-buffer)
+(general-define-key "s-B" 'ash/mirror-buffer)
 #+end_src
 * Alternative keybindings
 ** Meow
@@ -1447,9 +1443,6 @@ those customizations.
      '("k" . meow-prev)
      '("<escape>" . ignore))
     (meow-leader-define-key
-     ;; SPC j/k will run the original command in MOTION state.
-     '("j" . "H-j")
-     '("k" . "H-k")
      ;; Use SPC (0-9) for digit arguments.
      '("1" . meow-digit-argument)
      '("2" . meow-digit-argument)
@@ -1611,6 +1604,7 @@ And meow state for org mode navigation
   '("W" .  widen)
   ;; Editing
   '("a" . org-archive-subtree)
+  '("C-k" . org-cut-subtree)
   '("T" .  org-insert-todo-heading-respect-content))
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
@@ -1626,9 +1620,11 @@ Add meow commands for tree-sitter.
 Finally, set up tabs the way I like them, so everything has its place.
 #+begin_src emacs-lisp
 (use-package tabspaces
-  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup. 
+  :hook (after-init . tabspaces-mode) ;; use this only if you want the minor-mode loaded at startup.
   :commands (tabspaces-switch-or-create-workspace
              tabspaces-open-or-create-project-and-workspace)
+  :general
+  ("s-b" 'project-switch-to-buffer)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
