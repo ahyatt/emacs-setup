@@ -1011,7 +1011,8 @@ various places.
     "Customization on top of ef-themes."
     (ef-themes-with-colors
       (custom-set-faces
-       `(hydra-face-blue ((,c :foreground ,accent-0))))))
+       `(hydra-face-blue ((,c :foreground ,accent-0)))
+       `(telephone-line-projectile ((,c :foreground ,accent-1))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
 
@@ -1337,6 +1338,8 @@ Mermaid is a tool for drawing systems diagrams.
 #+begin_src emacs-lisp
 (add-to-list 'load-path "~/src/ekg")
 
+(use-package vecdb :ensure t)
+
 (use-package ekg
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
@@ -1596,6 +1599,7 @@ And meow state for org mode navigation
   '("d" .  org-deadline)
   '("s" .  org-schedule)
   '("e" .  org-set-effort)
+  '("Z" .  org-add-note)
   ;; Block navigation
   '("b" .  org-previous-block)
   '("f" .  org-next-block)

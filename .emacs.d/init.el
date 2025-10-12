@@ -179,11 +179,11 @@
 
 (use-package completion-preview
   :config
-  (global-completion-preview-mode 1)
+  (global-completion-preview-mode 1) 
   :bind
   (:map completion-preview-active-mode-map
-        ("C-n" . completion-preview-next-candidate)
-        ("C-p" . completion-preview-prev-candidate)))
+            ("C-n" . completion-preview-next-candidate)
+            ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -219,7 +219,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
+    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -310,7 +310,7 @@
   "Toggles window dedication in the selected window."
   (interactive)
   (set-window-dedicated-p (selected-window)
-                          (not (window-dedicated-p (selected-window)))))
+     (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
@@ -534,9 +534,9 @@
 (use-package casual
   :ensure t
   :config
-  (setq transient-align-variable-pitch t)
-  :bind (("s-o" . casual-editkit-main-tmenu)
-         :map dired-mode-map ("s-o" . casual-dired-tmenu)))
+    (setq transient-align-variable-pitch t)
+    :bind (("s-o" . casual-editkit-main-tmenu)
+           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -562,9 +562,9 @@
 (add-hook 'prog-mode-hook
           (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
-          (lambda ()
-            (when (derived-mode-p 'prog-mode)
-              (delete-trailing-whitespace))))
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
 
 (use-package magit
   :general ("C-x g" 'magit-status))
@@ -790,7 +790,8 @@
     "Customization on top of ef-themes."
     (ef-themes-with-colors
       (custom-set-faces
-       `(hydra-face-blue ((,c :foreground ,accent-0))))))
+       `(hydra-face-blue ((,c :foreground ,accent-0)))
+       `(telephone-line-projectile ((,c :foreground ,accent-1))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
 
@@ -1031,6 +1032,8 @@
 
 (add-to-list 'load-path "~/src/ekg")
 
+(use-package vecdb :ensure t)
+
 (use-package ekg
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
@@ -1076,7 +1079,7 @@
 
 (general-define-key :keymaps 'org-mode-map
                     :predicate '(s-contains? "emacs.org" (buffer-name))
-                    "C-c t" 'ash/tangle-config)
+            "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
@@ -1257,6 +1260,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("d" .  org-deadline)
   '("s" .  org-schedule)
   '("e" .  org-set-effort)
+  '("Z" .  org-add-note)
   ;; Block navigation
   '("b" .  org-previous-block)
   '("f" .  org-next-block)
@@ -1290,4 +1294,3 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
-(put 'narrow-to-region 'disabled nil)
