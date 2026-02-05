@@ -796,7 +796,7 @@
             #'ash/ef-themes-custom-faces))
 
 ;; Selection of our default theme
-(ef-themes-select 'ef-day)
+(modus-themes-load-theme 'ef-day)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -908,7 +908,7 @@
       org-agenda-span 'day
       org-agenda-include-diary t
       org-agenda-start-with-clockreport-mode t
-      org-agenda-start-with-archives-mode t
+      org-agenda-start-with-archives-mode nil
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
@@ -1284,6 +1284,7 @@ This has to be done as a string to handle 64-bit or larger ints."
              tabspaces-open-or-create-project-and-workspace)
   :general
   ("s-b" 'project-switch-to-buffer)
+  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1294,3 +1295,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
+
+(general-define-key "s-T" 'tab-bar-select-tab-by-name)
