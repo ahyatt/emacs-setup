@@ -179,11 +179,11 @@
 
 (use-package completion-preview
   :config
-  (global-completion-preview-mode 1)
+  (global-completion-preview-mode 1) 
   :bind
   (:map completion-preview-active-mode-map
-        ("C-n" . completion-preview-next-candidate)
-        ("C-p" . completion-preview-prev-candidate)))
+            ("C-n" . completion-preview-next-candidate)
+            ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -219,7 +219,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
+    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -310,7 +310,7 @@
   "Toggles window dedication in the selected window."
   (interactive)
   (set-window-dedicated-p (selected-window)
-                          (not (window-dedicated-p (selected-window)))))
+     (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
@@ -534,9 +534,9 @@
 (use-package casual
   :ensure t
   :config
-  (setq transient-align-variable-pitch t)
-  :bind (("s-o" . casual-editkit-main-tmenu)
-         :map dired-mode-map ("s-o" . casual-dired-tmenu)))
+    (setq transient-align-variable-pitch t)
+    :bind (("s-o" . casual-editkit-main-tmenu)
+           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -562,12 +562,23 @@
 (add-hook 'prog-mode-hook
           (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
-          (lambda ()
-            (when (derived-mode-p 'prog-mode)
-              (delete-trailing-whitespace))))
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
 
 (use-package magit
-  :general ("C-x g" 'magit-status))
+  :general ("C-x g" 'ash/magit-status)
+  :config
+  (defun ash/magit-status ()
+    "Open Magit status for the current project."
+    (interactive)
+    (let ((project-root (or
+                         (let ((tab-src (format "~/src/%s" (tabspaces--current-tab-name))))
+                           (when (file-directory-p tab-src)
+                             tab-src))
+                         (project-root (project-current))
+                            default-directory)))
+      (magit-status project-root))))
 
 (use-package lsp-mode
   :config
@@ -791,7 +802,8 @@
     "Customization on top of ef-themes."
     (ef-themes-with-colors
       (custom-set-faces
-       `(hydra-face-blue ((,c :foreground ,accent-0))))))
+       `(hydra-face-blue ((,c :foreground ,accent-0)))
+       `(telephone-line-projectile ((,c :foreground ,accent-1))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
 
@@ -905,7 +917,7 @@
       org-agenda-span 'day
       org-agenda-include-diary t
       org-agenda-start-with-clockreport-mode t
-      org-agenda-start-with-archives-mode t
+      org-agenda-start-with-archives-mode nil
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
@@ -1029,6 +1041,8 @@
 
 (add-to-list 'load-path "~/src/ekg")
 
+(use-package vecdb :ensure t)
+
 (use-package ekg
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
@@ -1067,6 +1081,134 @@
                                        (window-parameters (no-delete-other-windows . t))))
   (setq ekg-llm-provider ash/llm-gemini))
 
+(defvar-local ash/agent-shell-worktree-path nil
+  "Buffer-local worktree path for this agent shell.")
+
+(defvar-local ash/agent-shell-worktree-name nil
+  "Buffer-local worktree name for this agent shell.")
+
+(defun ash/org-item-to-worktree-name ()
+  "Get a short worktree name from the current org item using LLM."
+  (let* ((heading (org-get-heading t t t t))
+         (response (llm-chat emacs-llm-default-provider
+                             (llm-make-chat-prompt
+                              (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
+                              :response-format '(:type object
+                                                       :properties (:name (:type "string"))
+                                                       :required ["name"]))))
+         (parsed (json-parse-string response :object-type 'plist)))
+    (plist-get parsed :name)))
+
+(defun ash/org-code ()
+  "Start standard code agent shell for the current org item.
+
+This will also create a new git worktree.
+
+If a tab and buffer already exist for this item, switch to them instead.
+Also clocks into the org task."
+  (interactive)
+  (require 'org)
+  (require 'org-id)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an org-mode buffer"))
+  (let* ((org-id (org-id-get-create t))
+         (worktree-name (ash/org-item-to-worktree-name))
+         (existing-tab (seq-find (lambda (tab)
+                                   (string= (alist-get 'name tab) worktree-name))
+                                 (funcall tab-bar-tabs-function))))
+    (org-set-property "WORKTREE" worktree-name)
+    (save-buffer)
+    (if existing-tab
+        ;; Switch to existing tab
+        (tab-bar-select-tab-by-name worktree-name)
+      ;; Create new worktree and tab
+      (let* ((base-repo (expand-file-name "~/src/workspace"))
+             (worktree-path (expand-file-name (format "../%s" worktree-name) base-repo))
+             (org-context (buffer-substring-no-properties
+                           (org-entry-beginning-position)
+                           (org-entry-end-position))))
+        ;; Create worktree from main branch if it doesn't exist
+        (unless (file-directory-p worktree-path)
+          (let ((default-directory base-repo))
+          (unless (zerop (shell-command
+                          (format "git worktree add -b ahyatt/%s %s main"
+                                  (shell-quote-argument worktree-name)
+                                  (shell-quote-argument worktree-path))))
+            (user-error "Failed to create worktree"))))
+        ;; Create tab and switch to it
+        (tab-bar-new-tab)
+        (tab-bar-rename-tab worktree-name)
+        ;; Start agent shell in worktree
+        (run-at-time 0.5 nil
+                     (lambda (name path)
+                       (message "Starting agent in %s" path)
+                       (let ((default-directory path))
+                         (project-eshell)
+                         (message "In buffer %s, starting pi" (buffer-name))
+                         (pi-coding-agent name)))
+                     worktree-name worktree-path)
+
+        ;; Store worktree info in buffer and send context
+        (run-at-time 1 nil
+                     (lambda (path name)
+                       (mapc (lambda (buf)
+                              (with-current-buffer buf
+                                (setq-local ash/agent-shell-worktree-path path)
+                                (setq-local ash/agent-shell-worktree-name name)
+                                (goto-char (point-max))))
+                             (ash/agent-buffers)))
+                     worktree-path worktree-name)))))
+
+(defun ash/agent-buffers ()
+  "Get the current agent shell buffers, as a list."
+  (sort
+   (seq-filter (lambda (buf)
+                 (and (string-prefix-p "*pi-coding-agent" (buffer-name buf))
+                      (string-suffix-p
+                       (format "%s/*" (tabspaces--current-tab-name)) (buffer-name buf))))
+               (buffer-list))))
+
+(defun ash/agent-shell-finish-org ()
+  "Send /finish-org, remove worktree, and close tab."
+  (interactive)
+  (let* ((worktree-name (tabspaces--current-tab-name))
+         (worktree-path (format "~/src/%s" worktree-name))
+         (agent-buffers (ash/agent-buffers)))
+    (unless worktree-path
+      (user-error "No worktree associated with this agent shell"))
+    ;; Kill the agent shell buffer
+    (mapc #'kill-buffer agent-buffers)
+    ;; Remove worktree
+    (let ((default-directory (expand-file-name "~/src/workspace")))
+      (shell-command (format "git worktree remove %s"
+                             (shell-quote-argument worktree-path)))
+      ;; Delete the branch
+      (shell-command (format "git branch -D %s"
+                             (shell-quote-argument worktree-name))))
+    ;; Close the correct tab
+    (tab-bar-close-tab-by-name worktree-name)))
+
+(use-package pi-coding-agent
+  :ensure t
+  :init (defalias 'pi 'pi-coding-agent)
+  :config
+  (defun ash/pi-coding-agent-two-windows ()
+    "Display pi-coding-agent input and chat buffers in two windows.
+Input buffer on top, chat buffer on bottom."
+    (interactive)
+    (let ((agent-buffers (ash/agent-buffers)))
+      (cl-flet ((process-buffer (buf)
+                  (switch-to-buffer buf)
+                  (goto-char (point-max))
+                  (when (string-match-p "input" (buffer-name))
+                    (set-window-text-height nil 4))))
+        (delete-other-windows)
+        (process-buffer (car agent-buffers))
+        (dolist (buf (cdr agent-buffers))
+          (split-window-below)
+          (process-buffer buf)))))
+  :bind ("s-i" . ash/pi-coding-agent-two-windows))
+
 (defun ash/tangle-config ()
   "Tangle the config file to a standard config file."
   (interactive nil org-mode)
@@ -1074,7 +1216,7 @@
 
 (general-define-key :keymaps 'org-mode-map
                     :predicate '(s-contains? "emacs.org" (buffer-name))
-                    "C-c t" 'ash/tangle-config)
+            "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
@@ -1255,6 +1397,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   '("d" .  org-deadline)
   '("s" .  org-schedule)
   '("e" .  org-set-effort)
+  '("Z" .  org-add-note)
   ;; Block navigation
   '("b" .  org-previous-block)
   '("f" .  org-next-block)
@@ -1278,6 +1421,7 @@ This has to be done as a string to handle 64-bit or larger ints."
              tabspaces-open-or-create-project-and-workspace)
   :general
   ("s-b" 'project-switch-to-buffer)
+  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1288,4 +1432,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
-(put 'narrow-to-region 'disabled nil)
+
+(general-define-key "s-T" 'tab-bar-select-tab-by-name)

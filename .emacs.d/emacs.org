@@ -661,6 +661,10 @@ Hydra is useful for doing lots of things in succession.
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
 #+END_SRC
+
+#+RESULTS:
+: t
+
 ** Calc helpers
 #+begin_src emacs-lisp
 (use-package casual
@@ -725,7 +729,18 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
 *** Magit
 #+begin_src emacs-lisp
 (use-package magit
-  :general ("C-x g" 'magit-status))
+  :general ("C-x g" 'ash/magit-status)
+  :config
+  (defun ash/magit-status ()
+    "Open Magit status for the current project."
+    (interactive)
+    (let ((project-root (or
+                         (let ((tab-src (format "~/src/%s" (tabspaces--current-tab-name))))
+                           (when (file-directory-p tab-src)
+                             tab-src))
+                         (project-root (project-current))
+                            default-directory)))
+      (magit-status project-root))))
 #+end_src
 
 And Forge
@@ -1193,7 +1208,7 @@ This requires =rg= (ripgrep).
       org-agenda-span 'day
       org-agenda-include-diary t
       org-agenda-start-with-clockreport-mode t
-      org-agenda-start-with-archives-mode t
+      org-agenda-start-with-archives-mode nil
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
@@ -1347,6 +1362,8 @@ Mermaid is a tool for drawing systems diagrams.
 #+begin_src emacs-lisp
 (add-to-list 'load-path "~/src/ekg")
 
+(use-package vecdb :ensure t)
+
 (use-package ekg
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
@@ -1385,6 +1402,145 @@ Mermaid is a tool for drawing systems diagrams.
                                        (window-parameters (no-delete-other-windows . t))))
   (setq ekg-llm-provider ash/llm-gemini))
 #+end_src
+** Agentic coding
+*** Agentic buffer management
+It's good to have agentic buffers readily available, doing something meaningful per tab.
+
+The way it works is that from org-mode we can clock in, start agentic flows that will decide on a name, add worktrees, add a new tab, and start our agentic code with my custom command to read from the currently clocked org task.
+#+begin_src emacs-lisp
+(defvar-local ash/agent-shell-worktree-path nil
+  "Buffer-local worktree path for this agent shell.")
+
+(defvar-local ash/agent-shell-worktree-name nil
+  "Buffer-local worktree name for this agent shell.")
+
+(defun ash/org-item-to-worktree-name ()
+  "Get a short worktree name from the current org item using LLM."
+  (let* ((heading (org-get-heading t t t t))
+         (response (llm-chat emacs-llm-default-provider
+                             (llm-make-chat-prompt
+                              (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
+                              :response-format '(:type object
+                                                       :properties (:name (:type "string"))
+                                                       :required ["name"]))))
+         (parsed (json-parse-string response :object-type 'plist)))
+    (plist-get parsed :name)))
+
+(defun ash/org-code ()
+  "Start standard code agent shell for the current org item.
+
+This will also create a new git worktree.
+
+If a tab and buffer already exist for this item, switch to them instead.
+Also clocks into the org task."
+  (interactive)
+  (require 'org)
+  (require 'org-id)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an org-mode buffer"))
+  (let* ((org-id (org-id-get-create t))
+         (worktree-name (ash/org-item-to-worktree-name))
+         (existing-tab (seq-find (lambda (tab)
+                                   (string= (alist-get 'name tab) worktree-name))
+                                 (funcall tab-bar-tabs-function))))
+    (org-set-property "WORKTREE" worktree-name)
+    (save-buffer)
+    (if existing-tab
+        ;; Switch to existing tab
+        (tab-bar-select-tab-by-name worktree-name)
+      ;; Create new worktree and tab
+      (let* ((base-repo (expand-file-name "~/src/workspace"))
+             (worktree-path (expand-file-name (format "../%s" worktree-name) base-repo))
+             (org-context (buffer-substring-no-properties
+                           (org-entry-beginning-position)
+                           (org-entry-end-position))))
+        ;; Create worktree from main branch if it doesn't exist
+        (unless (file-directory-p worktree-path)
+          (let ((default-directory base-repo))
+          (unless (zerop (shell-command
+                          (format "git worktree add -b ahyatt/%s %s main"
+                                  (shell-quote-argument worktree-name)
+                                  (shell-quote-argument worktree-path))))
+            (user-error "Failed to create worktree"))))
+        ;; Create tab and switch to it
+        (tab-bar-new-tab)
+        (tab-bar-rename-tab worktree-name)
+        ;; Start agent shell in worktree
+        (run-at-time 0.5 nil
+                     (lambda (name path)
+                       (message "Starting agent in %s" path)
+                       (let ((default-directory path))
+                         (project-eshell)
+                         (message "In buffer %s, starting pi" (buffer-name))
+                         (pi-coding-agent name)))
+                     worktree-name worktree-path)
+
+        ;; Store worktree info in buffer and send context
+        (run-at-time 1 nil
+                     (lambda (path name)
+                       (mapc (lambda (buf)
+                              (with-current-buffer buf
+                                (setq-local ash/agent-shell-worktree-path path)
+                                (setq-local ash/agent-shell-worktree-name name)
+                                (goto-char (point-max))))
+                             (ash/agent-buffers)))
+                     worktree-path worktree-name)))))
+
+(defun ash/agent-buffers ()
+  "Get the current agent shell buffers, as a list."
+  (sort
+   (seq-filter (lambda (buf)
+                 (and (string-prefix-p "*pi-coding-agent" (buffer-name buf))
+                      (string-suffix-p
+                       (format "%s/*" (tabspaces--current-tab-name)) (buffer-name buf))))
+               (buffer-list))))
+
+(defun ash/agent-shell-finish-org ()
+  "Send /finish-org, remove worktree, and close tab."
+  (interactive)
+  (let* ((worktree-name (tabspaces--current-tab-name))
+         (worktree-path (format "~/src/%s" worktree-name))
+         (agent-buffers (ash/agent-buffers)))
+    (unless worktree-path
+      (user-error "No worktree associated with this agent shell"))
+    ;; Kill the agent shell buffer
+    (mapc #'kill-buffer agent-buffers)
+    ;; Remove worktree
+    (let ((default-directory (expand-file-name "~/src/workspace")))
+      (shell-command (format "git worktree remove %s"
+                             (shell-quote-argument worktree-path)))
+      ;; Delete the branch
+      (shell-command (format "git branch -D %s"
+                             (shell-quote-argument worktree-name))))
+    ;; Close the correct tab
+    (tab-bar-close-tab-by-name worktree-name)))
+#+end_src
+*** Pi
+
+Currently this is good and has a good emacs package
+#+begin_src emacs-lisp
+(use-package pi-coding-agent
+  :ensure t
+  :init (defalias 'pi 'pi-coding-agent)
+  :config
+  (defun ash/pi-coding-agent-two-windows ()
+    "Display pi-coding-agent input and chat buffers in two windows.
+Input buffer on top, chat buffer on bottom."
+    (interactive)
+    (let ((agent-buffers (ash/agent-buffers)))
+      (cl-flet ((process-buffer (buf)
+                  (switch-to-buffer buf)
+                  (goto-char (point-max))
+                  (when (string-match-p "input" (buffer-name))
+                    (set-window-text-height nil 4))))
+        (delete-other-windows)
+        (process-buffer (car agent-buffers))
+        (dolist (buf (cdr agent-buffers))
+          (split-window-below)
+          (process-buffer buf)))))
+  :bind ("s-i" . ash/pi-coding-agent-two-windows))
+#+end_src
+***
 * Tangling-related
 
 We need to add some functions to make dealing with this file easier.
@@ -1606,6 +1762,7 @@ And meow state for org mode navigation
   '("d" .  org-deadline)
   '("s" .  org-schedule)
   '("e" .  org-set-effort)
+  '("Z" .  org-add-note)
   ;; Block navigation
   '("b" .  org-previous-block)
   '("f" .  org-next-block)
@@ -1635,6 +1792,7 @@ Finally, set up tabs the way I like them, so everything has its place.
              tabspaces-open-or-create-project-and-workspace)
   :general
   ("s-b" 'project-switch-to-buffer)
+  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1645,4 +1803,10 @@ Finally, set up tabs the way I like them, so everything has its place.
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
+#+end_src
+
+When there's enough tabs, it's important to switch between them efficiently:
+
+#+begin_src emacs-lisp
+(general-define-key "s-T" 'tab-bar-select-tab-by-name)
 #+end_src

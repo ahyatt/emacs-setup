@@ -40,15 +40,18 @@
         meow-quit
         meow-replace
         meow-right
+        meow-save
         meow-till
         meow-undo
         meow-yank
+        multiple-cursors-mode
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert
         org-self-insert-command
         puni-backward-delete-char
         puni-backward-kill-word
+        puni-backward-sexp
         puni-forward-delete-char
         puni-forward-kill-word
         puni-forward-sexp
@@ -86,6 +89,7 @@
         ignore
         major-mode-hydra
         mc/mark-next-lines
+        meow-cancel-selection
         meow-keypad
         meow-search
         org-cycle
