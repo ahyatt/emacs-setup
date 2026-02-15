@@ -786,6 +786,7 @@
   :custom
   (ef-themes-mixed-fonts t)
   (ef-themes-variable-pitch-ui t)
+  :config
   (defun ash/ef-themes-custom-faces ()
     "Customization on top of ef-themes."
     (ef-themes-with-colors
@@ -793,9 +794,6 @@
        `(hydra-face-blue ((,c :foreground ,accent-0))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
-
-;; Selection of our default theme
-(ef-themes-select 'ef-day)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -1188,7 +1186,7 @@ This has to be done as a string to handle 64-bit or larger ints."
      '("y" . meow-save)
      '("Y" . meow-sync-grab)
      '("z" . meow-pop-selection)
-     '("'" . )
+     '("'" . repeat-fu-execute)
      '("<escape>" . ignore)))
   (require 'meow-cheatsheet-layout)
   (meow-setup)
