@@ -742,6 +742,14 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
                             default-directory)))
       (magit-status project-root))))
 #+end_src
+
+And Forge
+
+#+begin_src emacs-lisp
+(use-package forge
+  :ensure t
+  :after magit)
+#+end_src
 *** LSP variants
 **** LSP
 #+begin_src emacs-lisp
@@ -1017,22 +1025,23 @@ various places.
 ** Appearance
 *** Themes
 #+BEGIN_SRC emacs-lisp
-  (use-package ef-themes
-    :ensure t
-    :custom
-    (ef-themes-mixed-fonts t)
-    (ef-themes-variable-pitch-ui t)
-    (defun ash/ef-themes-custom-faces ()
-      "Customization on top of ef-themes."
-      (ef-themes-with-colors
-        (custom-set-faces
-         `(hydra-face-blue ((,c :foreground ,accent-0)))
-         `(telephone-line-projectile ((,c :foreground ,accent-1))))))
-    (add-hook 'ef-themes-post-load-hook
-              #'ash/ef-themes-custom-faces))
-
-  ;; Selection of our default theme
-  (modus-themes-load-theme 'ef-day)
+(use-package ef-themes
+  :ensure t
+  :init
+  (ef-themes-take-over-modus-themes-mode 1)
+  :custom
+  (modus-themes-mixed-fonts t)
+  (modus-themes-variable-pitch-ui t)
+  (modus-themes-italic-constructs t)
+  :config
+  (defun ash/ef-themes-custom-faces ()
+    "Customization on top of ef-themes."
+    (ef-themes-with-colors
+      (custom-set-faces
+       `(hydra-face-blue ((,c :foreground ,accent-0))))))
+  (add-hook 'ef-themes-post-load-hook
+            #'ash/ef-themes-custom-faces)
+  (modus-themes-load-theme 'ef-winter))
 #+END_SRC
 
 Make org prettier.
