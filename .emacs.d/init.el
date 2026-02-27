@@ -1123,7 +1123,7 @@ Also clocks into the org task."
   "Send /finish-org, remove worktree, and close tab."
   (interactive)
   (let* ((worktree-name (tabspaces--current-tab-name))
-         (worktree-path (format "~/src/%s" worktree-name))
+         (worktree-path (expand-file-name (format "~/src/%s" worktree-name)))
          (agent-buffers (ash/agent-buffers)))
     (unless worktree-path
       (user-error "No worktree associated with this agent shell"))
