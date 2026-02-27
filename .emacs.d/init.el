@@ -289,15 +289,6 @@
   :hook
   (embark-collect-mode . embark-consult-preview-minor-mode))
 
-(use-package consult-flycheck
-  :bind (:map flycheck-command-map
-              ("!" . consult-flycheck)
-              :map prog-mode-map
-              ("<f2>" . flycheck-list-errors))
-  ;; If flycheck idle change delay is too short, then it overwrites the helpful
-  ;; messages about how to call elisp functions, etc.
-  :config (setq flycheck-idle-change-delay 15))
-
 (use-package winum
   :config (winum-mode 1)
   :general
@@ -459,20 +450,6 @@
      "Movement"
      (("f" yas-next-field "forward field" :exit nil)
       ("b" yas-prev-field "previous field" :exit nil))))
-  (pretty-hydra-define hydra-flycheck ()
-    ("Movement"
-     (("n" flymake-goto-next-error "next error")
-      ("p" flymake-goto-prev-error "previous error")
-      ("d" flymake-goto-diagnostic "diagnostic")
-      ("<" flycheck-previous-error "previous flycheck error")
-      (">" flycheck-next-error "next flycheck error")
-      ("l" flycheck-list-errors "list")
-      ("." consult-flymake))
-     "Display"
-     (("." flymake-show-diagnostic "show diagnostic")
-      ("B" flymake-show-diagnostics-buffer "diagnostics buffers"))
-     "Misc"
-     (("=" hydra-all/body "back" :exit t))))
   ;; notmuch is too specialized to be set up here, it varies from machine to
   ;; machine. At some point I should break it down into the general &
   ;; specialized parts.
@@ -500,7 +477,6 @@
      (("i" consult-imenu "imenu" :exit t)
       ("m" consult-mark "mark rings" :exit t)
       ("o" consult-multi-occur "occur" :exit t)
-      ("e" consult-flycheck "errors" :exit t)
       ("l" consult-goto-line "line" :exit t))
      "Other"
      (("r" consult-ripgrep "grep" :exit t)
@@ -522,7 +498,6 @@
       ("y" hydra-yas/body "snippets" :exit t))
      "Movement"
      (("j" hydra-jumps/body "jumps" :exit t)
-      ("E" hydra-flycheck/body "errors" :exit t)
       ("G" deadgrep "grep" :exit t))
      "Misc"
      (("f" hydra-find/body "find" :exit t))))
@@ -586,8 +561,6 @@
 (use-package lsp-mode
   :config
   (setq lsp-warn-no-matched-clients nil)
-  :general
-  ("<f2>" 'lsp-ui-flycheck-list)
   :hook ((python-base-mode . lsp-mode)
          (go-mode . lsp-mode)
          (go-ts-mode . lsp-mode)))
@@ -602,7 +575,6 @@
                            ["flake8"]
                            :plugins (:pycodestyle (:enabled nil) :mccabe (:enabled nil) :pyflakes (:enabled nil) :flake8 (:enabled t)))))))
 
-(use-package flycheck-eglot)
 (use-package consult-eglot)
 (use-package consult-eglot-embark
   :config
@@ -632,49 +604,6 @@
   :config
   (global-git-gutter-mode 't)
   :diminish git-gutter-mode)
-
-(use-package flycheck
-  :custom
-  (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
-  :config
-  (add-hook 'after-init-hook 'global-flycheck-mode)
-  (setq-default flycheck-highlighting-mode 'lines
-                ;; Wait before complaining so we don't step on useful help messages.
-                flycheck-idle-change-delay 3)
-  ;; Define fringe indicator / warning levels
-  (define-fringe-bitmap 'flycheck-fringe-bitmap-ball
-    (vector #b00000000
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00011100
-            #b00111110
-            #b00111110
-            #b00111110
-            #b00011100
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00000000
-            #b00000000))
-  (flycheck-define-error-level 'error
-    :severity 2
-    :overlay-category 'flycheck-error-overlay
-    :fringe-bitmap 'flycheck-fringe-bitmap-ball
-    :fringe-face 'flycheck-fringe-error)
-  (flycheck-define-error-level 'warning
-    :severity 1
-    :overlay-category 'flycheck-warning-overlay
-    :fringe-bitmap 'flycheck-fringe-bitmap-ball
-    :fringe-face 'flycheck-fringe-warning)
-  (flycheck-define-error-level 'info
-    :severity 0
-    :overlay-category 'flycheck-info-overlay
-    :fringe-bitmap 'flycheck-fringe-bitmap-ball
-    :fringe-face 'flycheck-fringe-info))
 
 (use-package tree-sitter
   :config
@@ -706,10 +635,8 @@
 (use-package tree-sitter-langs)
 
 (use-package markdown-mode)
-(use-package flymake-markdownlint)
 
 (use-package yaml-mode)
-(use-package flycheck-yamllint)
 
 ;; Assuming python-ts-mode is installed
 ;; Add a hook to automatically use python-ts-mode for Python files
@@ -718,10 +645,6 @@
 
 (use-package lsp-pyright
   :ensure t)
-;; setup flycheck
-(add-hook 'python-base-mode-hook (lambda ()
-                                   (flycheck-select-checker 'python-pyright)
-                                   (setq flycheck-disabled-checkers '(python-mypy python-pylint))))
 
 (use-package virtualenvwrapper
   :ensure t
@@ -768,7 +691,7 @@
                                              default-directory)))
                   (apply orig-fun args)))))
 
-(use-package flycheck-package)
+
 
 (use-package copilot
   :vc (:url "https://github.com/copilot-emacs/copilot.el"
@@ -808,9 +731,6 @@
        `(telephone-line-projectile ((,c :foreground ,accent-1))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
-
-;; Selection of our default theme
-(ef-themes-select 'ef-day)
 
 (use-package org-bullets
   :init (add-hook 'org-mode-hook #'org-bullets-mode))
@@ -861,7 +781,23 @@
   (spacious-padding-mode 1))
 
 (use-package olivetti :ensure t
-  :hook ((text-mode prog-mode org-mode) . olivetti-mode))
+  :hook ((text-mode prog-mode org-mode) . olivetti-mode)
+  :config
+  (defun ash/olivetti-target-columns ()
+    "Return target column width for the current major mode, or nil."
+    (cond ((derived-mode-p 'python-mode 'python-ts-mode) 120)
+          ((derived-mode-p 'org-mode) 80)
+          (t nil)))
+
+  (defun ash/olivetti-adjust-scale ()
+    "Scale text so the target number of columns fills the window width."
+    (when-let ((target (and olivetti-mode (ash/olivetti-target-columns))))
+      (let* ((ratio (/ (float (window-pixel-width))
+                       (* target (frame-char-width))))
+             (level (/ (log ratio) (log text-scale-mode-step))))
+        (text-scale-set (min (max 0 (floor level)) 2)))))
+
+  (add-hook 'olivetti-mode-hook #'ash/olivetti-adjust-scale))
 
 (use-package auto-dim-other-buffers
   :ensure t
@@ -1078,9 +1014,6 @@
         (ekg-save-note (ekg-note-create :text text :mode (if org-mode 'org-mode 'text-mode)
                                         :tags `(,(ekg-tag-for-date) "log"))))))
 
-  (dolist (h '(ekg-capture-mode-hook ekg-edit-mode-hook ekg-notes-mode-hook))
-    (add-hook h (lambda ()
-                  (when (boundp 'flycheck-mode) (flycheck-mode -1)))))
   (add-to-list 'display-buffer-alist '("*EKG Capture.*\\*"
                                        (display-buffer-in-side-window)
                                        (side . right)
@@ -1125,6 +1058,7 @@ Also clocks into the org task."
                                    (string= (alist-get 'name tab) worktree-name))
                                  (funcall tab-bar-tabs-function))))
     (org-set-property "WORKTREE" worktree-name)
+    (org-todo "STARTED")
     (save-buffer)
     (if existing-tab
         ;; Switch to existing tab
@@ -1135,8 +1069,6 @@ Also clocks into the org task."
              (org-context (buffer-substring-no-properties
                            (org-entry-beginning-position)
                            (org-entry-end-position))))
-        ;; Set task to STARTED
-        (org-todo "STARTED")
         ;; Create worktree from main branch if it doesn't exist
         (unless (file-directory-p worktree-path)
           (let ((default-directory base-repo))
@@ -1156,16 +1088,18 @@ Also clocks into the org task."
         (tab-bar-new-tab)
         (tab-bar-rename-tab worktree-name)
         ;; Start agent shell in worktree
-        (run-at-time 1 nil
+        (run-at-time 1.5 nil
                      (lambda (path)
                        (let ((default-directory path))
                          (pi-coding-agent)))
                      worktree-path)
 
         ;; Store worktree info in buffer and send context
-        (run-at-time 1 nil
+        (run-at-time 2 nil
                      (lambda (path name org-id)
-                       (mapc (lambda (buf)
+                       (let ((default-directory path))
+                         (message "In lambda: agent buffers: %S" (mapcar #'buffer-name (ash/agent-buffers)))
+                         (mapc (lambda (buf)
                               (with-current-buffer buf
                                 (setq-local ash/agent-shell-worktree-path path)
                                 (setq-local ash/agent-shell-worktree-name name)
@@ -1173,7 +1107,7 @@ Also clocks into the org task."
                                 (when (string-match "input" (buffer-name buf))
                                   (insert (format "/do-org %s" org-id))
                                   (pi-coding-agent-send))))
-                             (ash/agent-buffers)))
+                             (ash/agent-buffers))))
                      worktree-path worktree-name org-id)))))
 
 (defun ash/agent-buffers ()
@@ -1197,6 +1131,7 @@ Also clocks into the org task."
     (mapc #'kill-buffer agent-buffers)
     ;; Remove worktree
     (let ((default-directory (expand-file-name "~/src/workspace")))
+      (message "Removing worktree at %s" worktree-path)
       (shell-command (format "git worktree remove %s"
                              (shell-quote-argument worktree-path)))
       ;; Delete the branch
@@ -1438,6 +1373,7 @@ This has to be done as a string to handle 64-bit or larger ints."
              tabspaces-open-or-create-project-and-workspace)
   :general
   ("s-b" 'project-switch-to-buffer)
+  ("s-T" 'tab-bar-select-tab-by-name)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
