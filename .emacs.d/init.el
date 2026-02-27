@@ -723,6 +723,7 @@
   :custom
   (ef-themes-mixed-fonts t)
   (ef-themes-variable-pitch-ui t)
+  :config
   (defun ash/ef-themes-custom-faces ()
     "Customization on top of ef-themes."
     (ef-themes-with-colors
@@ -861,7 +862,7 @@
       org-agenda-span 'day
       org-agenda-include-diary t
       org-agenda-start-with-clockreport-mode t
-      org-agenda-start-with-archives-mode t
+      org-agenda-start-with-archives-mode nil
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
@@ -1374,6 +1375,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   :general
   ("s-b" 'project-switch-to-buffer)
   ("s-T" 'tab-bar-select-tab-by-name)
+  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1384,3 +1386,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
+
+(general-define-key "s-T" 'tab-bar-select-tab-by-name)

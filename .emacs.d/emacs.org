@@ -638,6 +638,10 @@ Hydra is useful for doing lots of things in succession.
   (global-set-key (kbd "C-c c") 'hydra-all/body)
   (global-set-key (kbd "s-c") 'hydra-all/body))
 #+END_SRC
+
+#+RESULTS:
+: t
+
 ** Calc helpers
 #+begin_src emacs-lisp
 (use-package casual
@@ -717,6 +721,14 @@ Confession time: vi's killing up to a char is better than emacs, so let's change
                                            (error "No project found in the current directory")))
                          default-directory)))
       (magit-status project-root))))
+#+end_src
+
+And Forge
+
+#+begin_src emacs-lisp
+(use-package forge
+  :ensure t
+  :after magit)
 #+end_src
 *** LSP variants
 **** LSP
@@ -942,18 +954,20 @@ various places.
 #+BEGIN_SRC emacs-lisp
 (use-package ef-themes
   :ensure t
+  :init
+  (ef-themes-take-over-modus-themes-mode 1)
   :custom
-  (ef-themes-mixed-fonts t)
-  (ef-themes-variable-pitch-ui t)
+  (modus-themes-mixed-fonts t)
+  (modus-themes-variable-pitch-ui t)
+  (modus-themes-italic-constructs t)
+  :config
   (defun ash/ef-themes-custom-faces ()
     "Customization on top of ef-themes."
     (ef-themes-with-colors
       (custom-set-faces
-       `(hydra-face-blue ((,c :foreground ,accent-0)))
-       `(telephone-line-projectile ((,c :foreground ,accent-1))))))
+       `(hydra-face-blue ((,c :foreground ,accent-0))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
-
 #+END_SRC
 
 Make org prettier.
@@ -1143,7 +1157,7 @@ This requires =rg= (ripgrep).
       org-agenda-span 'day
       org-agenda-include-diary t
       org-agenda-start-with-clockreport-mode t
-      org-agenda-start-with-archives-mode t
+      org-agenda-start-with-archives-mode nil
       org-deadline-warning-days 4
       org-capture-bookmark nil  ;; otherwise it sets the bookmark face.
       org-clock-idle-time 30
@@ -1736,6 +1750,7 @@ Finally, set up tabs the way I like them, so everything has its place.
   :general
   ("s-b" 'project-switch-to-buffer)
   ("s-T" 'tab-bar-select-tab-by-name)
+  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1746,4 +1761,10 @@ Finally, set up tabs the way I like them, so everything has its place.
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
+#+end_src
+
+When there's enough tabs, it's important to switch between them efficiently:
+
+#+begin_src emacs-lisp
+(general-define-key "s-T" 'tab-bar-select-tab-by-name)
 #+end_src

@@ -44,6 +44,7 @@
         meow-till
         meow-undo
         meow-yank
+        multiple-cursors-mode
         org-beginning-of-line
         org-end-of-line
         org-force-self-insert
