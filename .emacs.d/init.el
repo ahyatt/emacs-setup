@@ -33,6 +33,7 @@
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
  completion-cycle-threshold 5                     ; Tab-cycle completions if there are only 5 of them.
  completions-detailed t                           ; Add extra detail to completions
+ completion-in-region-function #'consult-completion-in-region ; Use consult for completion in region
  cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
@@ -558,6 +559,10 @@
                          default-directory)))
       (magit-status project-root))))
 
+(use-package forge
+  :ensure t
+  :after magit)
+
 (use-package lsp-mode
   :config
   (setq lsp-warn-no-matched-clients nil)
@@ -720,16 +725,18 @@
 
 (use-package ef-themes
   :ensure t
+  :init
+  (ef-themes-take-over-modus-themes-mode 1)
   :custom
-  (ef-themes-mixed-fonts t)
-  (ef-themes-variable-pitch-ui t)
+  (modus-themes-mixed-fonts t)
+  (modus-themes-variable-pitch-ui t)
+  (modus-themes-italic-constructs t)
   :config
   (defun ash/ef-themes-custom-faces ()
     "Customization on top of ef-themes."
     (ef-themes-with-colors
       (custom-set-faces
-       `(hydra-face-blue ((,c :foreground ,accent-0)))
-       `(telephone-line-projectile ((,c :foreground ,accent-1))))))
+       `(hydra-face-blue ((,c :foreground ,accent-0))))))
   (add-hook 'ef-themes-post-load-hook
             #'ash/ef-themes-custom-faces))
 
@@ -786,7 +793,7 @@
   :config
   (defun ash/olivetti-target-columns ()
     "Return target column width for the current major mode, or nil."
-    (cond ((derived-mode-p 'python-mode 'python-ts-mode) 120)
+    (cond ((derived-mode-p 'prog-mode) 120)
           ((derived-mode-p 'org-mode) 80)
           (t nil)))
 
@@ -796,7 +803,8 @@
       (let* ((ratio (/ (float (window-pixel-width))
                        (* target (frame-char-width))))
              (level (/ (log ratio) (log text-scale-mode-step))))
-        (text-scale-set (min (max 0 (floor level)) 2)))))
+        (text-scale-set (min (max 0 (floor level)) 2))
+        (setq-local olivetti-body-width target))))
 
   (add-hook 'olivetti-mode-hook #'ash/olivetti-adjust-scale))
 
@@ -1029,9 +1037,10 @@
 (defvar-local ash/agent-shell-worktree-name nil
   "Buffer-local worktree name for this agent shell.")
 
-(defun ash/org-item-to-worktree-name ()
-  "Get a short worktree name from the current org item using LLM."
-  (let* ((heading (org-get-heading t t t t))
+(defun ash/org-item-to-worktree-name (&optional heading)
+  "Get a short worktree name from HEADING using LLM.
+If HEADING is nil, use the current org heading."
+  (let* ((heading (or heading (org-get-heading t t t t)))
          (response (llm-chat emacs-llm-default-provider
                              (llm-make-chat-prompt
                               (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
@@ -1041,75 +1050,103 @@
          (parsed (json-parse-string response :object-type 'plist)))
     (plist-get parsed :name)))
 
+(defun ash/org-code--setup-worktree-and-agent (worktree-name agent-command)
+  "Create a worktree, tab, and agent for WORKTREE-NAME.
+AGENT-COMMAND is the string to send to the agent input buffer."
+  (let* ((base-repo (expand-file-name "~/src/workspace"))
+         (worktree-path (expand-file-name (format "../%s" worktree-name) base-repo)))
+    ;; Create worktree from main branch if it doesn't exist
+    (unless (file-directory-p worktree-path)
+      (let ((default-directory base-repo))
+        (unless (or
+                 ;; worktree already exists (maybe from another agent shell)
+                 (file-directory-p worktree-path)
+                 (zerop (shell-command
+                        (format "git worktree add -b ahyatt/%s %s main"
+                                (shell-quote-argument worktree-name)
+                                (shell-quote-argument worktree-path)))))
+          (user-error "Failed to create worktree"))))
+    ;; Symlink .pi/git from base repo
+    (let ((base-pi-git (expand-file-name ".pi/git" base-repo))
+          (wt-pi-git (expand-file-name ".pi/git" worktree-path)))
+      (when (and (file-directory-p base-pi-git)
+                 (not (file-exists-p wt-pi-git)))
+        (make-symbolic-link base-pi-git wt-pi-git)))
+    ;; Create tab and switch to it
+    (tab-bar-new-tab)
+    (tab-bar-rename-tab worktree-name)
+    ;; Start agent shell in worktree
+    (run-at-time 1.5 nil
+                 (lambda (path)
+                   (let ((default-directory path))
+                     (pi-coding-agent)))
+                 worktree-path)
+    ;; Store worktree info and send context
+    (run-at-time 2 nil
+                 (lambda (path name cmd)
+                   (let ((default-directory path))
+                     (message "In lambda: agent buffers: %S" (mapcar #'buffer-name (ash/agent-buffers)))
+                     (mapc (lambda (buf)
+                             (with-current-buffer buf
+                               (setq-local ash/agent-shell-worktree-path path)
+                               (setq-local ash/agent-shell-worktree-name name)
+                               (goto-char (point-max))
+                               (when (string-match "input" (buffer-name buf))
+                                 (insert cmd)
+                                 (pi-coding-agent-send))))
+                           (ash/agent-buffers))))
+                 worktree-path worktree-name agent-command)))
+
+(defun ash/org-code--from-org-mode ()
+  "Run `ash/org-code' from an `org-mode' buffer."
+  (require 'org-id)
+  (let* ((org-id (org-id-get-create t))
+         (worktree-name (ash/org-item-to-worktree-name)))
+    (org-set-property "WORKTREE" worktree-name)
+    (org-todo "STARTED")
+    (save-buffer)
+    (list worktree-name (format "/do-org %s" org-id))))
+
+(defun ash/org-code--from-ekg-org-view ()
+  "Run `ash/org-code' from an `ekg-org-view-mode' buffer."
+  (require 'ekg-org)
+  (let* ((note-id (ekg-org-view--note-at-point))
+         (note (when note-id (ekg-get-note-with-id note-id))))
+    (unless note (user-error "No task at point"))
+    (let* ((title (or (ekg-org--note-title note) "Untitled"))
+           (existing-worktree (ekg-org-get-property note "WORKTREE"))
+           (worktree-name (or existing-worktree
+                               (ash/org-item-to-worktree-name title))))
+      ;; Store worktree name on the note if not already set
+      (unless existing-worktree
+        (ekg-org-set-property note "WORKTREE" worktree-name)
+        (ekg-save-note note))
+      ;; Set state to STARTED
+      (ekg-org-change-state "STARTED")
+      (list worktree-name (format "/do-ekg-org %s" note-id)))))
+
 (defun ash/org-code ()
   "Start standard code agent shell for the current org item.
 
 This will also create a new git worktree.
 
+Works in both `org-mode' buffers and `ekg-org-view-mode' buffers.
 If a tab and buffer already exist for this item, switch to them instead.
-Also clocks into the org task."
+Also sets the task state to STARTED."
   (interactive)
-  (require 'org)
-  (require 'org-id)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org-mode buffer"))
-  (let* ((org-id (org-id-get-create t))
-         (worktree-name (ash/org-item-to-worktree-name))
-         (existing-tab (seq-find (lambda (tab)
-                                   (string= (alist-get 'name tab) worktree-name))
-                                 (funcall tab-bar-tabs-function))))
-    (org-set-property "WORKTREE" worktree-name)
-    (org-todo "STARTED")
-    (save-buffer)
-    (if existing-tab
-        ;; Switch to existing tab
-        (tab-bar-select-tab-by-name worktree-name)
-      ;; Create new worktree and tab
-      (let* ((base-repo (expand-file-name "~/src/workspace"))
-             (worktree-path (expand-file-name (format "../%s" worktree-name) base-repo))
-             (org-context (buffer-substring-no-properties
-                           (org-entry-beginning-position)
-                           (org-entry-end-position))))
-        ;; Create worktree from main branch if it doesn't exist
-        (unless (file-directory-p worktree-path)
-          (let ((default-directory base-repo))
-          (unless (zerop (shell-command
-                          (format "git worktree add -b ahyatt/%s %s main"
-                                  (shell-quote-argument worktree-name)
-                                  (shell-quote-argument worktree-path))))
-            (user-error "Failed to create worktree"))))
-        ;; Symlink .pi/git from base repo so the new worktree's pi
-        ;; session doesn't need to re-clone extensions on first start.
-        (let ((base-pi-git (expand-file-name ".pi/git" base-repo))
-              (wt-pi-git (expand-file-name ".pi/git" worktree-path)))
-          (when (and (file-directory-p base-pi-git)
-                     (not (file-exists-p wt-pi-git)))
-            (make-symbolic-link base-pi-git wt-pi-git)))
-        ;; Create tab and switch to it
-        (tab-bar-new-tab)
-        (tab-bar-rename-tab worktree-name)
-        ;; Start agent shell in worktree
-        (run-at-time 1.5 nil
-                     (lambda (path)
-                       (let ((default-directory path))
-                         (pi-coding-agent)))
-                     worktree-path)
-
-        ;; Store worktree info in buffer and send context
-        (run-at-time 2 nil
-                     (lambda (path name org-id)
-                       (let ((default-directory path))
-                         (message "In lambda: agent buffers: %S" (mapcar #'buffer-name (ash/agent-buffers)))
-                         (mapc (lambda (buf)
-                              (with-current-buffer buf
-                                (setq-local ash/agent-shell-worktree-path path)
-                                (setq-local ash/agent-shell-worktree-name name)
-                                (goto-char (point-max))
-                                (when (string-match "input" (buffer-name buf))
-                                  (insert (format "/do-org %s" org-id))
-                                  (pi-coding-agent-send))))
-                             (ash/agent-buffers))))
-                     worktree-path worktree-name org-id)))))
+  (pcase-let ((`(,worktree-name ,agent-command)
+               (cond
+                ((derived-mode-p 'org-mode)
+                 (ash/org-code--from-org-mode))
+                ((derived-mode-p 'ekg-org-view-mode)
+                 (ash/org-code--from-ekg-org-view))
+                (t (user-error "Not in an org-mode or ekg-org-view buffer")))))
+    (let ((existing-tab (seq-find (lambda (tab)
+                                    (string= (alist-get 'name tab) worktree-name))
+                                  (funcall tab-bar-tabs-function))))
+      (if existing-tab
+          (tab-bar-select-tab-by-name worktree-name)
+        (ash/org-code--setup-worktree-and-agent worktree-name agent-command)))))
 
 (defun ash/agent-buffers ()
   "Get the current agent shell buffers, as a list."
@@ -1375,7 +1412,6 @@ This has to be done as a string to handle 64-bit or larger ints."
   :general
   ("s-b" 'project-switch-to-buffer)
   ("s-T" 'tab-bar-select-tab-by-name)
-  ("C-x b" 'tabspaces-switch-buffer-and-tab)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
@@ -1388,3 +1424,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   (tabspaces-session-auto-restore t))
 
 (general-define-key "s-T" 'tab-bar-select-tab-by-name)
+
+(server-start)
