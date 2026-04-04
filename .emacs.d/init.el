@@ -276,8 +276,6 @@
   (add-to-list 'embark-target-finders 'ash/org-link))
 
 (use-package consult
-  :config
-  (add-hook 'completion-list-mode-hook #'consult-preview-at-point-mode)
   :general
   ("C-x b" 'consult-buffer))
 
@@ -1039,8 +1037,8 @@
 
 (defun ash/org-item-to-worktree-name (&optional heading)
   "Get a short worktree name from HEADING using LLM.
-If HEADING is nil, use the current org heading."
-  (let* ((heading (or heading (org-get-heading t t t t)))
+  (or (org-entry-get nil "worktree")
+      (let* ((heading (org-get-heading t t t t))
          (response (llm-chat emacs-llm-default-provider
                              (llm-make-chat-prompt
                               (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
@@ -1048,7 +1046,11 @@ If HEADING is nil, use the current org heading."
                                                        :properties (:name (:type "string"))
                                                        :required ["name"]))))
          (parsed (json-parse-string response :object-type 'plist)))
-    (plist-get parsed :name)))
+        (plist-get parsed :name))))
+
+(require 'org)
+(require 'org-id)
+(require 'tabspaces)
 
 (defun ash/org-code--setup-worktree-and-agent (worktree-name agent-command)
   "Create a worktree, tab, and agent for WORKTREE-NAME.
@@ -1134,19 +1136,68 @@ Works in both `org-mode' buffers and `ekg-org-view-mode' buffers.
 If a tab and buffer already exist for this item, switch to them instead.
 Also sets the task state to STARTED."
   (interactive)
-  (pcase-let ((`(,worktree-name ,agent-command)
-               (cond
-                ((derived-mode-p 'org-mode)
-                 (ash/org-code--from-org-mode))
-                ((derived-mode-p 'ekg-org-view-mode)
-                 (ash/org-code--from-ekg-org-view))
-                (t (user-error "Not in an org-mode or ekg-org-view buffer")))))
-    (let ((existing-tab (seq-find (lambda (tab)
-                                    (string= (alist-get 'name tab) worktree-name))
-                                  (funcall tab-bar-tabs-function))))
-      (if existing-tab
-          (tab-bar-select-tab-by-name worktree-name)
-        (ash/org-code--setup-worktree-and-agent worktree-name agent-command)))))
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an org-mode buffer"))
+  (let* ((org-id (org-id-get-create t))
+         (worktree-name (ash/org-item-to-worktree-name))
+         (existing-tab (seq-find (lambda (tab)
+                                   (string= (alist-get 'name tab) worktree-name))
+                                 (funcall tab-bar-tabs-function))))
+    (org-set-property "WORKTREE" worktree-name)
+    (save-buffer)
+    (if existing-tab
+        ;; Switch to existing tab
+        (tab-bar-select-tab-by-name worktree-name)
+      ;; Create new worktree and tab
+      (let* ((codebase (or (org-entry-get nil "codebase" t)
+                           (error "No codebase property found")))
+             (base-repo (expand-file-name (format "~/src/%s" codebase)))
+             (worktree-path (expand-file-name (format "~/src/%s" worktree-name) base-repo))
+             (org-context (buffer-substring-no-properties
+                           (org-entry-beginning-position)
+                           (org-entry-end-position))))
+        ;; Create worktree from main branch if it doesn't exist
+        (unless (file-directory-p worktree-path)
+          (let ((default-directory base-repo))
+          (unless (zerop (shell-command
+                          (format "git worktree add -b %s %s %s"
+                                  (shell-quote-argument worktree-name)
+                                  (shell-quote-argument worktree-path)
+                                  ;; If the develop branch exists, use it,
+                                  ;; otherwise use main, otherwise use master
+                                  (or
+                                   (let ((develop-exists (zerop (shell-command "git rev-parse --verify develop"))))
+                                     (if develop-exists "develop" nil))
+                                   (let ((main-exists (zerop (shell-command "git rev-parse --verify main"))))
+                                     (if main-exists "main" nil))
+                                   (let ((master-exists (zerp (shell-command "git rev-parse --verify master"))))
+                                     (if master-exists "master" nil))))))
+            (user-error "Failed to create worktree"))))
+        ;; Create tab and switch to it
+        (tab-bar-new-tab)
+        (tab-bar-rename-tab worktree-name)
+        ;; Start agent shell in worktree
+        (run-at-time 0.5 nil
+                     (lambda (name path)
+                       (message "Starting agent in %s" path)
+                       (let ((default-directory path))
+                         (project-eshell)
+                         (pi-coding-agent)))
+                     worktree-name worktree-path)
+
+        ;; Store worktree info in buffer and send context
+        (run-at-time 1 nil
+                     (lambda (path name org-id)
+                       (mapc (lambda (buf)
+                              (with-current-buffer buf
+                                (setq-local ash/agent-shell-worktree-path path)
+                                (setq-local ash/agent-shell-worktree-name name)
+                                (when (string-match "input" (buffer-name buf))
+                                  (insert (format "/do-org %s" org-id))
+                                  (pi-coding-agent-send))
+                                (goto-char (point-max))))
+                             (ash/agent-buffers)))
+                     worktree-path worktree-name org-id)))))
 
 (defun ash/agent-buffers ()
   "Get the current agent shell buffers, as a list."
@@ -1161,15 +1212,16 @@ Also sets the task state to STARTED."
   "Send /finish-org, remove worktree, and close tab."
   (interactive)
   (let* ((worktree-name (tabspaces--current-tab-name))
-         (worktree-path (expand-file-name (format "~/src/%s" worktree-name)))
+         (codebase (format "~/src/%s" worktree-name))
+         (base-repo (expand-file-name codebase))
+         (worktree-path (expand-file-name worktree-name base-repo))
          (agent-buffers (ash/agent-buffers)))
     (unless worktree-path
       (user-error "No worktree associated with this agent shell"))
     ;; Kill the agent shell buffer
     (mapc #'kill-buffer agent-buffers)
     ;; Remove worktree
-    (let ((default-directory (expand-file-name "~/src/workspace")))
-      (message "Removing worktree at %s" worktree-path)
+    (let ((default-directory base-repo))
       (shell-command (format "git worktree remove %s"
                              (shell-quote-argument worktree-path)))
       ;; Delete the branch
@@ -1422,7 +1474,5 @@ This has to be done as a string to handle 64-bit or larger ints."
   ;; sessions
   (tabspaces-session t)
   (tabspaces-session-auto-restore t))
-
-(general-define-key "s-T" 'tab-bar-select-tab-by-name)
 
 (server-start)
