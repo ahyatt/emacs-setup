@@ -1360,7 +1360,7 @@ The way it works is that from org-mode we can clock in, start agentic flows that
   "Buffer-local worktree name for this agent shell.")
 
 (defun ash/org-item-to-worktree-name (&optional heading)
-  "Get a short worktree name from HEADING using LLM.
+  "Get a short worktree name from HEADING using LLM."
   (or (org-entry-get nil "worktree")
       (let* ((heading (org-get-heading t t t t))
          (response (llm-chat emacs-llm-default-provider

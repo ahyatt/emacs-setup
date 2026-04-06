@@ -180,11 +180,11 @@
 
 (use-package completion-preview
   :config
-  (global-completion-preview-mode 1) 
+  (global-completion-preview-mode 1)
   :bind
   (:map completion-preview-active-mode-map
-            ("C-n" . completion-preview-next-candidate)
-            ("C-p" . completion-preview-prev-candidate)))
+        ("C-n" . completion-preview-next-candidate)
+        ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -220,7 +220,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-    '(read-only t cursor-intangible t face minibuffer-prompt))
+        '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -300,7 +300,7 @@
   "Toggles window dedication in the selected window."
   (interactive)
   (set-window-dedicated-p (selected-window)
-     (not (window-dedicated-p (selected-window)))))
+                          (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
@@ -508,9 +508,9 @@
 (use-package casual
   :ensure t
   :config
-    (setq transient-align-variable-pitch t)
-    :bind (("s-o" . casual-editkit-main-tmenu)
-           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
+  (setq transient-align-variable-pitch t)
+  :bind (("s-o" . casual-editkit-main-tmenu)
+         :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -536,12 +536,12 @@
 (add-hook 'prog-mode-hook
           (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
-  (lambda ()
-    (when (derived-mode-p 'prog-mode)
-      (delete-trailing-whitespace))))
+          (lambda ()
+            (when (derived-mode-p 'prog-mode)
+              (delete-trailing-whitespace))))
 
 (use-package magit
- :general ("C-x g" 'ash/magit-status)
+  :general ("C-x g" 'ash/magit-status)
   :config
   (defun ash/magit-status ()
     "Open Magit status for the current project."
@@ -1036,16 +1036,16 @@
   "Buffer-local worktree name for this agent shell.")
 
 (defun ash/org-item-to-worktree-name (&optional heading)
-  "Get a short worktree name from HEADING using LLM.
+  "Get a short worktree name from HEADING using LLM."
   (or (org-entry-get nil "worktree")
       (let* ((heading (org-get-heading t t t t))
-         (response (llm-chat emacs-llm-default-provider
-                             (llm-make-chat-prompt
-                              (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
-                              :response-format '(:type object
-                                                       :properties (:name (:type "string"))
-                                                       :required ["name"]))))
-         (parsed (json-parse-string response :object-type 'plist)))
+             (response (llm-chat emacs-llm-default-provider
+                                 (llm-make-chat-prompt
+                                  (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
+                                  :response-format '(:type object
+                                                           :properties (:name (:type "string"))
+                                                           :required ["name"]))))
+             (parsed (json-parse-string response :object-type 'plist)))
         (plist-get parsed :name))))
 
 (require 'org)
@@ -1064,9 +1064,9 @@ AGENT-COMMAND is the string to send to the agent input buffer."
                  ;; worktree already exists (maybe from another agent shell)
                  (file-directory-p worktree-path)
                  (zerop (shell-command
-                        (format "git worktree add -b ahyatt/%s %s main"
-                                (shell-quote-argument worktree-name)
-                                (shell-quote-argument worktree-path)))))
+                         (format "git worktree add -b ahyatt/%s %s main"
+                                 (shell-quote-argument worktree-name)
+                                 (shell-quote-argument worktree-path)))))
           (user-error "Failed to create worktree"))))
     ;; Symlink .pi/git from base repo
     (let ((base-pi-git (expand-file-name ".pi/git" base-repo))
@@ -1118,7 +1118,7 @@ AGENT-COMMAND is the string to send to the agent input buffer."
     (let* ((title (or (ekg-org--note-title note) "Untitled"))
            (existing-worktree (ekg-org-get-property note "WORKTREE"))
            (worktree-name (or existing-worktree
-                               (ash/org-item-to-worktree-name title))))
+                              (ash/org-item-to-worktree-name title))))
       ;; Store worktree name on the note if not already set
       (unless existing-worktree
         (ekg-org-set-property note "WORKTREE" worktree-name)
@@ -1159,20 +1159,20 @@ Also sets the task state to STARTED."
         ;; Create worktree from main branch if it doesn't exist
         (unless (file-directory-p worktree-path)
           (let ((default-directory base-repo))
-          (unless (zerop (shell-command
-                          (format "git worktree add -b %s %s %s"
-                                  (shell-quote-argument worktree-name)
-                                  (shell-quote-argument worktree-path)
-                                  ;; If the develop branch exists, use it,
-                                  ;; otherwise use main, otherwise use master
-                                  (or
-                                   (let ((develop-exists (zerop (shell-command "git rev-parse --verify develop"))))
-                                     (if develop-exists "develop" nil))
-                                   (let ((main-exists (zerop (shell-command "git rev-parse --verify main"))))
-                                     (if main-exists "main" nil))
-                                   (let ((master-exists (zerp (shell-command "git rev-parse --verify master"))))
-                                     (if master-exists "master" nil))))))
-            (user-error "Failed to create worktree"))))
+            (unless (zerop (shell-command
+                            (format "git worktree add -b %s %s %s"
+                                    (shell-quote-argument worktree-name)
+                                    (shell-quote-argument worktree-path)
+                                    ;; If the develop branch exists, use it,
+                                    ;; otherwise use main, otherwise use master
+                                    (or
+                                     (let ((develop-exists (zerop (shell-command "git rev-parse --verify develop"))))
+                                       (if develop-exists "develop" nil))
+                                     (let ((main-exists (zerop (shell-command "git rev-parse --verify main"))))
+                                       (if main-exists "main" nil))
+                                     (let ((master-exists (zerp (shell-command "git rev-parse --verify master"))))
+                                       (if master-exists "master" nil))))))
+              (user-error "Failed to create worktree"))))
         ;; Create tab and switch to it
         (tab-bar-new-tab)
         (tab-bar-rename-tab worktree-name)
@@ -1189,13 +1189,13 @@ Also sets the task state to STARTED."
         (run-at-time 1 nil
                      (lambda (path name org-id)
                        (mapc (lambda (buf)
-                              (with-current-buffer buf
-                                (setq-local ash/agent-shell-worktree-path path)
-                                (setq-local ash/agent-shell-worktree-name name)
-                                (when (string-match "input" (buffer-name buf))
-                                  (insert (format "/do-org %s" org-id))
-                                  (pi-coding-agent-send))
-                                (goto-char (point-max))))
+                               (with-current-buffer buf
+                                 (setq-local ash/agent-shell-worktree-path path)
+                                 (setq-local ash/agent-shell-worktree-name name)
+                                 (when (string-match "input" (buffer-name buf))
+                                   (insert (format "/do-org %s" org-id))
+                                   (pi-coding-agent-send))
+                                 (goto-char (point-max))))
                              (ash/agent-buffers)))
                      worktree-path worktree-name org-id)))))
 
@@ -1258,7 +1258,7 @@ Input buffer on top, chat buffer on bottom."
 
 (general-define-key :keymaps 'org-mode-map
                     :predicate '(s-contains? "emacs.org" (buffer-name))
-            "C-c t" 'ash/tangle-config)
+                    "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
@@ -1410,46 +1410,46 @@ This has to be done as a string to handle 64-bit or larger ints."
   :keymap meow-org-motion-keymap)
 
 (meow-define-keys 'org-motion
-  '("<escape>" . meow-normal-mode)
-  '("i" . meow-insert-mode)
-  '("g" . meow-normal-mode)
-  '("u" .  meow-undo)
-  ;; Moving between headlines
-  '("k" .  org-previous-visible-heading)
-  '("j" .  org-next-visible-heading)
-  ;; Moving between headings at the same level
-  '("p" .  org-backward-heading-same-level)
-  '("n" .  org-forward-heading-same-level)
-  ;; Clock
-  '("I" .  org-clock-in)
-  '("O" .  org-clock-out)
-  ;; Moving up and down in the outline
-  '("," .  outline-up-heading)
-  '("." .  org-down-element)
-  ;; Subtree de/promotion, and reordering
-  '("L" .  org-demote-subtree)
-  '("H" .  org-promote-subtree)
-  '("J" .  org-move-subtree-down)
-  '("K" .  org-move-subtree-up)
-  ;; Completion-style search of headings
-  '("v" .  imenu)
-  ;; Setting subtree metadata
-  '("l" .  org-set-property)
-  '("t" .  org-todo)
-  '("d" .  org-deadline)
-  '("s" .  org-schedule)
-  '("e" .  org-set-effort)
-  '("Z" .  org-add-note)
-  ;; Block navigation
-  '("b" .  org-previous-block)
-  '("f" .  org-next-block)
-  ;; Narrowing/widening
-  '("N" .  org-narrow-to-subtree)
-  '("W" .  widen)
-  ;; Editing
-  '("a" . org-archive-subtree)
-  '("C-k" . org-cut-subtree)
-  '("T" .  org-insert-todo-heading-respect-content))
+                  '("<escape>" . meow-normal-mode)
+                  '("i" . meow-insert-mode)
+                  '("g" . meow-normal-mode)
+                  '("u" .  meow-undo)
+                  ;; Moving between headlines
+                  '("k" .  org-previous-visible-heading)
+                  '("j" .  org-next-visible-heading)
+                  ;; Moving between headings at the same level
+                  '("p" .  org-backward-heading-same-level)
+                  '("n" .  org-forward-heading-same-level)
+                  ;; Clock
+                  '("I" .  org-clock-in)
+                  '("O" .  org-clock-out)
+                  ;; Moving up and down in the outline
+                  '("," .  outline-up-heading)
+                  '("." .  org-down-element)
+                  ;; Subtree de/promotion, and reordering
+                  '("L" .  org-demote-subtree)
+                  '("H" .  org-promote-subtree)
+                  '("J" .  org-move-subtree-down)
+                  '("K" .  org-move-subtree-up)
+                  ;; Completion-style search of headings
+                  '("v" .  imenu)
+                  ;; Setting subtree metadata
+                  '("l" .  org-set-property)
+                  '("t" .  org-todo)
+                  '("d" .  org-deadline)
+                  '("s" .  org-schedule)
+                  '("e" .  org-set-effort)
+                  '("Z" .  org-add-note)
+                  ;; Block navigation
+                  '("b" .  org-previous-block)
+                  '("f" .  org-next-block)
+                  ;; Narrowing/widening
+                  '("N" .  org-narrow-to-subtree)
+                  '("W" .  widen)
+                  ;; Editing
+                  '("a" . org-archive-subtree)
+                  '("C-k" . org-cut-subtree)
+                  '("T" .  org-insert-todo-heading-respect-content))
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 
