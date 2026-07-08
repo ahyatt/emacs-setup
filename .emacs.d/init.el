@@ -199,6 +199,8 @@
         vertico-cycle t))
 
 (use-package completion-preview
+  :ensure nil
+  :if (fboundp 'global-completion-preview-mode)
   :config
   (global-completion-preview-mode 1)
   :bind
@@ -637,9 +639,12 @@
 
 (use-package tree-sitter
   :config
-  (global-tree-sitter-mode)
-  (treesit-auto-install-grammar t)
-  (treesit-enabled-modes t))
+  (when (fboundp 'global-tree-sitter-mode)
+    (global-tree-sitter-mode))
+  (when (fboundp 'treesit-auto-install-grammar)
+    (treesit-auto-install-grammar t))
+  (when (fboundp 'treesit-enabled-modes)
+    (treesit-enabled-modes t)))
 (use-package tree-sitter-langs)
 
 (use-package markdown-mode)
@@ -682,7 +687,13 @@
   :vc (:url "https://github.com/copilot-emacs/copilot.el"
             :rev :newest
             :branch "main")
-  :hook (prog-mode . copilot-mode)
+  :preface
+  (defun ash/copilot-mode-maybe ()
+    "Enable Copilot when its language server is available."
+    (when (and (not noninteractive)
+               (ignore-errors (copilot-server-executable)))
+      (copilot-mode 1)))
+  :hook (prog-mode . ash/copilot-mode-maybe)
   :bind (("C-c M-f" . copilot-complete)
          :map copilot-completion-map
          ("C-g" . 'copilot-clear-overlay)
@@ -824,12 +835,15 @@
          ("M" . ghostel-project-list-buffers)))
 
 (use-package ghostel-eshell
+  :ensure nil
   :hook (eshell-load . ghostel-eshell-visual-command-mode))
 
 (use-package ghostel-comint
+  :ensure nil
   :hook (after-init . ghostel-comint-global-mode))
 
 (use-package ghostel-compile
+  :ensure nil
   :hook (after-init . ghostel-compile-global-mode))
 
 (general-define-key "s-p" 'project-find-file)
@@ -1000,22 +1014,43 @@ wraps the entire quoted section in a div with class gmail_quote_container."
 
 (use-package ob-mermaid)
 
-(add-to-list 'load-path "~/src/llm")
-(require 'llm)
+(let ((llm-directory (expand-file-name "~/src/llm")))
+  (when (file-directory-p llm-directory)
+    (add-to-list 'load-path llm-directory)
+    (require 'llm nil t)))
 
 ;; This fix is needed to properly use auth-source-search.
 (setq epa-pinentry-mode 'loopback)
 
-(require 'llm-openai)
-(require 'llm-gemini)
-(require 'llm-claude)
-(require 'llm-deepseek)
-(defconst ash/llm-claude (make-llm-claude :key (plist-get (car (auth-source-search :host "llm.claude")) :secret)))
-(defconst ash/llm-openai (make-llm-openai :chat-model "gpt-4o" :key (plist-get (car (auth-source-search :host "llm.openai")) :secret)))
-(defconst ash/llm-openai-small (make-llm-openai :chat-model "gpt-4o-mini" :key (plist-get (car (auth-source-search :host "llm.openai")) :secret)))
-(defconst ash/llm-gemini (make-llm-gemini :key (plist-get (car (auth-source-search :host "llm.gemini")) :secret)))
-(defconst ash/llm-deepseek-reasoner (make-llm-deepseek :key (plist-get (car (auth-source-search :host "llm.deepseek")) :secret) :chat-model "deepseek-reasoner"))
-(defvar emacs-llm-default-provider ash/llm-claude "The default LLM provider to use in Emacs.")
+(defvar ash/llm-claude nil)
+(defvar ash/llm-openai nil)
+(defvar ash/llm-openai-small nil)
+(defvar ash/llm-gemini nil)
+(defvar ash/llm-deepseek-reasoner nil)
+(defvar emacs-llm-default-provider nil
+  "The default LLM provider to use in Emacs.")
+
+(defun ash/auth-secret (host)
+  "Return the auth-source secret for HOST, or nil when unavailable."
+  (when-let* ((entry (car (auth-source-search :host host :require '(:secret))))
+              (secret (plist-get entry :secret)))
+    (if (functionp secret) (funcall secret) secret)))
+
+(when (featurep 'llm)
+  (require 'llm-openai nil t)
+  (require 'llm-gemini nil t)
+  (require 'llm-claude nil t)
+  (require 'llm-deepseek nil t)
+  (when-let* ((key (ash/auth-secret "llm.claude")))
+    (setq ash/llm-claude (make-llm-claude :key key)))
+  (when-let* ((key (ash/auth-secret "llm.openai")))
+    (setq ash/llm-openai (make-llm-openai :chat-model "gpt-4o" :key key)
+          ash/llm-openai-small (make-llm-openai :chat-model "gpt-4o-mini" :key key)))
+  (when-let* ((key (ash/auth-secret "llm.gemini")))
+    (setq ash/llm-gemini (make-llm-gemini :key key)))
+  (when-let* ((key (ash/auth-secret "llm.deepseek")))
+    (setq ash/llm-deepseek-reasoner (make-llm-deepseek :key key :chat-model "deepseek-reasoner")))
+  (setq emacs-llm-default-provider ash/llm-claude))
 
 (use-package magit-gptcommit
   :ensure t
@@ -1071,7 +1106,7 @@ wraps the entire quoted section in a div with class gmail_quote_container."
 
 (require 'org)
 (require 'org-id)
-(require 'tabspaces)
+(use-package tabspaces :ensure t)
 
 (defun ash/org-code--gather-context ()
   "Gather all context from current buffer for `ash/org-code'.
@@ -1434,7 +1469,7 @@ Input buffer on top, chat buffer on bottom."
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 
-(use-package org-auto-tangl
+(use-package org-auto-tangle
   :defer t
   :hook (org-mode . org-auto-tangle-mode))
 
