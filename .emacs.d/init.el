@@ -6,7 +6,13 @@
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
   (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
+(setq use-package-always-ensure t)
 (package-initialize)
+
+(unless (fboundp 'set-local)
+  (defun set-local (variable value)
+    "Make VARIABLE buffer local and set it to VALUE."
+    (set (make-local-variable variable) value)))
 
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -26,6 +32,8 @@
 (setq-default
  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
  auto-window-vscroll nil                          ; Lighten vertical scroll
+ bidi-display-reordering 'left-to-right           ; If you don't use RTL languages, this is a speedup
+ bidi-paragraph-direction 'left-to-right          ; Ditto
  bookmark-save-flag 1                             ; Always save bookmarks
  calc-kill-line-numbering nil                     ; Do not show line numbers in calc
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
@@ -33,25 +41,34 @@
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
  completion-cycle-threshold 5                     ; Tab-cycle completions if there are only 5 of them.
  completions-detailed t                           ; Add extra detail to completions
+ completion-eager-display t                       ; Show completions immediately
+ completion-eager-update t                        ; Keep completions updated as you type
  completion-in-region-function #'consult-completion-in-region ; Use consult for completion in region
- cursor-in-non-selected-windows t                 ; Hide the cursor in inactive windows
+ cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
  dired-vc-rename-file t                           ; Rename files in vc via dired
  display-time-default-load-average nil            ; Don't display load average
  display-time-format "%H:%M"                      ; Format the time string
+ eldoc-help-at-point t                            ; Show documentation in the echo area
  fill-column 80                                   ; Set width for automatic line breaks
  help-window-select t                             ; Focus new help windows when opened
+ highlight-nonselected-windows nil                ; No need to see highlights in other windows
  indent-tabs-mode nil                             ; Stop using tabs to indent
  inhibit-startup-screen t                         ; Disable start-up screen
  initial-scratch-message ""                       ; Empty the initial *scratch* buffer
+ kill-do-not-save-duplicates t                    ; Eliminate duplicates in the kill ring
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
+ minibuffer-visible-completion 'up-down           ; Navigate minibuffer with arrow keys
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  next-error-message-highlight t                   ; Highlight the current error in next-error buffer.
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
+ read-process-output-max (* 4 1024 1024)          ; Bigger read-process buffer
  reb-re-syntax 'string                            ; No double blacklashes in re-builder
  recenter-positions '(5 top bottom)               ; Set re-centering positions
  redisplay-dont-pause t                           ; As recommended by Mastering Emacs
+ redisplay-skip-fontification-on-input t          ; For speed
+ save-interprogram-paste-before-kill t            ; Useful to keep most useful things in kill ring
  scroll-conservatively most-positive-fixnum       ; Always scroll by one line.
  scroll-margin 10                                 ; Add a margin when scrolling vertically
  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
@@ -90,6 +107,8 @@
 (add-hook 'focus-out-hook #'garbage-collect)
 
 (ffap-bindings)
+;; Don't try to contact machines on ffap (for latency reasons)
+(setq-default ffap-machine-p-known 'reject)
 
 (setq-default custom-file (expand-file-name ".custom.el" user-emacs-directory))
 (when (file-exists-p custom-file)
@@ -97,6 +116,7 @@
 
 (setq mac-command-modifier 'super)
 (setq mac-option-modifier 'meta)
+(setq mac-right-command-modifier 'hyper)
 
 (set-input-method "rfc1345")
 
@@ -206,6 +226,13 @@
     (define-key map (kbd "?") nil)))
 
 (use-package savehist
+  :custom (savehist-additional-variables '(search-ring regexp-search-ring kill-ring))
+  :config
+  (add-hook 'savehist-save-hook
+            (lambda ()
+              (setq kill-ring
+                    (mapcar #'substring-no-properties
+                            (cl-remove-if-not #'stringp kill-ring)))))
   :init
   (savehist-mode))
 
@@ -611,30 +638,8 @@
 (use-package tree-sitter
   :config
   (global-tree-sitter-mode)
-  (setq treesit-language-source-alist
-        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-          (c "https://github.com/tree-sitter/tree-sitter-c")
-          (cmake "https://github.com/uyha/tree-sitter-cmake")
-          (common-lisp "https://github.com/theHamsta/tree-sitter-commonlisp")
-          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-          (css "https://github.com/tree-sitter/tree-sitter-css")
-          (csharp "https://github.com/tree-sitter/tree-sitter-c-sharp")
-          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (go "https://github.com/tree-sitter/tree-sitter-go" "v0.23.0")
-          (go-mod "https://github.com/camdencheek/tree-sitter-go-mod")
-          (html "https://github.com/tree-sitter/tree-sitter-html")
-          (js . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
-          (json "https://github.com/tree-sitter/tree-sitter-json")
-          (lua "https://github.com/Azganoth/tree-sitter-lua")
-          (make "https://github.com/alemuller/tree-sitter-make")
-          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-          (python "https://github.com/tree-sitter/tree-sitter-python")
-          (r "https://github.com/r-lib/tree-sitter-r")
-          (rust "https://github.com/tree-sitter/tree-sitter-rust")
-          (toml "https://github.com/tree-sitter/tree-sitter-toml")
-          (tsx . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
-          (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
-          (yaml "https://github.com/ikatyang/tree-sitter-yaml"))))
+  (treesit-auto-install-grammar t)
+  (treesit-enabled-modes t))
 (use-package tree-sitter-langs)
 
 (use-package markdown-mode)
@@ -654,27 +659,6 @@
   :init
   (venv-initialize-eshell))
 
-(use-package combobulate
-  :preface
-  ;; You can customize Combobulate's key prefix here.
-  ;; Note that you may have to restart Emacs for this to take effect!
-  (setq combobulate-key-prefix "s-o")
-
-  ;; Optional, but recommended.
-  ;;
-  ;; You can manually enable Combobulate with `M-x
-  ;; combobulate-mode'.
-  :hook
-  ((python-ts-mode . combobulate-mode)
-   (typst-ts-mode . combobulate-mode)
-   (js-ts-mode . combobulate-mode)
-   (html-ts-mode . combobulate-mode)
-   (css-ts-mode . combobulate-mode)
-   (yaml-ts-mode . combobulate-mode)
-   (typescript-ts-mode . combobulate-mode)
-   (json-ts-mode . combobulate-mode)
-   (tsx-ts-mode . combobulate-mode)))
-
 (use-package apheleia
   :config
   (apheleia-global-mode +1)
@@ -693,8 +677,6 @@
                 (let ((default-directory (or (locate-dominating-file buffer-file-name ".git")
                                              default-directory)))
                   (apply orig-fun args)))))
-
-
 
 (use-package copilot
   :vc (:url "https://github.com/copilot-emacs/copilot.el"
@@ -755,10 +737,12 @@
 (use-package telephone-line
   :ensure t
   :config
+  ;; Gradient separators can throw redisplay errors after theme/frame changes
+  ;; because they render PBM images from live face and frame metrics.
   (setq telephone-line-primary-left-separator 'telephone-line-abs-left
-        telephone-line-secondary-left-separator 'telephone-line-gradient
+        telephone-line-secondary-left-separator 'telephone-line-nil
         telephone-line-primary-right-separator 'telephone-line-abs-right
-        telephone-line-secondary-right-separator 'telephone-line-gradient)
+        telephone-line-secondary-right-separator 'telephone-line-nil)
 
   (setq telephone-line-lhs
         '((evil . (telephone-line-meow-tag-segment))
@@ -797,7 +781,7 @@
 
   (defun ash/olivetti-adjust-scale ()
     "Scale text so the target number of columns fills the window width."
-    (when-let ((target (and olivetti-mode (ash/olivetti-target-columns))))
+    (when-let* ((target (and olivetti-mode (ash/olivetti-target-columns))))
       (let* ((ratio (/ (float (window-pixel-width))
                        (* target (frame-char-width))))
              (level (/ (log ratio) (log text-scale-mode-step))))
@@ -825,14 +809,28 @@
   :custom-face
   (eshell-git-prompt-multiline2-dir-face ((t (:weight ultra-bold :foreground "grey")))))
 
-(use-package eat
-  :config
-  (general-add-hook 'eshell-load-hook #'eat-eshell-mode)
-  ;; For `eat-eshell-visual-command-mode'.
-  (add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
-  (when (eq system-type 'darwin)
-    (define-key eat-semi-char-mode-map (kbd "C-h")  #'eat-self-input)
-    (define-key eat-semi-char-mode-map (kbd "<backspace>") (kbd "C-h"))))
+(use-package ghostel
+  ;; Mostly borrowed from Ghostel README
+  :bind (("s-g" . ghostel)
+         :map ghostel-semi-char-mode-map
+         ("C-s"  . consult-line)
+         ("C-k"  . my/ghostel-send-C-k-and-kill)
+         ;; ;; I'm used to go up/down the shell history with M-n/p from eshell
+         ;; ;; Simulate this behavior in ghostel by sending C-p and C-n
+         ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
+         ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl")))
+         :map project-prefix-map
+         ("m" . ghostel-project)
+         ("M" . ghostel-project-list-buffers)))
+
+(use-package ghostel-eshell
+  :hook (eshell-load . ghostel-eshell-visual-command-mode))
+
+(use-package ghostel-comint
+  :hook (after-init . ghostel-comint-global-mode))
+
+(use-package ghostel-compile
+  :hook (after-init . ghostel-compile-global-mode))
 
 (general-define-key "s-p" 'project-find-file)
 
@@ -846,7 +844,52 @@
 
 (use-package ol-notmuch)
 
+(use-package org-mime
+  :config
+  (setq org-mime-library 'mml)
+  ;; Make the attribution line match Gmail's "On [date], [name] wrote:" format.
+  ;; Gmail uses: "On Sun, Jun 21, 2026 at 11:46\u202fAM Name &lt;email&gt; wrote:"
+  ;; We approximate this with a close format that still works for plaintext.
+  (setq message-citation-line-format "On %a, %b %d %Y at %I:%M\u202f%p, %N wrote:\n")
+  ;; Add gmail_attr class to the attribution line so Gmail recognizes it
+  (defun ash/org-mime-html-gmail-style ()
+    "Post-process the current org-mime HTML buffer to match Gmail's visual appearance.
+Wraps the attribution line in a div with class gmail_attr, and
+wraps the entire quoted section in a div with class gmail_quote_container."
+    (save-excursion
+      ;; Wrap the attribution line in a gmail_attr div.  Gnus uses "Name writes:"
+      ;; while Gmail uses "On DATE Name wrote:".
+      (goto-char (point-min))
+      (while (re-search-forward
+              "<p>\\(\\(?:On [^<]+ wrote:\\)\\|\\(?:[^<]+ &lt;[^>]+&gt;\\) writes:\\)</p>"
+              nil t)
+        (let ((attribution (match-string 1)))
+          (replace-match
+           (format "<div dir=\"ltr\" class=\"gmail_attr\">%s</div>"
+                   (replace-regexp-in-string " writes:\\'" " wrote:" attribution t t))
+           t t)))
+      ;; Add gmail_quote_container class to the outer blockquote for proper Gmail collapsing
+      (goto-char (point-min))
+      (while (search-forward "<blockquote class=\"gmail_quote\"" nil t)
+        (replace-match "<div class=\"gmail_quote gmail_quote_container\"><blockquote class=\"gmail_quote\""
+                       t t))
+      ;; Close the gmail_quote_container div before the end of the message
+      (goto-char (point-max))
+      (when (re-search-backward "</blockquote>\\s-*\\'" nil t)
+        (replace-match "</blockquote></div>" t t))))
+  (add-hook 'org-mime-html-hook 'ash/org-mime-html-gmail-style)
+  :hook
+  ((message-mode . (lambda ()
+                     (local-set-key (kbd "C-c M-o") 'org-mime-htmlize)))
+   (message-send-hook . org-mime-htmlize)))
+
 (use-package deadgrep)
+
+(require 'midnight)
+
+(setq-default midnight-node t)
+(push ".*Agent.*" clean-buffer-list-kill-never-regexps)
+(push ".*eshell*" clean-buffer-list-kill-never-regexps)
 
 (defun ash-goto-agenda (&optional _)
   (interactive)
@@ -974,18 +1017,10 @@
 (defconst ash/llm-deepseek-reasoner (make-llm-deepseek :key (plist-get (car (auth-source-search :host "llm.deepseek")) :secret) :chat-model "deepseek-reasoner"))
 (defvar emacs-llm-default-provider ash/llm-claude "The default LLM provider to use in Emacs.")
 
-(use-package ellama
-  :init
-  (setopt ellama-language "Portguese")
-  (setopt ellama-provider emacs-llm-default-provider))
-
 (use-package magit-gptcommit
   :ensure t
   :bind (:map git-commit-mode-map
               ("C-c C-g" . magit-gptcommit-commit-accept))
-  :custom
-  (magit-gptcommit-llm-provider ash/llm-claude)
-
   :config
   ;; Eval (transient-remove-suffix 'magit-commit '(1 -1)) to remove gptcommit transient commands
   (magit-gptcommit-status-buffer-setup))
@@ -1026,209 +1061,343 @@
                                        (side . right)
                                        (slot . 0)
                                        (window-width . 80)
-                                       (window-parameters (no-delete-other-windows . t))))
-  (setq ekg-llm-provider ash/llm-gemini))
+                                       (window-parameters (no-delete-other-windows . t)))))
 
-(defvar-local ash/agent-shell-worktree-path nil
-  "Buffer-local worktree path for this agent shell.")
+(defvar ash/org-code-contexts (make-hash-table :test 'equal)
+  "Map from ws-name to context plist for active agent sessions.")
 
-(defvar-local ash/agent-shell-worktree-name nil
-  "Buffer-local worktree name for this agent shell.")
-
-(defun ash/org-item-to-worktree-name (&optional heading)
-  "Get a short worktree name from HEADING using LLM."
-  (or (org-entry-get nil "worktree")
-      (let* ((heading (org-get-heading t t t t))
-             (response (llm-chat emacs-llm-default-provider
-                                 (llm-make-chat-prompt
-                                  (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
-                                  :response-format '(:type object
-                                                           :properties (:name (:type "string"))
-                                                           :required ["name"]))))
-             (parsed (json-parse-string response :object-type 'plist)))
-        (plist-get parsed :name))))
+(defvar ash/org-code-agent 'ghostel
+  "Which agent frontend to use.  Either `ghostel' or `agent-shell'.")
 
 (require 'org)
 (require 'org-id)
 (require 'tabspaces)
 
-(defun ash/org-code--setup-worktree-and-agent (worktree-name agent-command)
-  "Create a worktree, tab, and agent for WORKTREE-NAME.
-AGENT-COMMAND is the string to send to the agent input buffer."
-  (let* ((base-repo (expand-file-name "~/src/workspace"))
-         (worktree-path (expand-file-name (format "../%s" worktree-name) base-repo)))
-    ;; Create worktree from main branch if it doesn't exist
-    (unless (file-directory-p worktree-path)
-      (let ((default-directory base-repo))
-        (unless (or
-                 ;; worktree already exists (maybe from another agent shell)
-                 (file-directory-p worktree-path)
-                 (zerop (shell-command
-                         (format "git worktree add -b ahyatt/%s %s main"
-                                 (shell-quote-argument worktree-name)
-                                 (shell-quote-argument worktree-path)))))
-          (user-error "Failed to create worktree"))))
-    ;; Symlink .pi/git from base repo
-    (let ((base-pi-git (expand-file-name ".pi/git" base-repo))
-          (wt-pi-git (expand-file-name ".pi/git" worktree-path)))
-      (when (and (file-directory-p base-pi-git)
-                 (not (file-exists-p wt-pi-git)))
-        (make-symbolic-link base-pi-git wt-pi-git)))
-    ;; Create tab and switch to it
-    (tab-bar-new-tab)
-    (tab-bar-rename-tab worktree-name)
-    ;; Start agent shell in worktree
-    (run-at-time 1.5 nil
-                 (lambda (path)
-                   (let ((default-directory path))
-                     (pi-coding-agent)))
-                 worktree-path)
-    ;; Store worktree info and send context
-    (run-at-time 2 nil
-                 (lambda (path name cmd)
-                   (let ((default-directory path))
-                     (message "In lambda: agent buffers: %S" (mapcar #'buffer-name (ash/agent-buffers)))
-                     (mapc (lambda (buf)
-                             (with-current-buffer buf
-                               (setq-local ash/agent-shell-worktree-path path)
-                               (setq-local ash/agent-shell-worktree-name name)
-                               (goto-char (point-max))
-                               (when (string-match "input" (buffer-name buf))
-                                 (insert cmd)
-                                 (pi-coding-agent-send))))
-                           (ash/agent-buffers))))
-                 worktree-path worktree-name agent-command)))
+(defun ash/org-code--gather-context ()
+  "Gather all context from current buffer for `ash/org-code'.
+Must be called while in the org/ekg buffer.  Returns a plist."
+  (cond
+   ((derived-mode-p 'org-mode)
+    (let* ((org-id (org-id-get-create t))
+           (heading (org-get-heading t t t t))
+           (task-name (org-entry-get nil "TASK_NAME"))
+           (tags (org-get-tags))
+           (project-tag (car (seq-filter
+                              (lambda (tag) (string-prefix-p "project/" tag))
+                              tags)))
+           (base-repo-name (cond
+                            (project-tag
+                             (substring project-tag (length "project/")))
+                            ((org-entry-get nil "codebase" t))
+                            (t nil)))
+           (marker (point-marker)))
+      (save-buffer)
+      (list :mode 'org
+            :marker marker
+            :buffer (current-buffer)
+            :id org-id
+            :heading heading
+            :task-name task-name
+            :base-repo-name base-repo-name
+            :agent-command (format "/do-org %s" org-id))))
+   ((derived-mode-p 'ekg-org-view-mode)
+    (require 'ekg-org)
+    (let* ((note-id (ekg-org-view--note-at-point))
+           (note (when note-id (ekg-get-note-with-id note-id))))
+      (unless note (user-error "No task at point"))
+      (let* ((title (or (ekg-org--note-title note) "Untitled"))
+             (task-name (ekg-org-get-property note "TASK_NAME"))
+             (tags (ekg-note-tags note))
+             (project-tag (car (seq-filter
+                                (lambda (tag) (string-prefix-p "project/" tag))
+                                tags)))
+             (base-repo-name (when project-tag
+                               (substring project-tag (length "project/")))))
+        (list :mode 'ekg
+              :note-id note-id
+              :heading title
+              :task-name task-name
+              :base-repo-name base-repo-name
+              :agent-command (format "/do-ekg-org %s" note-id)))))
+   (t (user-error "Not in an org-mode or ekg-org-view-mode buffer"))))
 
-(defun ash/org-code--from-org-mode ()
-  "Run `ash/org-code' from an `org-mode' buffer."
-  (require 'org-id)
-  (let* ((org-id (org-id-get-create t))
-         (worktree-name (ash/org-item-to-worktree-name)))
-    (org-set-property "WORKTREE" worktree-name)
-    (org-todo "STARTED")
-    (save-buffer)
-    (list worktree-name (format "/do-org %s" org-id))))
+(defun ash/org-code--resolve-base-repo (context)
+  "Resolve the base repo path from CONTEXT, prompting if needed."
+  (let ((name (plist-get context :base-repo-name)))
+    (unless name
+      (let* ((src-dirs (seq-remove
+                        (lambda (d)
+                          (or (string-prefix-p "ws-" d)
+                              (string-prefix-p "." d)))
+                        (directory-files "~/src")))
+             (choice (completing-read "Base repo (from ~/src/): " src-dirs nil t)))
+        (setq name choice)))
+    (expand-file-name (format "~/src/%s" name))))
 
-(defun ash/org-code--from-ekg-org-view ()
-  "Run `ash/org-code' from an `ekg-org-view-mode' buffer."
-  (require 'ekg-org)
-  (let* ((note-id (ekg-org-view--note-at-point))
-         (note (when note-id (ekg-get-note-with-id note-id))))
-    (unless note (user-error "No task at point"))
-    (let* ((title (or (ekg-org--note-title note) "Untitled"))
-           (existing-worktree (ekg-org-get-property note "WORKTREE"))
-           (worktree-name (or existing-worktree
-                              (ash/org-item-to-worktree-name title))))
-      ;; Store worktree name on the note if not already set
-      (unless existing-worktree
-        (ekg-org-set-property note "WORKTREE" worktree-name)
-        (ekg-save-note note))
-      ;; Set state to STARTED
-      (ekg-org-change-state "STARTED")
-      (list worktree-name (format "/do-ekg-org %s" note-id)))))
+(defun ash/org-code--find-main-branch (base-repo)
+  "Find the main branch name in BASE-REPO."
+  (let ((default-directory base-repo))
+    (cond
+     ((zerop (call-process "git" nil nil nil "rev-parse" "--verify" "develop"))
+      "develop")
+     ((zerop (call-process "git" nil nil nil "rev-parse" "--verify" "main"))
+      "main")
+     ((zerop (call-process "git" nil nil nil "rev-parse" "--verify" "master"))
+      "master")
+     (t (error "No main branch found in %s" base-repo)))))
 
-(defun ash/org-code ()
-  "Start standard code agent shell for the current org item.
+(defun ash/org-code--set-task-name (context task-name)
+  "Store TASK_NAME property in the org/ekg item described by CONTEXT."
+  (pcase (plist-get context :mode)
+    ('org
+     (let ((buf (marker-buffer (plist-get context :marker))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (save-excursion
+             (goto-char (plist-get context :marker))
+             (org-set-property "TASK_NAME" task-name)
+             (save-buffer))))))
+    ('ekg
+     (let ((note (ekg-get-note-with-id (plist-get context :note-id))))
+       (ekg-org-set-property note "TASK_NAME" task-name)
+       (ekg-save-note note)))))
 
-This will also create a new git worktree.
+(defun ash/org-code--set-state (context new-state)
+  "Set the org state to NEW-STATE using CONTEXT."
+  (pcase (plist-get context :mode)
+    ('org
+     (let ((buf (marker-buffer (plist-get context :marker))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (save-excursion
+             (goto-char (plist-get context :marker))
+             (org-todo new-state)
+             (save-buffer))))))
+    ('ekg
+     (let* ((note (ekg-get-note-with-id (plist-get context :note-id)))
+            (tags (ekg-note-tags note))
+            (new-tags (cons (format "org/state/%s" (downcase new-state))
+                            (seq-remove (lambda (tag)
+                                          (string-prefix-p "org/state/" tag))
+                                        tags))))
+       (setf (ekg-note-tags note) new-tags)
+       (ekg-save-note note)))))
 
-Works in both `org-mode' buffers and `ekg-org-view-mode' buffers.
-If a tab and buffer already exist for this item, switch to them instead.
-Also sets the task state to STARTED."
-  (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Not in an org-mode buffer"))
-  (let* ((org-id (org-id-get-create t))
-         (worktree-name (ash/org-item-to-worktree-name))
-         (existing-tab (seq-find (lambda (tab)
-                                   (string= (alist-get 'name tab) worktree-name))
-                                 (funcall tab-bar-tabs-function))))
-    (org-set-property "WORKTREE" worktree-name)
-    (save-buffer)
-    (if existing-tab
-        ;; Switch to existing tab
-        (tab-bar-select-tab-by-name worktree-name)
-      ;; Create new worktree and tab
-      (let* ((codebase (or (org-entry-get nil "codebase" t)
-                           (error "No codebase property found")))
-             (base-repo (expand-file-name (format "~/src/%s" codebase)))
-             (worktree-path (expand-file-name (format "~/src/%s" worktree-name) base-repo))
-             (org-context (buffer-substring-no-properties
-                           (org-entry-beginning-position)
-                           (org-entry-end-position))))
-        ;; Create worktree from main branch if it doesn't exist
-        (unless (file-directory-p worktree-path)
-          (let ((default-directory base-repo))
-            (unless (zerop (shell-command
-                            (format "git worktree add -b %s %s %s"
-                                    (shell-quote-argument worktree-name)
-                                    (shell-quote-argument worktree-path)
-                                    ;; If the develop branch exists, use it,
-                                    ;; otherwise use main, otherwise use master
-                                    (or
-                                     (let ((develop-exists (zerop (shell-command "git rev-parse --verify develop"))))
-                                       (if develop-exists "develop" nil))
-                                     (let ((main-exists (zerop (shell-command "git rev-parse --verify main"))))
-                                       (if main-exists "main" nil))
-                                     (let ((master-exists (zerp (shell-command "git rev-parse --verify master"))))
-                                       (if master-exists "master" nil))))))
-              (user-error "Failed to create worktree"))))
-        ;; Create tab and switch to it
-        (tab-bar-new-tab)
-        (tab-bar-rename-tab worktree-name)
-        ;; Start agent shell in worktree
-        (run-at-time 0.5 nil
-                     (lambda (name path)
-                       (message "Starting agent in %s" path)
-                       (let ((default-directory path))
-                         (project-eshell)
-                         (pi-coding-agent)))
-                     worktree-name worktree-path)
+(defun ash/org-code--get-state (context)
+  "Get the current org state from CONTEXT.  Returns uppercase string."
+  (pcase (plist-get context :mode)
+    ('org
+     (let ((buf (marker-buffer (plist-get context :marker))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (save-excursion
+             (goto-char (plist-get context :marker))
+             (org-get-todo-state))))))
+    ('ekg
+     (let ((note (ekg-get-note-with-id (plist-get context :note-id))))
+       (when note (ekg-org--state note))))))
 
-        ;; Store worktree info in buffer and send context
-        (run-at-time 1 nil
-                     (lambda (path name org-id)
-                       (mapc (lambda (buf)
-                               (with-current-buffer buf
-                                 (setq-local ash/agent-shell-worktree-path path)
-                                 (setq-local ash/agent-shell-worktree-name name)
-                                 (when (string-match "input" (buffer-name buf))
-                                   (insert (format "/do-org %s" org-id))
-                                   (pi-coding-agent-send))
-                                 (goto-char (point-max))))
-                             (ash/agent-buffers)))
-                     worktree-path worktree-name org-id)))))
+(defun ash/org-code--on-name-generated (context callback response)
+  "Handle LLM RESPONSE for name generation, updating CONTEXT and calling CALLBACK."
+  (let* ((parsed (json-parse-string response :object-type 'plist))
+         (name (plist-get parsed :name)))
+    (plist-put context :task-name name)
+    (funcall callback context)))
+
+(defun ash/org-code--generate-name-async (context callback)
+  "Generate a worktree name from CONTEXT heading asynchronously.
+Calls CALLBACK with the updated context once the name is ready."
+  (let ((heading (plist-get context :heading)))
+    (llm-chat-async
+     emacs-llm-default-provider
+     (llm-make-chat-prompt
+      (format "Create a short git branch name (2-4 words max, lowercase, hyphenated, no special characters) for this task: %s" heading)
+      :response-format '(:type object
+                               :properties (:name (:type "string"))
+                               :required ["name"]))
+     (apply-partially #'ash/org-code--on-name-generated context callback)
+     (lambda (err)
+       (message "Failed to generate task name: %s" err)))))
 
 (defun ash/agent-buffers ()
-  "Get the current agent shell buffers, as a list."
-  (sort
-   (seq-filter (lambda (buf)
-                 (and (string-prefix-p "*pi-coding-agent" (buffer-name buf))
-                      (string-suffix-p
-                       (format "%s/*" (tabspaces--current-tab-name)) (buffer-name buf))))
-               (buffer-list))))
+  "Get the current agent shell buffers for the current tab."
+  (let ((tab-name (tabspaces--current-tab-name)))
+    (ash/agent-buffers-for-tab tab-name)))
+
+(defun ash/agent-buffers-for-tab (tab-name)
+  "Get agent buffers for TAB-NAME.
+Matches agent-shell or ghostel buffers whose name contains the tab name."
+  (seq-filter (lambda (buf)
+                (and (string-match-p (regexp-quote tab-name) (buffer-name buf))
+                     (or (string-match-p "Agent @" (buffer-name buf))
+                         (string-match-p "ghostel" (buffer-name buf)))))
+              (buffer-list)))
+
+(defun ash/org-code--send-to-ghostel (buf text)
+  "Send TEXT as keystrokes to ghostel buffer BUF."
+  (let ((proc (get-buffer-process buf)))
+    (when proc
+      (process-send-string proc text))))
+
+(defun ash/org-code--send-command-to-ghostel (task-name cmd)
+  "Send CMD to the ghostel buffer for TASK-NAME."
+  (let ((bufs (ash/agent-buffers-for-tab task-name)))
+    (when-let* ((buf (car bufs)))
+      (ash/org-code--send-to-ghostel buf (concat cmd "\n")))))
+
+(defun ash/org-code--launch-ghostel (worktree-path context)
+  "Start a ghostel terminal in WORKTREE-PATH, run claude, then send command."
+  (let* ((default-directory worktree-path)
+         (task-name (plist-get context :task-name))
+         (cmd (plist-get context :agent-command)))
+    (ghostel t)
+    (rename-buffer (format "*ghostel: %s*" task-name) t)
+    ;; Send "claude" to start the agent
+    (ash/org-code--send-to-ghostel (current-buffer) "claude --dangerously-skip-permissions\n")
+    ;; Copy command to kill ring as fallback
+    (kill-new cmd)
+    (message "Copied '%s' to kill ring — will also auto-send in 5s." cmd)
+    ;; After 5 seconds, send the /do-* command
+    (run-at-time 5 nil #'ash/org-code--send-command-to-ghostel task-name cmd)))
+
+(defun ash/org-code--launch-agent-shell (worktree-path)
+  "Start a new agent-shell in WORKTREE-PATH without any prompts."
+  (let ((default-directory worktree-path)
+        (saved-strategy agent-shell-session-strategy))
+    (unwind-protect
+        (progn
+          (setq agent-shell-session-strategy 'new)
+          (agent-shell-anthropic-start-claude-code))
+      (setq agent-shell-session-strategy saved-strategy))))
+
+(defun ash/org-code--launch-and-command (context)
+  "Launch the agent and send the command, using the configured backend."
+  (let ((worktree-path (plist-get context :worktree-path)))
+    (pcase ash/org-code-agent
+      ('ghostel
+       (ash/org-code--launch-ghostel worktree-path context))
+      ('agent-shell
+       (ash/org-code--launch-agent-shell worktree-path)
+       (ash/org-code--prepare-command context)))))
+
+(defun ash/org-code--prepare-command (context)
+  "Copy the agent command from CONTEXT to the kill ring."
+  (let ((cmd (plist-get context :agent-command)))
+    (kill-new cmd)
+    (message "Copied '%s' to kill ring — yank into the agent shell to start." cmd)))
+
+(defun ash/org-code--start-agent (context)
+  "Create tab and start the agent for CONTEXT.
+Assumes worktree already exists at the path in CONTEXT."
+  (let ((task-name (plist-get context :task-name)))
+    (tab-bar-new-tab)
+    (tab-bar-rename-tab task-name)
+    (ash/org-code--launch-and-command context)))
+
+(defun ash/org-code--activate (context)
+  "Activate or switch to the agent for CONTEXT."
+  (let* ((task-name (plist-get context :task-name))
+         (worktree-dir (format "ws-%s" task-name))
+         (base-repo (ash/org-code--resolve-base-repo context))
+         (worktree-path (expand-file-name (format "~/src/%s" worktree-dir)))
+         (existing-tab (seq-find (lambda (tab)
+                                   (string= (alist-get 'name tab) task-name))
+                                 (funcall tab-bar-tabs-function)))
+         (worktree-exists (file-directory-p worktree-path)))
+    ;; Store computed values in context
+    (plist-put context :base-repo base-repo)
+    (plist-put context :worktree-path worktree-path)
+    ;; Save context for later use by finish
+    (puthash task-name context ash/org-code-contexts)
+    ;; Store TASK_NAME property
+    (ash/org-code--set-task-name context task-name)
+    ;; Set state to STARTED
+    (ash/org-code--set-state context "STARTED")
+    (cond
+     ;; Tab exists -> switch to it, start agent if needed
+     (existing-tab
+      (tab-bar-select-tab-by-name task-name)
+      (unless (ash/agent-buffers-for-tab task-name)
+        (ash/org-code--launch-and-command context)))
+     ;; Worktree exists but no tab -> create tab, resume session
+     (worktree-exists
+      (ash/org-code--start-agent context))
+     ;; Neither -> pull upstream, create worktree, start agent
+     (t
+      (let* ((default-directory base-repo)
+             (main-branch (ash/org-code--find-main-branch base-repo)))
+        ;; Pull upstream before creating worktree
+        (message "Pulling %s from upstream in %s..." main-branch base-repo)
+        (call-process "git" nil nil nil "pull" "--ff-only" "origin" main-branch)
+        ;; Create worktree
+        (unless (zerop (call-process "git" nil nil nil
+                                     "worktree" "add" "-b" task-name
+                                     worktree-path main-branch))
+          (user-error "Failed to create worktree at %s" worktree-path)))
+      (ash/org-code--start-agent context)))))
+
+(defun ash/org-code ()
+  "Start agentic coding for the current org item.
+
+Works in both `org-mode' and `ekg-org-view-mode' buffers.
+Creates a git worktree at ~/src/ws-<TASK_NAME>, opens a new tab,
+starts a pi-coding-agent session, and sends the /do-org or
+/do-ekg-org command.  If a tab already exists, switches to it.
+Sets the task state to STARTED."
+  (interactive)
+  (let ((context (ash/org-code--gather-context)))
+    (if (plist-get context :task-name)
+        (ash/org-code--activate context)
+      (ash/org-code--generate-name-async context #'ash/org-code--activate))))
+
+(defun ash/ekg-org-copy-do-command ()
+  "Copy the /do-ekg-org command for the task at point to the kill ring."
+  (interactive)
+  (unless (derived-mode-p 'ekg-org-view-mode)
+    (user-error "Not in an ekg-org-view-mode buffer"))
+  (require 'ekg-org)
+  (let ((note-id (ekg-org-view--note-at-point)))
+    (unless note-id (user-error "No task at point"))
+    (let ((cmd (format "/do-ekg-org %s" note-id)))
+      (kill-new cmd)
+      (message "Copied '%s'" cmd))))
 
 (defun ash/agent-shell-finish-org ()
-  "Send /finish-org, remove worktree, and close tab."
+  "Clean up agent, worktree, and tab for current session.
+Sets state to DONE only if currently STARTED."
   (interactive)
-  (let* ((worktree-name (tabspaces--current-tab-name))
-         (codebase (format "~/src/%s" worktree-name))
-         (base-repo (expand-file-name codebase))
-         (worktree-path (expand-file-name worktree-name base-repo))
+  (let* ((tab-name (tabspaces--current-tab-name))
+         (context (gethash tab-name ash/org-code-contexts))
+         (task-name (or (plist-get context :task-name) tab-name))
+         (worktree-path (or (plist-get context :worktree-path)
+                            (expand-file-name (format "~/src/ws-%s" task-name))))
          (agent-buffers (ash/agent-buffers)))
-    (unless worktree-path
-      (user-error "No worktree associated with this agent shell"))
-    ;; Kill the agent shell buffer
+    (unless (and task-name (file-directory-p worktree-path))
+      (user-error "No worktree found at %s" worktree-path))
+    ;; Set state to DONE only if currently STARTED
+    (when context
+      (let ((current-state (ash/org-code--get-state context)))
+        (when (equal current-state "STARTED")
+          (ash/org-code--set-state context "DONE"))))
+    ;; Kill agent buffers
     (mapc #'kill-buffer agent-buffers)
-    ;; Remove worktree
-    (let ((default-directory base-repo))
-      (shell-command (format "git worktree remove %s"
-                             (shell-quote-argument worktree-path)))
-      ;; Delete the branch
-      (shell-command (format "git branch -D ahyatt/%s"
-                             (shell-quote-argument worktree-name))))
-    ;; Close the correct tab
-    (tab-bar-close-tab-by-name worktree-name)))
+    ;; Find base repo and remove worktree + branch
+    (let* ((default-directory worktree-path)
+           (base-repo (or (plist-get context :base-repo)
+                          (string-trim
+                           (shell-command-to-string
+                            "git worktree list --porcelain | head -1 | sed 's/^worktree //'"))))
+           )
+      (when (and base-repo (not (string-empty-p base-repo)))
+        (let ((default-directory base-repo))
+          (call-process "git" nil nil nil
+                        "worktree" "remove" "--force" worktree-path)
+          (call-process "git" nil nil nil
+                        "branch" "-D" task-name))))
+    ;; Clean up context
+    (remhash tab-name ash/org-code-contexts)
+    ;; Close tab
+    (tab-bar-close-tab-by-name tab-name)))
 
 (use-package pi-coding-agent
   :ensure t
@@ -1265,7 +1434,7 @@ Input buffer on top, chat buffer on bottom."
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
 
-(use-package org-auto-tangle
+(use-package org-auto-tangl
   :defer t
   :hook (org-mode . org-auto-tangle-mode))
 
@@ -1375,7 +1544,7 @@ This has to be done as a string to handle 64-bit or larger ints."
   (require 'meow-cheatsheet-layout)
   (meow-setup)
   (meow-global-mode 1)
-  (dolist (mode '(eshell-mode calc-mode help-mode info-mode eat-mode vterm-mode))
+  (dolist (mode '(eshell-mode calc-mode help-mode info-mode ghostel-mode))
     (add-to-list 'meow-mode-state-list `(,mode . insert))))
 
 (use-package repeat-fu
@@ -1398,7 +1567,7 @@ This has to be done as a string to handle 64-bit or larger ints."
 
 (defun meow-enter-mode-state-list ()
   (interactive)
-  (when-let ((state (assoc-default major-mode meow-per-mode-state-list)))
+  (when-let* ((state (assoc-default major-mode meow-per-mode-state-list)))
     (funcall (intern (format "meow-%s-mode" state)))))
 
 (meow-define-keys 'normal '("/" . meow-enter-mode-state-list))
@@ -1410,46 +1579,46 @@ This has to be done as a string to handle 64-bit or larger ints."
   :keymap meow-org-motion-keymap)
 
 (meow-define-keys 'org-motion
-                  '("<escape>" . meow-normal-mode)
-                  '("i" . meow-insert-mode)
-                  '("g" . meow-normal-mode)
-                  '("u" .  meow-undo)
-                  ;; Moving between headlines
-                  '("k" .  org-previous-visible-heading)
-                  '("j" .  org-next-visible-heading)
-                  ;; Moving between headings at the same level
-                  '("p" .  org-backward-heading-same-level)
-                  '("n" .  org-forward-heading-same-level)
-                  ;; Clock
-                  '("I" .  org-clock-in)
-                  '("O" .  org-clock-out)
-                  ;; Moving up and down in the outline
-                  '("," .  outline-up-heading)
-                  '("." .  org-down-element)
-                  ;; Subtree de/promotion, and reordering
-                  '("L" .  org-demote-subtree)
-                  '("H" .  org-promote-subtree)
-                  '("J" .  org-move-subtree-down)
-                  '("K" .  org-move-subtree-up)
-                  ;; Completion-style search of headings
-                  '("v" .  imenu)
-                  ;; Setting subtree metadata
-                  '("l" .  org-set-property)
-                  '("t" .  org-todo)
-                  '("d" .  org-deadline)
-                  '("s" .  org-schedule)
-                  '("e" .  org-set-effort)
-                  '("Z" .  org-add-note)
-                  ;; Block navigation
-                  '("b" .  org-previous-block)
-                  '("f" .  org-next-block)
-                  ;; Narrowing/widening
-                  '("N" .  org-narrow-to-subtree)
-                  '("W" .  widen)
-                  ;; Editing
-                  '("a" . org-archive-subtree)
-                  '("C-k" . org-cut-subtree)
-                  '("T" .  org-insert-todo-heading-respect-content))
+  '("<escape>" . meow-normal-mode)
+  '("i" . meow-insert-mode)
+  '("g" . meow-normal-mode)
+  '("u" .  meow-undo)
+  ;; Moving between headlines
+  '("k" .  org-previous-visible-heading)
+  '("j" .  org-next-visible-heading)
+  ;; Moving between headings at the same level
+  '("p" .  org-backward-heading-same-level)
+  '("n" .  org-forward-heading-same-level)
+  ;; Clock
+  '("I" .  org-clock-in)
+  '("O" .  org-clock-out)
+  ;; Moving up and down in the outline
+  '("," .  outline-up-heading)
+  '("." .  org-down-element)
+  ;; Subtree de/promotion, and reordering
+  '("L" .  org-demote-subtree)
+  '("H" .  org-promote-subtree)
+  '("J" .  org-move-subtree-down)
+  '("K" .  org-move-subtree-up)
+  ;; Completion-style search of headings
+  '("v" .  imenu)
+  ;; Setting subtree metadata
+  '("l" .  org-set-property)
+  '("t" .  org-todo)
+  '("d" .  org-deadline)
+  '("s" .  org-schedule)
+  '("e" .  org-set-effort)
+  '("Z" .  org-add-note)
+  ;; Block navigation
+  '("b" .  org-previous-block)
+  '("f" .  org-next-block)
+  ;; Narrowing/widening
+  '("N" .  org-narrow-to-subtree)
+  '("W" .  widen)
+  ;; Editing
+  '("a" . org-archive-subtree)
+  '("C-k" . org-cut-subtree)
+  '("T" .  org-insert-todo-heading-respect-content))
 
 (add-to-list 'meow-per-mode-state-list '(org-mode . org-motion))
 
@@ -1463,16 +1632,22 @@ This has to be done as a string to handle 64-bit or larger ints."
              tabspaces-open-or-create-project-and-workspace)
   :general
   ("s-b" 'project-switch-to-buffer)
-  ("s-T" 'tab-bar-select-tab-by-name)
+  ("s-t" 'tab-bar-select-tab-by-name)
+  ("s-T" 'tabspaces-open-or-create-project-and-workspace)
   :custom
   (tabspaces-use-filtered-buffers-as-default t)
   (tabspaces-default-tab "main")
   (tabspaces-remove-to-default t)
   (tabspaces-include-buffers '("*scratch*"))
-  (tabspaces-initialize-project-with-todo t)
+  (tabspaces-initialize-project-with-todo nil)
   (tabspaces-todo-file-name "project-todo.org")
   ;; sessions
   (tabspaces-session t)
-  (tabspaces-session-auto-restore t))
+  (tabspaces-session-auto-restore t)
+  (tab-bar-show 0))
 
+(setq server-socket-dir "~/.emacs.d/server")
 (server-start)
+
+(setenv "EDITOR" "~/Applications/Emacs.app/Contents/MacOS/bin/emacsclient")
+(setenv "EMACS_SOCKET_NAME" "/Users/andrewhyatt/.emacs.d/server/server")
