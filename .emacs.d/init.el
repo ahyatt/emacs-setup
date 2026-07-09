@@ -593,7 +593,12 @@
 (use-package lsp-mode
   :config
   (setq lsp-warn-no-matched-clients nil)
-  :hook ((python-base-mode . lsp-mode)
+  (defun ash/python-lsp-mode-maybe ()
+    "Start Python LSP only when pyright is available in a project."
+    (when (and (executable-find "pyright-langserver")
+               (project-current nil))
+      (lsp-deferred)))
+  :hook ((python-base-mode . ash/python-lsp-mode-maybe)
          (go-mode . lsp-mode)
          (go-ts-mode . lsp-mode)))
 (use-package lsp-ui)
@@ -651,10 +656,14 @@
 
 (use-package yaml-mode)
 
-;; Assuming python-ts-mode is installed
-;; Add a hook to automatically use python-ts-mode for Python files
+(defun ash/python-mode-for-file ()
+  "Use `python-ts-mode' when the grammar is ready; otherwise use `python-mode'."
+  (if (and (fboundp 'treesit-ready-p)
+           (treesit-ready-p 'python t))
+      (python-ts-mode)
+    (python-mode)))
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
+(add-to-list 'auto-mode-alist '("\\.py\\'" . ash/python-mode-for-file))
 
 (use-package lsp-pyright
   :ensure t)
@@ -808,11 +817,25 @@
 
 (use-package vertico-posframe
   :ensure t
-  :config (vertico-posframe-mode 1))
+  :config
+  (defun ash/vertico-posframe-mode-maybe ()
+    "Enable `vertico-posframe-mode' only on graphical frames."
+    (when (display-graphic-p (selected-frame))
+      (vertico-posframe-mode 1)))
+
+  (ash/vertico-posframe-mode-maybe)
+  (add-hook 'server-after-make-frame-hook #'ash/vertico-posframe-mode-maybe))
 
 (use-package transient-posframe
   :ensure t
-  :config (transient-posframe-mode 1))
+  :config
+  (defun ash/transient-posframe-mode-maybe ()
+    "Enable `transient-posframe-mode' only on graphical frames."
+    (when (display-graphic-p (selected-frame))
+      (transient-posframe-mode 1)))
+
+  (ash/transient-posframe-mode-maybe)
+  (add-hook 'server-after-make-frame-hook #'ash/transient-posframe-mode-maybe))
 
 (use-package eshell-git-prompt
   :config
@@ -1681,8 +1704,13 @@ This has to be done as a string to handle 64-bit or larger ints."
   (tabspaces-session-auto-restore t)
   (tab-bar-show 0))
 
-(setq server-socket-dir "~/.emacs.d/server")
-(server-start)
+(require 'server)
+(setq server-socket-dir (expand-file-name "server" user-emacs-directory))
+(make-directory server-socket-dir t)
+(unless (server-running-p server-name)
+  (server-start))
 
 (setenv "EDITOR" "~/Applications/Emacs.app/Contents/MacOS/bin/emacsclient")
-(setenv "EMACS_SOCKET_NAME" "/Users/andrewhyatt/.emacs.d/server/server")
+(setenv "EMACS_SOCKET_NAME"
+        (or (getenv "EMACS_SOCKET_NAME")
+            (expand-file-name server-name server-socket-dir)))
