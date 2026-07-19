@@ -5,7 +5,7 @@
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://snapshots.melpa.org/packages/")) t))
 (setq use-package-always-ensure t)
 (package-initialize)
 
@@ -205,8 +205,8 @@
   (global-completion-preview-mode 1)
   :bind
   (:map completion-preview-active-mode-map
-        ("C-n" . completion-preview-next-candidate)
-        ("C-p" . completion-preview-prev-candidate)))
+            ("C-n" . completion-preview-next-candidate)
+            ("C-p" . completion-preview-prev-candidate)))
 
 ;; From Vertico example installation instructions.
 (use-package orderless
@@ -231,10 +231,10 @@
   :custom (savehist-additional-variables '(search-ring regexp-search-ring kill-ring))
   :config
   (add-hook 'savehist-save-hook
-            (lambda ()
-              (setq kill-ring
-                    (mapcar #'substring-no-properties
-                            (cl-remove-if-not #'stringp kill-ring)))))
+          (lambda ()
+            (setq kill-ring
+                  (mapcar #'substring-no-properties
+                          (cl-remove-if-not #'stringp kill-ring)))))
   :init
   (savehist-mode))
 
@@ -249,7 +249,7 @@
   :init
   ;; Do not allow the cursor in the minibuffer prompt
   (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
+    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
@@ -329,7 +329,7 @@
   "Toggles window dedication in the selected window."
   (interactive)
   (set-window-dedicated-p (selected-window)
-                          (not (window-dedicated-p (selected-window)))))
+     (not (window-dedicated-p (selected-window)))))
 
 (use-package avy
   :general ("s-j" 'avy-goto-char-timer)
@@ -537,9 +537,9 @@
 (use-package casual
   :ensure t
   :config
-  (setq transient-align-variable-pitch t)
-  :bind (("s-o" . casual-editkit-main-tmenu)
-         :map dired-mode-map ("s-o" . casual-dired-tmenu)))
+    (setq transient-align-variable-pitch t)
+    :bind (("s-o" . casual-editkit-main-tmenu)
+           :map dired-mode-map ("s-o" . casual-dired-tmenu)))
 
 (use-package yasnippet
   :diminish yas-minor-mode
@@ -565,12 +565,12 @@
 (add-hook 'prog-mode-hook
           (lambda () (setq show-trailing-whitespace t)))
 (add-hook 'before-save-hook
-          (lambda ()
-            (when (derived-mode-p 'prog-mode)
-              (delete-trailing-whitespace))))
+  (lambda ()
+    (when (derived-mode-p 'prog-mode)
+      (delete-trailing-whitespace))))
 
 (use-package magit
-  :general ("C-x g" 'ash/magit-status)
+ :general ("C-x g" 'ash/magit-status)
   :config
   (defun ash/magit-status ()
     "Open Magit status for the current project."
@@ -874,8 +874,77 @@
 (setq tab-bar-select-tab-modifiers '(super))
 
 (use-package notmuch
+  ;; Leave Message's address completion to BBDB, even when Notmuch is loaded.
+  :init (setq notmuch-address-command 'as-is)
   :custom (notmuch-search-oldest-first nil)
   :config (require 'notmuch))
+
+(use-package bbdb
+  :custom
+  (bbdb-file "~/.bbdb")
+  (bbdb-complete-mail nil)
+  (bbdb-completion-display-record nil)
+  ;; Prefer the author shown in From over a possibly generic Reply-To address.
+  (bbdb-message-headers
+   '((sender "From" "Resent-From" "Reply-To" "Sender")
+     (recipients "Resent-To" "Resent-CC" "To" "CC" "BCC")))
+  (bbdb-mua-auto-action 'create)
+  :config
+  (bbdb-initialize 'gnus 'message)
+
+  (defun ash/bbdb-add-name-if-placeholder (record _new-name)
+    "Replace BBDB names synthesized from an email address.
+Otherwise retain BBDB's normal behavior of asking before changing a name."
+    (let* ((mail (car (bbdb-record-mail record)))
+           (placeholder (and mail
+                             (funcall bbdb-message-clean-name-function mail))))
+      (if (and placeholder
+               (bbdb-string= (bbdb-record-name record) placeholder))
+          t
+        'query)))
+  (setq bbdb-add-name #'ash/bbdb-add-name-if-placeholder)
+
+  (defun ash/bbdb-prefer-gnus-summary-name (original-function header)
+    "Use Gnus's parsed sender when the raw HEADER has no display name."
+    (let ((value (funcall original-function header)))
+      (if (and (eq (bbdb-mua) 'gnus)
+               (string-equal header "From")
+               (not (car (and value
+                              (bbdb-extract-address-components value))))
+               (bound-and-true-p gnus-current-headers)
+               (mail-header-p gnus-current-headers))
+          (let* ((summary-from (mail-header-from gnus-current-headers))
+                 (decoded-from (and summary-from
+                                    (mail-decode-encoded-word-string
+                                     summary-from))))
+            (if (car (and decoded-from
+                          (bbdb-extract-address-components decoded-from)))
+                decoded-from
+              value))
+        value)))
+
+  ;; Learn senders from articles read in Gnus and recipients of outgoing mail.
+  ;; With `bbdb-message-all-addresses' nil, incoming messages contribute their
+  ;; sender without also harvesting everyone in their To and Cc headers.
+  (bbdb-mua-auto-update-init 'gnus 'message)
+  (unless (advice-member-p #'ash/bbdb-prefer-gnus-summary-name
+                           #'bbdb-message-header)
+    (advice-add #'bbdb-message-header :around
+                #'ash/bbdb-prefer-gnus-summary-name)))
+
+(use-package message
+  :ensure nil
+  :custom
+  (message-mail-alias-type nil)
+  (message-expand-name-standard-ui t)
+  (message-expand-name-databases '(bbdb))
+  (message-self-insert-commands nil)
+  :config
+  ;; `partial-completion' combines the common prefix and suffix of addresses,
+  ;; producing synthetic strings such as "Alex@gmail.com>".  Keep substring
+  ;; matching for addresses, but only insert prefixes that candidates contain.
+  (add-to-list 'completion-category-overrides
+               '(email (styles basic substring))))
 
 (use-package consult-notmuch)
 
@@ -919,6 +988,15 @@ wraps the entire quoted section in a div with class gmail_quote_container."
   ((message-mode . (lambda ()
                      (local-set-key (kbd "C-c M-o") 'org-mime-htmlize)))
    (message-send-hook . org-mime-htmlize)))
+
+(setq gnus-asynchronous t
+      gnus-use-cache t
+      gnus-use-header-prefetch t
+      gnus-summary-line-format "%U%R%z%I%(%[%4L: %d %-23,23f%]%) %s
+")
+
+(general-define-key :keymaps 'gnus-summary-mode-map
+                    "s-k" 'gnus-summary-delete-article)
 
 (use-package deadgrep)
 
@@ -1485,7 +1563,7 @@ Input buffer on top, chat buffer on bottom."
 
 (general-define-key :keymaps 'org-mode-map
                     :predicate '(s-contains? "emacs.org" (buffer-name))
-                    "C-c t" 'ash/tangle-config)
+            "C-c t" 'ash/tangle-config)
 
 (defun ash/find-config ()
   "Edit config.org"
