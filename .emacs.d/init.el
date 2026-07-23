@@ -165,10 +165,12 @@
           'executable-make-buffer-file-executable-if-script-p)
 
 (defun ash/get-current-url ()
-  (string-trim (do-applescript "tell application \"Arc\" to return URL of active tab of front window") (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+  (string-trim (do-applescript "tell application \"Chrome\" to return URL of active tab of front window")
+               (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
+
 (defun ash/get-current-title ()
   (string-trim
-   (do-applescript "tell application \"Arc\" to return title of front window")
+   (do-applescript "tell application \"Chrome\" to return title of front window")
    (rx (1+ (or whitespace ?\"))) (rx (1+ (or whitespace ?\")))))
 
 (require 'use-package)
@@ -757,11 +759,11 @@
 (use-package telephone-line
   :ensure t
   :config
-  ;; Gradient separators can throw redisplay errors after theme/frame changes
+  ;; Image separators can throw redisplay errors after theme/frame changes
   ;; because they render PBM images from live face and frame metrics.
-  (setq telephone-line-primary-left-separator 'telephone-line-abs-left
+  (setq telephone-line-primary-left-separator 'telephone-line-utf-abs-left
         telephone-line-secondary-left-separator 'telephone-line-nil
-        telephone-line-primary-right-separator 'telephone-line-abs-right
+        telephone-line-primary-right-separator 'telephone-line-utf-abs-right
         telephone-line-secondary-right-separator 'telephone-line-nil)
 
   (setq telephone-line-lhs
