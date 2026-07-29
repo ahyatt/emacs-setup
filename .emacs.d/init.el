@@ -5,7 +5,8 @@
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://snapshots.melpa.org/packages/")) t))
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t))
 (setq use-package-always-ensure t)
 (package-initialize)
 
@@ -80,6 +81,7 @@
  tab-always-indent 'complete                      ; If we're already indented, tab should complete
  tab-width 4                                      ; Set width for tabs
  trash-directory "~/.Trash"                       ; Set trash directory
+ truncat-string-ellipsis "…"                      ; Use unicode ellipsis for truncated strings
  tooltip-use-echo-area t                          ; Good for non-mouse-users
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
