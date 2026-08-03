@@ -5,8 +5,7 @@
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t))
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
 (setq use-package-always-ensure t)
 (package-initialize)
 
@@ -21,7 +20,7 @@
 (package-install 'use-package)
 
 (add-to-list 'display-buffer-alist
-             '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
+             '("\\`\\*Compile-Log\\*\\'"
                (display-buffer-no-window)
                (allow-no-window . t)))
 
@@ -99,6 +98,7 @@
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
+ visual-bell t                                    ; Flash instead of making a sound
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
 (cd "~/")                                         ; Move to the user directory
@@ -856,8 +856,6 @@
 (setq tab-bar-select-tab-modifiers '(super))
 
 (use-package notmuch
-  ;; Leave Message's address completion to BBDB, even when Notmuch is loaded.
-  :init (setq notmuch-address-command 'as-is)
   :custom (notmuch-search-oldest-first nil)
   :config (require 'notmuch))
 

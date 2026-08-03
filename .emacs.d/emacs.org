@@ -14,8 +14,7 @@ Code, slightly simplified, comes from http://melpa.org/#/getting-started.
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t))
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t))
 (setq use-package-always-ensure t)
 (package-initialize)
 
@@ -36,7 +35,7 @@ Refresh archive and set up use-package.
 Remove warnings when compiling (from [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:c12c3baa-49bc-4fc8-8eb5-cf3fb53903ef][Prot's config]]):
 #+begin_src emacs-lisp
 (add-to-list 'display-buffer-alist
-             '("\\`\\*\\(Warnings\\|Compile-Log\\)\\*\\'"
+             '("\\`\\*Compile-Log\\*\\'"
                (display-buffer-no-window)
                (allow-no-window . t)))
 #+end_src
@@ -130,6 +129,7 @@ the same file.
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
+ visual-bell t                                    ; Flash instead of making a sound
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
 (cd "~/")                                         ; Move to the user directory
@@ -251,7 +251,8 @@ Tired of marking scripts executable, or forgetting to do so?  Now you don’t ha
           'executable-make-buffer-file-executable-if-script-p)
 #+END_SRC
 
-It's useful to have methods of getting the URLs (for Mac only)
+It's useful to have methods of getting the URLs (for Mac only).  If this doesn't work, you may have to execute this within emacs (for example, in eshell): =osascript -e 'tell application "Chrome" to return title of front window'= to force the permission.
+
 #+begin_src emacs-lisp
 (defun ash/get-current-url ()
   (string-trim (do-applescript "tell application \"Chrome\" to return URL of active tab of front window")
@@ -1127,8 +1128,6 @@ I use the tab bar to sort specific activies, such as mail, elfeed, and projects 
 I've used many mail packages, but =notmuch= is a good combination of simple, suited to mail, very fast, and with a good search.
 #+begin_src emacs-lisp
 (use-package notmuch
-  ;; Leave Message's address completion to BBDB, even when Notmuch is loaded.
-  :init (setq notmuch-address-command 'as-is)
   :custom (notmuch-search-oldest-first nil)
   :config (require 'notmuch))
 #+end_src
