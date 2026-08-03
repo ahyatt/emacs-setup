@@ -71,11 +71,19 @@ the same file.
  compilation-ask-about-save nil                   ; Don't save anything, don't ask
  compilation-save-buffers-predicate '(lambda () nil)
  confirm-kill-emacs 'yes-or-no-p                  ; Confirm before exiting Emacs
+ completion-auto-help t                           ; Automatically provide help for invalid completion input
+ completion-auto-select 'second-tab               ; Use the second tab to start completion in the buffer
  completion-cycle-threshold 5                     ; Tab-cycle completions if there are only 5 of them.
  completions-detailed t                           ; Add extra detail to completions
  completion-eager-display t                       ; Show completions immediately
  completion-eager-update t                        ; Keep completions updated as you type
+ completion-ignore-case t                         ; Ignore case when completing
  completion-in-region-function #'consult-completion-in-region ; Use consult for completion in region
+ completion-show-help nil                         ; Don't show help
+ completions-format 'one-column                   ; Show completions in one column
+ completions-max-height 10                        ; Don't have a really high completion window
+ completions-sort 'historical                     ; Sort completions by history
+ completions-styles '(partial-completion flex initials)
  cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
@@ -91,10 +99,15 @@ the same file.
  initial-scratch-message ""                       ; Empty the initial *scratch* buffer
  kill-do-not-save-duplicates t                    ; Eliminate duplicates in the kill ring
  left-margin-width 1 right-margin-width 1         ; Add left and right margins
+ minibuffer-depth-indicate-mode t                 ; Show the depth of nested minibuffer
+ minibuffer-electric-default-mode t               ; Automatically enter default value in minibuffer
+ minibuffer-prompt-properties
+   '(read-only t intangible t cursor-intangible t face minibuffer-prompt)
  minibuffer-visible-completion 'up-down           ; Navigate minibuffer with arrow keys
  mouse-yank-at-point t                            ; Yank at point rather than pointer
  next-error-message-highlight t                   ; Highlight the current error in next-error buffer.
  ns-use-srgb-colorspace nil                       ; Don't use sRGB colors
+ read-buffer-completion-ignore-case t             ; Ignore case  when completing buffer names
  read-process-output-max (* 4 1024 1024)          ; Bigger read-process buffer
  reb-re-syntax 'string                            ; No double blacklashes in re-builder
  recenter-positions '(5 top bottom)               ; Set re-centering positions
@@ -315,25 +328,6 @@ is good for compatibility.
 #+end_src
 
 #+begin_src emacs-lisp
-;; From Vertico example installation instructions.
-(use-package orderless
-  :custom
-  (orderless-matching-styles '(orderless-regexp orderless-literal orderless-initialism orderless-prefixes))
-  (orderless-component-separator " +\\|[-/]")
-  :init
-  ;; Completion category overrides for file helps with tramp, this is mentioned in the vertico docs.
-  (setq completion-styles '(orderless)
-        completion-ignore-case t
-        completion-category-defaults nil
-        completion-category-overrides '((file (styles basic partial-completion))))
-  :config
-  ;; We make the SPC key insert a literal space and the same for the
-  ;; question mark.  Spaces are used to delimit orderless groups, while
-  ;; the question mark is a valid regexp character.
-  (let ((map minibuffer-local-completion-map))
-    (define-key map (kbd "SPC") nil)
-    (define-key map (kbd "?") nil)))
-
 (use-package savehist
   :custom (savehist-additional-variables '(search-ring regexp-search-ring kill-ring))
   :config
@@ -355,26 +349,10 @@ is good for compatibility.
 (use-package emacs
   :init
   ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-    '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28: Hide commands in M-x which do not work in the current mode.
-  (setq read-extended-command-predicate #'command-completion-default-include-p)
-
-  ;; In non-programming-buffers, we don't want `pcomplete-completions-at-point'
-  ;; or 't' which seems to complete everything.
-  (defun ash/fix-completion-for-nonprog-buffers ()
-    (setq completion-at-point-functions
-          (-remove-item t (append (-remove-item #'pcomplete-completions-at-point completion-at-point-functions)
-                                  '(cape-file cape-abbrev cape-rfc1345)))))
-  (add-hook 'org-mode-hook #'ash/fix-completion-for-nonprog-buffers)
-  (add-hook 'notmuch-message-mode-hook #'ash/fix-completion-for-nonprog-buffers)
-
-  (setq enable-recursive-minibuffers t
-        read-buffer-completion-ignore-case t
-        read-file-name-completion-ignore-case t
-        resize-mini-windows t))
+  (setq read-extended-command-predicate #'command-completion-default-include-p))
 #+end_src
 *** Actions via embark
 Embark is a framework for actions, including those done on completions.
@@ -1157,17 +1135,23 @@ I've used many mail packages, but =notmuch= is a good combination of simple, sui
 
 Use BBDB as the address book for Gnus.  Add recipients to BBDB when messages
 are sent, and use those contacts with the standard completion-at-point UI.
+Ignore Substack's generated =reply+= addresses and GitHub's shared
+=notifications@github.com= address.  The former changes continually, while the
+latter is reused with unrelated sender names, so neither is a useful contact.
 #+begin_src emacs-lisp
 (use-package bbdb
   :custom
   (bbdb-file "~/.bbdb")
   (bbdb-complete-mail nil)
   (bbdb-completion-display-record nil)
+  (bbdb-message-ignore-mail-re
+   "\\`\\(?:reply[+][^@]+@mg1\\.substack\\.com\\|notifications@github\\.com\\)\\'")
   ;; Prefer the author shown in From over a possibly generic Reply-To address.
   (bbdb-message-headers
    '((sender "From" "Resent-From" "Reply-To" "Sender")
      (recipients "Resent-To" "Resent-CC" "To" "CC" "BCC")))
   (bbdb-mua-auto-action 'create)
+  (bbdb-mua-pop-up nil)
   :config
   (bbdb-initialize 'gnus 'message)
 
