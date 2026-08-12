@@ -79,10 +79,10 @@ the same file.
  completion-ignore-case t                         ; Ignore case when completing
  completion-in-region-function #'consult-completion-in-region ; Use consult for completion in region
  completion-show-help nil                         ; Don't show help
+ completion-styles '(partial-completion flex initials orderless)
  completions-format 'one-column                   ; Show completions in one column
  completions-max-height 10                        ; Don't have a really high completion window
  completions-sort 'historical                     ; Sort completions by history
- completions-styles '(partial-completion flex initials)
  cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
  column-number-mode t                             ; Useful to look out for line length limits
  delete-by-moving-to-trash t                      ; Delete files to trash
@@ -1029,21 +1029,92 @@ Also, I don't like wide buffers.
   :hook ((text-mode prog-mode org-mode) . olivetti-mode)
   :config
   (defun ash/olivetti-target-columns ()
-    "Return target column width for the current major mode, or nil."
-    (cond ((derived-mode-p 'prog-mode) 120)
-          ((derived-mode-p 'org-mode) 80)
-          (t nil)))
+    "Return target column width for the current buffer, or nil.
+The target is the 90th percentile of the buffer's non-empty line
+lengths (sampled from at most the first 5000 lines), clamped
+between `fill-column' and 120.  The `fill-column' floor matters in
+buffers dominated by short lines but with a few very long ones
+\(e.g. pretty-printed JSON): a body narrower than the fill width
+has no benefit and just forces the long lines to wrap.
+Returns nil for an empty buffer."
+    (let ((lengths nil)
+          (lines-left 5000))
+      (save-excursion
+        (goto-char (point-min))
+        (while (and (not (eobp)) (> lines-left 0))
+          (end-of-line)
+          (let ((col (current-column)))
+            (when (> col 0)
+              (push col lengths)))
+          (forward-line 1)
+          (setq lines-left (1- lines-left))))
+      (when lengths
+        (let* ((sorted (sort lengths #'<))
+               (n (length sorted))
+               (idx (min (1- n) (floor (* 0.9 n)))))
+          (min 120 (max fill-column (nth idx sorted)))))))
+
+  (define-advice olivetti-scale-width (:override (width) ash/robust)
+    "Scale WIDTH by the `text-scale-mode' factor.
+The original inspects only the newest `default' face remapping to
+find the :height factor, which fails whenever another package
+\(e.g. auto-dim-other-buffers) remaps `default' after
+text-scale-mode does — the margins then come out unscaled and the
+visible body is too narrow."
+    (round (* width (if (bound-and-true-p text-scale-mode)
+                        (expt text-scale-mode-step text-scale-mode-amount)
+                      1))))
 
   (defun ash/olivetti-adjust-scale ()
     "Scale text so the target number of columns fills the window width."
     (when-let* ((target (and olivetti-mode (ash/olivetti-target-columns))))
-      (let* ((ratio (/ (float (window-pixel-width))
+      ;; Usable width is the body plus olivetti's margins; unlike
+      ;; `window-pixel-width' it excludes fringes and scroll bars.
+      (let* ((margins (window-margins))
+             (usable-pixels (+ (window-body-width nil t)
+                               (* (frame-char-width)
+                                  (+ (or (car margins) 0)
+                                     (or (cdr margins) 0)))))
+             (ratio (/ (float usable-pixels)
                        (* target (frame-char-width))))
-             (level (/ (log ratio) (log text-scale-mode-step))))
-        (text-scale-set (min (max 0 (floor level)) 2))
-        (setq-local olivetti-body-width target))))
+             (level (min (max 0 (floor (/ (log ratio)
+                                          (log text-scale-mode-step))))
+                         2)))
+        ;; Skip when nothing would change: `text-scale-set' always
+        ;; re-runs `text-scale-mode-hook', which makes olivetti tear
+        ;; down and re-apply its margins — a visible flicker and
+        ;; another `window-size-change-functions' event.
+        (unless (and (= level (if text-scale-mode text-scale-mode-amount 0))
+                     (equal olivetti-body-width target))
+          (setq-local olivetti-body-width target)
+          (text-scale-set level)))))
 
-  (add-hook 'olivetti-mode-hook #'ash/olivetti-adjust-scale))
+  (defun ash/olivetti-adjust-frame (frame)
+    "Readjust olivetti scaling in all of FRAME's olivetti windows.
+Cheap when nothing changed, since `ash/olivetti-adjust-scale'
+no-ops unless the computed values differ from the current ones."
+    (dolist (window (window-list frame 'no-minibuf))
+      (when (buffer-local-value 'olivetti-mode (window-buffer window))
+        (with-selected-window window
+          (ash/olivetti-adjust-scale)))))
+
+  (defun ash/olivetti-adjust-scale-on-resize (frame)
+    "Readjust olivetti scaling in FRAME's windows whose width changed."
+    (dolist (window (window-list frame 'no-minibuf))
+      (let ((width (window-pixel-width window)))
+        ;; Height-only changes (echo area growth, minibuffer, etc.)
+        ;; don't affect the scale, so ignore them.
+        (unless (eql width (window-parameter window 'ash/olivetti-width))
+          (set-window-parameter window 'ash/olivetti-width width)
+          (when (buffer-local-value 'olivetti-mode (window-buffer window))
+            (with-selected-window window
+              (ash/olivetti-adjust-scale)))))))
+
+  (add-hook 'olivetti-mode-hook #'ash/olivetti-adjust-scale)
+  (add-hook 'window-size-change-functions #'ash/olivetti-adjust-scale-on-resize)
+  ;; Re-adjust when a window switches to a different buffer; the
+  ;; resize hook won't fire then since the window size is unchanged.
+  (add-hook 'window-buffer-change-functions #'ash/olivetti-adjust-frame))
 #+end_src
 *** Dim other buffers
 #+begin_src emacs-lisp
@@ -1129,6 +1200,10 @@ I've used many mail packages, but =notmuch= is a good combination of simple, sui
 #+begin_src emacs-lisp
 (use-package notmuch
   :custom (notmuch-search-oldest-first nil)
+  :hook ((notmuch-show-mode . visual-line-mode)
+         (notmuch-message-mode . visual-line-mode)
+         (notmuch-show-mode . variable-pitch-mode)
+         (notmuch-message-mode . visual-line-mode))
   :config (require 'notmuch))
 #+end_src
 
@@ -1341,6 +1416,7 @@ Clean up old buffers after a while
       org-agenda-tags-todo-honor-ignore-options t
       org-agenda-skip-deadline-if-done 't
       org-agenda-skip-scheduled-if-done 't
+      org-agenda-skip-deadline-prewarning-if-scheduled 't
       org-src-window-setup 'other-window
       org-src-tab-acts-natively t
       org-fontify-done-headline t
@@ -2036,7 +2112,13 @@ those customizations.
   (meow-setup)
   (meow-global-mode 1)
   (dolist (mode '(eshell-mode calc-mode help-mode info-mode ghostel-mode))
-    (add-to-list 'meow-mode-state-list `(,mode . insert))))
+    (add-to-list 'meow-mode-state-list `(,mode . insert)))
+  ;; These modes have no editing to do, just navigation using the
+  ;; mode's own single-letter keybindings, so put them in meow's
+  ;; `motion' state, which only binds SPC/escape and otherwise lets
+  ;; the major mode's keymap handle everything.
+  (dolist (mode '(notmuch-search-mode notmuch-hello-mode notmuch-show-mode))
+    (add-to-list 'meow-mode-state-list `(,mode . motion))))
 
 (use-package repeat-fu
   :commands (repeat-fu-mode repeat-fu-execute)
