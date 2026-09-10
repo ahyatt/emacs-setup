@@ -316,14 +316,24 @@ is good for compatibility.
         vertico-cycle t))
 #+end_src
 
+Use the global completion preview mode when it isn't annoying.  It generally is annoying when writing out text, since the continuations aren't that helpful due to the arbitrariness of them and their constant distracting appearance.
+
 #+begin_src emacs-lisp
 (use-package completion-preview
   :ensure nil
   :if (fboundp 'global-completion-preview-mode)
+  :custom
+  (global-completion-preview-modes
+   '((not archive-mode calc-mode compilation-mode diff-mode dired-mode
+          image-mode minibuffer-mode minibuffer-inactive-mode
+          org-agenda-mode special-mode wdired-mode org-mode markdown-mode text-mode)
+     t))
   :config
   (global-completion-preview-mode 1)
   :bind
   (:map completion-preview-active-mode-map
+            ("M-i" . completion-preview-insert-word)
+            ("<tab>" . completion-preview-complete)
             ("C-n" . completion-preview-next-candidate)
             ("C-p" . completion-preview-prev-candidate)))
 #+end_src
@@ -814,7 +824,12 @@ Git gutter highlights changes to files.
     :diminish git-gutter-mode)
 #+END_SRC
 
+Use ts-mode for JSON:
 
+#+begin_src emacs-lisp
+(setf (alist-get "\\.json\\'" auto-mode-alist nil nil #'equal)
+      'json-ts-mode)
+#+end_src
 *** Tree Sitter
 This gives emacs the power to interact with the AST.
 #+begin_src emacs-lisp

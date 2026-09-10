@@ -218,10 +218,18 @@
 (use-package completion-preview
   :ensure nil
   :if (fboundp 'global-completion-preview-mode)
+  :custom
+  (global-completion-preview-modes
+   '((not archive-mode calc-mode compilation-mode diff-mode dired-mode
+          image-mode minibuffer-mode minibuffer-inactive-mode
+          org-agenda-mode special-mode wdired-mode org-mode markdown-mode text-mode)
+     t))
   :config
   (global-completion-preview-mode 1)
   :bind
   (:map completion-preview-active-mode-map
+            ("M-i" . completion-preview-insert-word)
+            ("<tab>" . completion-preview-complete)
             ("C-n" . completion-preview-next-candidate)
             ("C-p" . completion-preview-prev-candidate)))
 
@@ -623,6 +631,9 @@
   :config
   (global-git-gutter-mode 't)
   :diminish git-gutter-mode)
+
+(setf (alist-get "\\.json\\'" auto-mode-alist nil nil #'equal)
+      'json-ts-mode)
 
 (use-package tree-sitter
   :config
