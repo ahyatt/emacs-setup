@@ -1,5 +1,10 @@
 ;; -*- lexical-binding: t -*-
 
+(let ((go-bin (expand-file-name "~/go/bin")))
+  (when (file-directory-p go-bin)
+    (add-to-list 'exec-path go-bin)
+    (setenv "PATH" (concat go-bin path-separator (getenv "PATH")))))
+
 (require 'package)
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
@@ -589,9 +594,22 @@
                (project-current nil))
       (lsp-deferred)))
   :hook ((python-base-mode . ash/python-lsp-mode-maybe)
-         (go-mode . lsp-mode)
-         (go-ts-mode . lsp-mode)))
+         (go-mode . lsp-deferred)
+         (go-ts-mode . lsp-deferred))
+  ;; Large GC thresholds are recomended in LSP mode
+  :custom gc-cons-threshold 104857600)
 (use-package lsp-ui)
+
+;; Go uses tabs (gofmt), so override the global `indent-tabs-mode nil`
+;; for Go buffers; otherwise Emacs indents with spaces and conflicts
+;; with the tabs used elsewhere in the file.  tab-width must also be
+;; bumped to match go-ts-indent-offset (8); otherwise Emacs computes
+;; the indent target in columns (8) using the global tab-width (4)
+;; and inserts two tab characters per level instead of one.
+(add-hook 'go-mode-hook #'(lambda () (setq-local indent-tabs-mode t
+                                                  tab-width 8)))
+(add-hook 'go-ts-mode-hook #'(lambda () (setq-local indent-tabs-mode t
+                                                     tab-width 8)))
 
 (use-package eglot
   :hook ((csharp-mode . eglot))
@@ -810,7 +828,7 @@ Returns nil for an empty buffer."
         (let* ((sorted (sort lengths #'<))
                (n (length sorted))
                (idx (min (1- n) (floor (* 0.9 n)))))
-          (min 120 (max fill-column (nth idx sorted)))))))
+          (min 120 (max (+ fill-column 5) (nth idx sorted)))))))
 
   (define-advice olivetti-scale-width (:override (width) ash/robust)
     "Scale WIDTH by the `text-scale-mode' factor.
@@ -1231,11 +1249,11 @@ wraps the entire quoted section in a div with class gmail_quote_container."
   ;; Eval (transient-remove-suffix 'magit-commit '(1 -1)) to remove gptcommit transient commands
   (magit-gptcommit-status-buffer-setup))
 
-(add-to-list 'load-path "~/src/ekg")
-
 (use-package vecdb :ensure t)
 
 (use-package ekg
+  :ensure nil
+  :load-path "~/src/ekg"
   ;; Use variable pitch fonts for notes
   :hook (((ekg-notes-mode ekg-capture-mode ekg-edit-mode) . variable-pitch-mode)
          ((ekg-capture-mode ekg-edit-mode) . visual-line-mode))
@@ -1272,7 +1290,7 @@ wraps the entire quoted section in a div with class gmail_quote_container."
 (defvar ash/org-code-contexts (make-hash-table :test 'equal)
   "Map from ws-name to context plist for active agent sessions.")
 
-(defvar ash/org-code-agent 'ghostel
+(defvar ash/org-code-agent 'agent-shell
   "Which agent frontend to use.  Either `ghostel' or `agent-shell'.")
 
 (require 'org)
@@ -1605,9 +1623,19 @@ Sets state to DONE only if currently STARTED."
     ;; Close tab
     (tab-bar-close-tab-by-name tab-name)))
 
-(use-package pi-coding-agent
+(use-package pilish
   :ensure t
-  :init (defalias 'pi 'pi-coding-agent)
+  :init (defalias 'pi 'pilish)
+  :custom
+  ;; Collapse completed thinking in new chats; live thinking still streams:
+  (pilish-thinking-display 'hidden)
+  (pilish-input-window-height 0.25)
+  ;; Copy source Markdown from the chat buffer instead of only visible text:
+  (pilish-copy-raw-markdown t)
+  ;; Request the native same-window opener for chat file targets;
+  ;; use C-u RET to invert this request for one visit.  Emacs display policy
+  ;; may redirect final placement:
+  (pilish-visit-file-other-window nil)
   :config
   (defun ash/pi-coding-agent-two-windows ()
     "Display pi-coding-agent input and chat buffers in two windows.
