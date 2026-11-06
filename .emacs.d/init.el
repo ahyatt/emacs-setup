@@ -103,7 +103,7 @@
  use-dialog-box nil                               ; Never use a UI dialog box, only minibuffer
  use-short-answers t                              ; Use y/n instead yes / no.
  uniquify-buffer-name-style 'forward              ; Uniquify buffer names
- visual-bell t                                    ; Flash instead of making a sound
+ visible-bell t                                    ; Flash instead of making a sound
  window-combination-resize t                      ; Resize windows proportionally
  x-stretch-cursor t)                              ; Stretch cursor to the glyph width
 (cd "~/")                                         ; Move to the user directory
@@ -117,6 +117,11 @@
 (put 'downcase-region 'disabled nil)              ; Enable downcase-region
 (put 'upcase-region 'disabled nil)                ; Enable upcase-region
 (set-default-coding-systems 'utf-8)               ; Default to utf-8 encoding
+
+;; New Emacs scaling flags
+(setq underline-line-scaling-flag t
+      overline-line-scaling-flag t
+      strike-through-line-scaling-flag t)
 
 (if (member window-system '(ns mac))
     (toggle-frame-maximized)
@@ -1079,6 +1084,8 @@ wraps the entire quoted section in a div with class gmail_quote_container."
 (setq gnus-asynchronous t
       gnus-use-cache t
       gnus-use-header-prefetch t
+      ;; Without this the cursor jumps around when I read mail
+      gnus-auto-center-summary nil
       gnus-summary-line-format "%U%R%z%I%(%[%4L: %d %-23,23f%]%) %s
 ")
 
@@ -1226,6 +1233,7 @@ wraps the entire quoted section in a div with class gmail_quote_container."
     (if (functionp secret) (funcall secret) secret)))
 
 (when (featurep 'llm)
+  (require 'llm nil t)
   (require 'llm-openai nil t)
   (require 'llm-gemini nil t)
   (require 'llm-claude nil t)
